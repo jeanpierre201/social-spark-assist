@@ -1,25 +1,34 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   BarChart3, 
-  Calendar, 
   TrendingUp, 
   Users, 
   Sparkles, 
   Clock,
   Image as ImageIcon,
-  Hash
+  Hash,
+  LogOut
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import RobotCalendarIcon from '@/components/RobotCalendarIcon';
 
 const Dashboard = () => {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [planUsage] = useState({
     postsUsed: 7,
     postsLimit: 10,
     planName: "Starter Plan"
   });
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   const stats = [
     {
@@ -47,7 +56,7 @@ const Dashboard = () => {
       title: "Scheduled Posts",
       value: "23",
       change: "Next 7 days",
-      icon: Calendar,
+      icon: RobotCalendarIcon,
       color: "text-orange-600"
     }
   ];
@@ -77,9 +86,15 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's your social media overview.</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back, {user?.name || user?.email}! Here's your social media overview.</p>
+          </div>
+          <Button variant="outline" onClick={handleLogout} className="flex items-center space-x-2">
+            <LogOut className="h-4 w-4" />
+            <span>Logout</span>
+          </Button>
         </div>
 
         {/* Plan Usage */}

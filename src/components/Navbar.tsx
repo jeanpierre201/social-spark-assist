@@ -1,10 +1,32 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Zap } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
+import RobotCalendarIcon from '@/components/RobotCalendarIcon';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignIn = () => {
+    navigate('/login');
+  };
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
@@ -12,7 +34,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-2">
             <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-2 rounded-lg">
-              <Zap className="h-6 w-6 text-white" />
+              <RobotCalendarIcon className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               Social Assistance AI
@@ -23,12 +45,27 @@ const Navbar = () => {
             <a href="#features" className="text-foreground hover:text-purple-600 transition-colors">Features</a>
             <a href="#pricing" className="text-foreground hover:text-purple-600 transition-colors">Pricing</a>
             <a href="#about" className="text-foreground hover:text-purple-600 transition-colors">About</a>
-            <Button variant="outline" className="border-purple-200 hover:bg-purple-50">
-              Sign In
-            </Button>
-            <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-              Get Started
-            </Button>
+            
+            {user ? (
+              <div className="flex items-center space-x-4">
+                <span className="text-sm text-muted-foreground">Welcome, {user.name || user.email}</span>
+                <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                  Dashboard
+                </Button>
+                <Button variant="outline" onClick={handleLogout}>
+                  Logout
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Button variant="outline" className="border-purple-200 hover:bg-purple-50" onClick={handleSignIn}>
+                  Sign In
+                </Button>
+                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" onClick={handleGetStarted}>
+                  Get Started
+                </Button>
+              </>
+            )}
           </div>
 
           <div className="md:hidden">
@@ -48,14 +85,27 @@ const Navbar = () => {
               <a href="#features" className="block px-3 py-2 text-foreground hover:text-purple-600">Features</a>
               <a href="#pricing" className="block px-3 py-2 text-foreground hover:text-purple-600">Pricing</a>
               <a href="#about" className="block px-3 py-2 text-foreground hover:text-purple-600">About</a>
-              <div className="flex flex-col space-y-2 pt-2">
-                <Button variant="outline" className="border-purple-200 hover:bg-purple-50">
-                  Sign In
-                </Button>
-                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                  Get Started
-                </Button>
-              </div>
+              
+              {user ? (
+                <div className="flex flex-col space-y-2 pt-2">
+                  <span className="px-3 py-2 text-sm text-muted-foreground">Welcome, {user.name || user.email}</span>
+                  <Button variant="outline" onClick={() => navigate('/dashboard')}>
+                    Dashboard
+                  </Button>
+                  <Button variant="outline" onClick={handleLogout}>
+                    Logout
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col space-y-2 pt-2">
+                  <Button variant="outline" className="border-purple-200 hover:bg-purple-50" onClick={handleSignIn}>
+                    Sign In
+                  </Button>
+                  <Button className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700" onClick={handleGetStarted}>
+                    Get Started
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
