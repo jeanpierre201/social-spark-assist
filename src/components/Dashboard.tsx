@@ -11,10 +11,10 @@ import {
   Clock,
   Image as ImageIcon,
   Hash,
-  LogOut
+  LogOut,
+  Calendar
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import RobotCalendarIcon from '@/components/RobotCalendarIcon';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -56,7 +56,7 @@ const Dashboard = () => {
       title: "Scheduled Posts",
       value: "23",
       change: "Next 7 days",
-      icon: RobotCalendarIcon,
+      icon: Calendar,
       color: "text-orange-600"
     }
   ];
