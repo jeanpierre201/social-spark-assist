@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,8 @@ import {
   Image as ImageIcon,
   Hash,
   LogOut,
-  Calendar
+  Calendar,
+  Home
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -50,6 +52,10 @@ const Dashboard = () => {
 
   const handleLogout = () => {
     logout();
+    navigate('/');
+  };
+
+  const handleGoHome = () => {
     navigate('/');
   };
 
@@ -116,10 +122,16 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, {displayName}! Here's your social media overview.</p>
           </div>
-          <Button variant="outline" onClick={handleLogout} className="flex items-center space-x-2">
-            <LogOut className="h-4 w-4" />
-            <span>Logout</span>
-          </Button>
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
+              <Home className="h-4 w-4" />
+              <span>Home</span>
+            </Button>
+            <Button variant="outline" onClick={handleLogout} className="flex items-center space-x-2">
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </Button>
+          </div>
         </div>
 
         {/* Plan Usage */}
@@ -202,7 +214,10 @@ const Dashboard = () => {
                     </div>
                   </Card>
                 </div>
-                <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
+                <Button 
+                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  onClick={() => navigate('/content-generator')}
+                >
                   Start Creating Content
                 </Button>
               </div>

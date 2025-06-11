@@ -73,6 +73,7 @@ serve(async (req) => {
   try {
     // Check if OpenAI API key is configured
     if (!openAIApiKey) {
+      console.error('OpenAI API key not configured');
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }),
         { 
@@ -82,12 +83,15 @@ serve(async (req) => {
       );
     }
 
+    console.log('Processing content generation request...');
+
     // Get user ID from authorization header for rate limiting
     const authHeader = req.headers.get('authorization');
     const userId = authHeader ? authHeader.split(' ')[1] : 'anonymous';
 
     // Check rate limit
     if (!checkRateLimit(userId)) {
+      console.error('Rate limit exceeded for user:', userId);
       return new Response(
         JSON.stringify({ error: 'Rate limit exceeded. Try again in an hour.' }),
         { 
@@ -98,10 +102,12 @@ serve(async (req) => {
     }
 
     const body: RequestBody = await req.json();
+    console.log('Request body:', body);
 
     // Validate input
     const validationError = validateInput(body);
     if (validationError) {
+      console.error('Validation error:', validationError);
       return new Response(
         JSON.stringify({ error: validationError }),
         { 
@@ -116,6 +122,8 @@ serve(async (req) => {
     const goal = sanitizeInput(body.goal);
     const nicheInfo = body.nicheInfo ? sanitizeInput(body.nicheInfo) : '';
 
+    console.log('Sanitized inputs:', { industry, goal, nicheInfo });
+
     // Prepare prompt for OpenAI
     const prompt = `Create a social media post for the ${industry} industry. 
 Goal: ${goal}
@@ -127,7 +135,9 @@ Please provide:
 
 Make the content professional, engaging, and appropriate for social media platforms like Instagram, LinkedIn, and Twitter.`;
 
-    // Call OpenAI API
+    console.log('Making OpenAI API call...');
+
+    // Call OpenAI API with gpt-4o-mini model
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -149,11 +159,16 @@ Make the content professional, engaging, and appropriate for social media platfo
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`OpenAI API error: ${response.status} - ${errorText}`);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log('OpenAI response:', data);
+    
     const generatedText = data.choices[0].message.content;
+    console.log('Generated text:', generatedText);
 
     // Try to parse as JSON first, fallback to text parsing
     let caption = '';
@@ -164,6 +179,7 @@ Make the content professional, engaging, and appropriate for social media platfo
       caption = parsed.caption || '';
       hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
     } catch {
+      console.log('JSON parsing failed, using text parsing fallback');
       // Fallback: extract caption and hashtags from text
       const lines = generatedText.split('\n').filter(line => line.trim());
       
@@ -202,6 +218,8 @@ Make the content professional, engaging, and appropriate for social media platfo
         'business'
       ];
     }
+
+    console.log('Final result:', { caption, hashtags });
 
     return new Response(
       JSON.stringify({ 

@@ -1,7 +1,6 @@
 
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play } from 'lucide-react';
-import RobotCalendarIcon from './RobotCalendarIcon';
 
 const Hero = () => {
   return (
@@ -9,18 +8,13 @@ const Hero = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-5xl lg:text-6xl font-bold text-foreground leading-tight">
-                AI-Powered
-                <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  Social Media
-                </span>
-                Content Creation
-              </h1>
-              <div className="flex-shrink-0">
-                <RobotCalendarIcon className="w-16 h-16 lg:w-20 lg:h-20" />
-              </div>
-            </div>
+            <h1 className="text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+              AI-Powered
+              <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Social Media
+              </span>
+              Content Creation
+            </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl">
               Transform your social media strategy with our AI assistant. Generate engaging content, 

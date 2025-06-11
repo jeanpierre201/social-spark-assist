@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,8 +6,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Download, AlertCircle, Loader2 } from 'lucide-react';
+import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface GeneratedContent {
   caption: string;
@@ -18,6 +18,7 @@ interface GeneratedContent {
 const ContentGenerator = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
   const [nicheInfo, setNicheInfo] = useState('');
@@ -185,6 +186,14 @@ const ContentGenerator = () => {
     });
   };
 
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  const handleGoBack = () => {
+    navigate('/dashboard');
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -196,9 +205,21 @@ const ContentGenerator = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">AI Content Generator</h1>
-          <p className="text-muted-foreground">Generate engaging social media content with AI</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">AI Content Generator</h1>
+            <p className="text-muted-foreground">Generate engaging social media content with AI</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" onClick={handleGoBack} className="flex items-center space-x-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Dashboard</span>
+            </Button>
+            <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
+              <Home className="h-4 w-4" />
+              <span>Home</span>
+            </Button>
+          </div>
         </div>
 
         {/* Usage Indicator */}
