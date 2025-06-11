@@ -1,8 +1,21 @@
 
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Sparkles, Calendar, TrendingUp } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const Hero = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return (
     <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 overflow-hidden">
       {/* Background decoration */}
@@ -18,15 +31,22 @@ const Hero = () => {
             AI-Powered Social Media Management
           </div>
           
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground mb-6">
-            Generate & Schedule
-            <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Social Content
-            </span>
-            <span className="block text-4xl sm:text-5xl lg:text-6xl">
-              with AI Magic
-            </span>
-          </h1>
+          <div className="flex items-center justify-center mb-6">
+            <img 
+              src="/lovable-uploads/2de04226-da8a-493b-b26b-1e6a6b6d8c98.png" 
+              alt="AI Robot Assistant" 
+              className="w-20 h-20 mr-4 animate-bounce"
+            />
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-foreground">
+              Generate & Schedule
+              <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                Social Content
+              </span>
+              <span className="block text-4xl sm:text-5xl lg:text-6xl">
+                with AI Magic
+              </span>
+            </h1>
+          </div>
           
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto leading-relaxed">
             Transform your social media strategy with AI-generated content, automated scheduling, 
@@ -34,8 +54,8 @@ const Hero = () => {
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 py-3">
-              Start Free Trial
+            <Button size="lg" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-lg px-8 py-3" onClick={handleGetStarted}>
+              {user ? 'Go to Dashboard' : 'Start Free Trial'}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button size="lg" variant="outline" className="text-lg px-8 py-3 border-purple-200 hover:bg-purple-50">

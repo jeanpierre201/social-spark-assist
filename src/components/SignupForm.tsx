@@ -29,14 +29,15 @@ const SignupForm = () => {
       return;
     }
 
-    try {
-      await signup(email, password, name);
+    const { error: signupError } = await signup(email, password, name);
+    
+    if (signupError) {
+      setError(signupError);
+    } else {
       navigate('/dashboard');
-    } catch (err) {
-      setError('Failed to create account');
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   };
 
   return (

@@ -21,14 +21,15 @@ const LoginForm = () => {
     setLoading(true);
     setError('');
 
-    try {
-      await login(email, password);
+    const { error: loginError } = await login(email, password);
+    
+    if (loginError) {
+      setError(loginError);
+    } else {
       navigate('/dashboard');
-    } catch (err) {
-      setError('Invalid email or password');
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   };
 
   return (

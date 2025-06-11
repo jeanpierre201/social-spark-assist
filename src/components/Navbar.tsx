@@ -1,13 +1,37 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [profileName, setProfileName] = useState<string>('');
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      // Fetch user profile from database
+      const fetchProfile = async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (data?.full_name) {
+          setProfileName(data.full_name);
+        }
+      };
+      
+      fetchProfile();
+    } else {
+      setProfileName('');
+    }
+  }, [user]);
 
   const handleSignIn = () => {
     navigate('/login');
@@ -21,10 +45,12 @@ const Navbar = () => {
     }
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/');
   };
+
+  const displayName = profileName || user?.email || '';
 
   return (
     <nav className="bg-white/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
@@ -46,7 +72,7 @@ const Navbar = () => {
             
             {user ? (
               <div className="flex items-center space-x-4">
-                <span className="text-sm text-muted-foreground">Welcome, {user.name || user.email}</span>
+                <span className="text-sm text-muted-foreground">Welcome, {displayName}</span>
                 <Button variant="outline" onClick={() => navigate('/dashboard')}>
                   Dashboard
                 </Button>
@@ -86,7 +112,7 @@ const Navbar = () => {
               
               {user ? (
                 <div className="flex flex-col space-y-2 pt-2">
-                  <span className="px-3 py-2 text-sm text-muted-foreground">Welcome, {user.name || user.email}</span>
+                  <span className="px-3 py-2 text-sm text-muted-foreground">Welcome, {displayName}</span>
                   <Button variant="outline" onClick={() => navigate('/dashboard')}>
                     Dashboard
                   </Button>
