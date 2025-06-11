@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -19,16 +20,40 @@ import { useNavigate } from 'react-router-dom';
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [profileName, setProfileName] = useState<string>('');
   const [planUsage] = useState({
     postsUsed: 7,
     postsLimit: 10,
     planName: "Starter Plan"
   });
 
+  useEffect(() => {
+    if (user) {
+      // Fetch user profile from database
+      const fetchProfile = async () => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        
+        if (data?.full_name) {
+          setProfileName(data.full_name);
+        }
+      };
+      
+      fetchProfile();
+    } else {
+      setProfileName('');
+    }
+  }, [user]);
+
   const handleLogout = () => {
     logout();
     navigate('/');
   };
+
+  const displayName = profileName || user?.email || '';
 
   const stats = [
     {
@@ -89,7 +114,7 @@ const Dashboard = () => {
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {user?.name || user?.email}! Here's your social media overview.</p>
+            <p className="text-muted-foreground">Welcome back, {displayName}! Here's your social media overview.</p>
           </div>
           <Button variant="outline" onClick={handleLogout} className="flex items-center space-x-2">
             <LogOut className="h-4 w-4" />
