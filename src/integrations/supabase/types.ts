@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      posts: {
+        Row: {
+          created_at: string | null
+          generated_caption: string
+          generated_hashtags: string[]
+          goal: string
+          id: string
+          industry: string
+          niche_info: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          generated_caption: string
+          generated_hashtags: string[]
+          goal: string
+          id?: string
+          industry: string
+          niche_info?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          generated_caption?: string
+          generated_hashtags?: string[]
+          goal?: string
+          id?: string
+          industry?: string
+          niche_info?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -38,7 +74,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_monthly_post_count: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

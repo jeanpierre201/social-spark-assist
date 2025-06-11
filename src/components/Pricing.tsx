@@ -2,8 +2,21 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, Star } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const Pricing = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleGetStartedFree = () => {
+    if (user) {
+      navigate('/content-generator');
+    } else {
+      navigate('/login');
+    }
+  };
+
   const plans = [
     {
       name: "Free Plan",
@@ -19,7 +32,8 @@ const Pricing = () => {
       ],
       buttonText: "Get Started Free",
       popular: false,
-      buttonVariant: "outline" as const
+      buttonVariant: "outline" as const,
+      onClick: handleGetStartedFree
     },
     {
       name: "Starter Plan",
@@ -36,7 +50,8 @@ const Pricing = () => {
       ],
       buttonText: "Start Starter Plan",
       popular: true,
-      buttonVariant: "default" as const
+      buttonVariant: "default" as const,
+      onClick: () => console.log('Starter plan coming soon!')
     },
     {
       name: "Pro Plan",
@@ -55,7 +70,8 @@ const Pricing = () => {
       ],
       buttonText: "Go Pro",
       popular: false,
-      buttonVariant: "outline" as const
+      buttonVariant: "outline" as const,
+      onClick: () => console.log('Pro plan coming soon!')
     }
   ];
 
@@ -111,6 +127,7 @@ const Pricing = () => {
                   }`}
                   variant={plan.buttonVariant}
                   size="lg"
+                  onClick={plan.onClick}
                 >
                   {plan.buttonText}
                 </Button>
