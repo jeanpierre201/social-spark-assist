@@ -7,7 +7,7 @@ const Hero = () => {
     <section className="relative py-20 lg:py-32 bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
+          <div className="space-y-8 lg:order-1 order-2">
             <h1 className="text-5xl lg:text-6xl font-bold text-foreground leading-tight">
               AI-Powered
               <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
@@ -44,7 +44,7 @@ const Hero = () => {
             </div>
           </div>
           
-          <div className="relative">
+          <div className="relative lg:order-2 order-1">
             <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 border border-white/20">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-100/50 to-blue-100/50 rounded-3xl"></div>
               <div className="relative space-y-6">
