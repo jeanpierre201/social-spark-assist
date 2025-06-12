@@ -2,23 +2,24 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, 
   TrendingUp, 
   Users, 
+  Calendar, 
   Sparkles, 
-  Clock,
-  Image as ImageIcon,
-  Hash,
-  LogOut,
-  Calendar,
-  Home,
-  Lock
+  Crown,
+  Lock,
+  ArrowRight,
+  RefreshCw
 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import StarterPlanPricing from './StarterPlanPricing';
 
 interface Post {
   id: string;
@@ -30,283 +31,262 @@ interface Post {
 }
 
 const Dashboard = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
+  const { subscribed, subscriptionTier, checkSubscription } = useSubscription();
+  const { toast } = useToast();
   const navigate = useNavigate();
-  const [profileName, setProfileName] = useState<string>('');
-  const [monthlyPosts, setMonthlyPosts] = useState(0);
-  const [recentPosts, setRecentPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  const planUsage = {
-    postsUsed: monthlyPosts,
-    postsLimit: 1, // Free plan limit
-    planName: "Free Plan"
-  };
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      fetchUserData();
-    } else {
-      setProfileName('');
-    }
-  }, [user]);
-
-  const fetchUserData = async () => {
-    if (!user) return;
-    
-    try {
-      // Fetch user profile
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
+    const fetchPosts = async () => {
+      if (!user) return;
       
-      if (profileData?.full_name) {
-        setProfileName(profileData.full_name);
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+        setPosts(data || []);
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your content history",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Fetch monthly post count
-      const { data: monthlyCount } = await supabase.rpc('get_monthly_post_count', {
-        user_uuid: user.id
-      });
-      
-      setMonthlyPosts(monthlyCount || 0);
+    fetchPosts();
+  }, [user, toast]);
 
-      // Fetch recent posts
-      const { data: posts } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      setRecentPosts(posts || []);
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleRefreshSubscription = async () => {
+    await checkSubscription();
+    toast({
+      title: "Refreshed",
+      description: "Subscription status updated",
+    });
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const handleGoHome = () => {
-    navigate('/');
-  };
+  const LockedCard = ({ title, description, icon: Icon }: { title: string; description: string; icon: any }) => (
+    <Card className="relative overflow-hidden">
+      <div className="absolute inset-0 bg-gray-50/80 z-10 flex items-center justify-center">
+        <div className="text-center">
+          <Lock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+          <p className="text-sm text-gray-600 font-medium">Starter Plan Required</p>
+        </div>
+      </div>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold text-gray-300">--</div>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </CardContent>
+    </Card>
+  );
 
-  const handleUpgrade = () => {
-    navigate('/#pricing');
-  };
-
-  const displayName = profileName || user?.email || '';
-
-  // Free plan stats - all disabled except total posts
-  const stats = [
-    {
-      title: "Total Posts",
-      value: monthlyPosts.toString(),
-      change: "This month",
-      icon: BarChart3,
-      color: "text-blue-600",
-      disabled: false
-    },
-    {
-      title: "Engagement Rate",
-      value: "—",
-      change: "Upgrade to view",
-      icon: TrendingUp,
-      color: "text-gray-400",
-      disabled: true
-    },
-    {
-      title: "Followers",
-      value: "—",
-      change: "Upgrade to view",
-      icon: Users,
-      color: "text-gray-400",
-      disabled: true
-    },
-    {
-      title: "Scheduled Posts",
-      value: "—",
-      change: "Upgrade to view",
-      icon: Calendar,
-      color: "text-gray-400",
-      disabled: true
-    }
-  ];
-
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center">Loading dashboard...</div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {displayName}! Here's your social media overview.</p>
+            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back, {user?.email}
+              {subscribed && (
+                <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
+                  <Crown className="h-3 w-3 mr-1" />
+                  {subscriptionTier}
+                </Badge>
+              )}
+            </p>
           </div>
           <div className="flex items-center space-x-3">
-            <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
-              <Home className="h-4 w-4" />
-              <span>Home</span>
+            <Button variant="outline" onClick={handleRefreshSubscription}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh Status
             </Button>
-            <Button variant="outline" onClick={handleLogout} className="flex items-center space-x-2">
-              <LogOut className="h-4 w-4" />
-              <span>Logout</span>
+            <Button onClick={() => navigate('/content-generator')}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Generate Content
             </Button>
           </div>
         </div>
 
-        {/* Plan Usage */}
-        <Card className="mb-8 border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span className="flex items-center">
-                <Sparkles className="h-5 w-5 text-orange-600 mr-2" />
-                {planUsage.planName}
-              </span>
-              <Button onClick={handleUpgrade} size="sm" className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700">
-                Upgrade
-              </Button>
-            </CardTitle>
-            <CardDescription>
-              You've used {planUsage.postsUsed} of {planUsage.postsLimit} posts this month
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Progress 
-              value={(planUsage.postsUsed / planUsage.postsLimit) * 100} 
-              className="h-3"
-            />
-            <p className="text-sm text-muted-foreground mt-2">
-              {Math.max(0, planUsage.postsLimit - planUsage.postsUsed)} posts remaining
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index} className={`hover:shadow-lg transition-shadow ${stat.disabled ? 'opacity-60' : ''}`}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center">
-                    {stat.title}
-                    {stat.disabled && <Lock className="h-3 w-3 ml-2" />}
-                  </CardTitle>
-                  <Icon className={`h-4 w-4 ${stat.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">{stat.change}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* AI Content Generator */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
-                AI Content Generator
-              </CardTitle>
-              <CardDescription>
-                Generate engaging content for your social media platforms
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <Card className="p-4 hover:bg-purple-50 cursor-pointer transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <Hash className="h-8 w-8 text-blue-600" />
-                      <div>
-                        <h3 className="font-semibold">Caption & Hashtags</h3>
-                        <p className="text-sm text-muted-foreground">Generate captions</p>
-                      </div>
-                    </div>
-                  </Card>
-                  <Card className="p-4 bg-gray-50 cursor-not-allowed transition-colors relative">
-                    <div className="absolute top-2 right-2">
-                      <Lock className="h-4 w-4 text-gray-400" />
-                    </div>
-                    <div className="flex items-center space-x-3 opacity-50">
-                      <ImageIcon className="h-8 w-8 text-gray-400" />
-                      <div>
-                        <h3 className="font-semibold">AI Images</h3>
-                        <p className="text-sm text-muted-foreground">Upgrade required</p>
-                      </div>
-                    </div>
-                  </Card>
+        {/* Subscription Status */}
+        {!subscribed && (
+          <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-orange-900">Upgrade to Starter Plan</h3>
+                  <p className="text-orange-700">Unlock unlimited content generation and premium features</p>
                 </div>
-                <Button 
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                  onClick={() => navigate('/content-generator')}
-                >
-                  Start Creating Content
-                </Button>
+                <div className="flex-shrink-0">
+                  <StarterPlanPricing />
+                </div>
               </div>
             </CardContent>
           </Card>
+        )}
 
-          {/* Recent Content */}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Clock className="h-5 w-5 text-green-600 mr-2" />
-                Recent Content
-              </CardTitle>
-              <CardDescription>
-                Your generated content history
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Posts Generated</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
+              <div className="text-2xl font-bold">{posts.length}</div>
+              <p className="text-xs text-muted-foreground">All-time content created</p>
+            </CardContent>
+          </Card>
+
+          {subscribed ? (
+            <>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">4.2%</div>
+                  <p className="text-xs text-muted-foreground">+0.5% from last month</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Followers</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">1,247</div>
+                  <p className="text-xs text-muted-foreground">+12% from last month</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Scheduled Posts</CardTitle>
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">8</div>
+                  <p className="text-xs text-muted-foreground">Posts ready to publish</p>
+                </CardContent>
+              </Card>
+            </>
+          ) : (
+            <>
+              <LockedCard 
+                title="Engagement Rate" 
+                description="Track your social media performance"
+                icon={TrendingUp}
+              />
+              <LockedCard 
+                title="Followers" 
+                description="Monitor your audience growth"
+                icon={Users}
+              />
+              <LockedCard 
+                title="Scheduled Posts" 
+                description="Manage your content calendar"
+                icon={Calendar}
+              />
+            </>
+          )}
+        </div>
+
+        {/* Recent Content */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Content</CardTitle>
+            <CardDescription>Your latest AI-generated social media posts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {posts.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">No content generated yet</p>
+                <p className="mb-4">Start creating engaging social media content with AI</p>
+                <Button onClick={() => navigate('/content-generator')}>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Generate Your First Post
+                </Button>
+              </div>
+            ) : (
               <div className="space-y-4">
-                {recentPosts.length > 0 ? (
-                  recentPosts.map((post) => (
-                    <div key={post.id} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                      <div className="w-2 h-2 rounded-full mt-2 bg-blue-500" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-foreground">{post.industry}</p>
-                          <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                            Generated
-                          </span>
-                        </div>
-                        <p className="text-sm text-muted-foreground truncate">{post.generated_caption}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(post.created_at).toLocaleDateString()} at {new Date(post.created_at).toLocaleTimeString()}
-                        </p>
+                {posts.map((post) => (
+                  <div key={post.id} className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">{post.industry}</Badge>
+                        <span className="text-sm text-muted-foreground">
+                          {formatDate(post.created_at)}
+                        </span>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No content generated yet</p>
-                    <p className="text-sm">Create your first post to see it here!</p>
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Goal:</h3>
+                      <p className="text-sm">{post.goal}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Generated Caption:</h3>
+                      <p className="text-sm bg-gray-50 p-3 rounded">{post.generated_caption}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Hashtags:</h3>
+                      <p className="text-sm text-blue-600">
+                        {post.generated_hashtags.map(tag => `#${tag}`).join(' ')}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+                
+                {posts.length >= 5 && (
+                  <div className="text-center pt-4">
+                    <Button variant="outline" onClick={() => navigate('/content-generator')}>
+                      View All Content
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
