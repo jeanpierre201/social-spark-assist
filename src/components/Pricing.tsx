@@ -1,12 +1,13 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 
 const Pricing = () => {
   const { user } = useAuth();
+  const { subscribed, subscriptionTier, createCheckout } = useSubscription();
   const navigate = useNavigate();
 
   const handleGetStartedFree = () => {
@@ -17,11 +18,18 @@ const Pricing = () => {
     }
   };
 
-  const handleStarterPlan = () => {
-    if (user) {
+  const handleStarterPlan = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    // Check if user already has Starter plan or higher
+    if (subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise')) {
       navigate('/content-generator');
     } else {
-      navigate('/login');
+      // User needs to upgrade - redirect to Stripe checkout
+      await createCheckout();
     }
   };
 
@@ -56,7 +64,9 @@ const Pricing = () => {
         "Email support",
         "Content calendar"
       ],
-      buttonText: "Start Starter Plan",
+      buttonText: subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise') 
+        ? "Access Features" 
+        : "Start Starter Plan",
       popular: true,
       buttonVariant: "default" as const,
       onClick: handleStarterPlan
