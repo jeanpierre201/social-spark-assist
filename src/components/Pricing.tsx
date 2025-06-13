@@ -17,6 +17,14 @@ const Pricing = () => {
     }
   };
 
+  const handleStarterPlan = () => {
+    if (user) {
+      navigate('/content-generator');
+    } else {
+      navigate('/login');
+    }
+  };
+
   const plans = [
     {
       name: "Free Plan",
@@ -51,7 +59,7 @@ const Pricing = () => {
       buttonText: "Start Starter Plan",
       popular: true,
       buttonVariant: "default" as const,
-      onClick: () => console.log('Starter plan coming soon!')
+      onClick: handleStarterPlan
     },
     {
       name: "Pro Plan",

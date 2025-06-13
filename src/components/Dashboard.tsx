@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,8 @@ import {
   Crown,
   Lock,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  Home
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -132,6 +132,10 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
+            <Button variant="outline" onClick={() => navigate('/')}>
+              <Home className="h-4 w-4 mr-2" />
+              Home
+            </Button>
             <Button variant="outline" onClick={handleRefreshSubscription}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh Status
