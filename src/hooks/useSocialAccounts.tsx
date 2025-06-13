@@ -84,25 +84,63 @@ export const SocialAccountsProvider = ({ children }: { children: React.ReactNode
     if (!user) return;
 
     try {
+      // Check if provider is supported
+      const supportedProviders = ['google', 'facebook', 'twitter', 'linkedin_oidc'];
+      const providerMap: { [key: string]: string } = {
+        'instagram': 'facebook', // Instagram uses Facebook OAuth
+        'twitter': 'twitter',
+        'facebook': 'facebook',
+        'linkedin': 'linkedin_oidc',
+        'youtube': 'google' // YouTube uses Google OAuth
+      };
+
+      const oauthProvider = providerMap[platform];
+      
+      if (!oauthProvider) {
+        toast({
+          title: "Not Supported",
+          description: `${platform} authentication is not yet supported`,
+          variant: "destructive",
+        });
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
-        provider: platform as any,
+        provider: oauthProvider as any,
         options: {
           scopes: getOAuthScopes(platform),
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('OAuth error:', error);
+        
+        if (error.message.includes('provider is not enabled')) {
+          toast({
+            title: "Provider Not Configured",
+            description: `${platform} OAuth is not enabled. Please configure it in Supabase Dashboard under Authentication > Providers.`,
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
       
       toast({
-        title: "Success",
-        description: `Connecting to ${platform}...`,
+        title: "Connecting...",
+        description: `Redirecting to ${platform} for authentication`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error connecting account:', error);
       toast({
-        title: "Error",
-        description: `Failed to connect ${platform} account`,
+        title: "Connection Failed",
+        description: error.message || `Failed to connect ${platform} account`,
         variant: "destructive",
       });
     }
@@ -176,10 +214,11 @@ export const useSocialAccounts = () => {
 
 const getOAuthScopes = (platform: string): string => {
   const scopes = {
-    instagram: 'user_profile,user_media',
-    twitter: 'users.read,tweet.read,offline.access',
-    facebook: 'pages_show_list,pages_read_engagement',
-    linkedin: 'r_liteprofile,r_emailaddress,w_member_social'
+    instagram: 'instagram_basic,pages_show_list',
+    twitter: 'tweet.read,users.read,offline.access',
+    facebook: 'pages_show_list,pages_read_engagement,instagram_basic',
+    linkedin: 'r_liteprofile,r_emailaddress,w_member_social',
+    youtube: 'https://www.googleapis.com/auth/youtube.readonly'
   };
   return scopes[platform as keyof typeof scopes] || '';
 };

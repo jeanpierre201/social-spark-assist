@@ -8,6 +8,7 @@ import {
   Twitter, 
   Facebook, 
   Linkedin,
+  Youtube,
   Plus,
   Unlink,
   RefreshCw 
@@ -20,7 +21,8 @@ const SocialMediaSettings = () => {
     { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500' },
     { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'bg-blue-500' },
     { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600' },
-    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' }
+    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' },
+    { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'bg-red-600' }
   ];
 
   const getAccountByPlatform = (platform: string) => {
@@ -123,6 +125,12 @@ const SocialMediaSettings = () => {
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-lg font-medium">No accounts connected yet</p>
             <p className="text-sm">Connect your social media accounts to see real analytics</p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg text-left">
+              <p className="text-sm font-medium text-blue-900 mb-2">Setup Required:</p>
+              <p className="text-sm text-blue-800">
+                Configure OAuth providers in your Supabase Dashboard under Authentication → Providers to enable social media connections.
+              </p>
+            </div>
           </div>
         )}
       </CardContent>
