@@ -69,6 +69,110 @@ export type Database = {
         }
         Relationships: []
       }
+      social_accounts: {
+        Row: {
+          access_token: string | null
+          account_data: Json | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          platform: string
+          platform_user_id: string
+          refresh_token: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          account_data?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          platform: string
+          platform_user_id: string
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          account_data?: Json | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          platform?: string
+          platform_user_id?: string
+          refresh_token?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      social_metrics: {
+        Row: {
+          avg_comments: number | null
+          avg_likes: number | null
+          created_at: string
+          engagement_rate: number | null
+          followers_count: number | null
+          following_count: number | null
+          id: string
+          metrics_date: string
+          platform: string
+          posts_count: number | null
+          scheduled_posts_count: number | null
+          social_account_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_comments?: number | null
+          avg_likes?: number | null
+          created_at?: string
+          engagement_rate?: number | null
+          followers_count?: number | null
+          following_count?: number | null
+          id?: string
+          metrics_date?: string
+          platform: string
+          posts_count?: number | null
+          scheduled_posts_count?: number | null
+          social_account_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_comments?: number | null
+          avg_likes?: number | null
+          created_at?: string
+          engagement_rate?: number | null
+          followers_count?: number | null
+          following_count?: number | null
+          id?: string
+          metrics_date?: string
+          platform?: string
+          posts_count?: number | null
+          scheduled_posts_count?: number | null
+          social_account_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_metrics_social_account_id_fkey"
+            columns: ["social_account_id"]
+            isOneToOne: false
+            referencedRelation: "social_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscribers: {
         Row: {
           created_at: string
@@ -113,6 +217,16 @@ export type Database = {
       get_monthly_post_count: {
         Args: { user_uuid: string }
         Returns: number
+      }
+      get_user_latest_metrics: {
+        Args: { user_uuid: string }
+        Returns: {
+          platform: string
+          followers_count: number
+          engagement_rate: number
+          posts_count: number
+          scheduled_posts_count: number
+        }[]
       }
     }
     Enums: {

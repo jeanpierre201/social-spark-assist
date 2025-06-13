@@ -1,9 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   BarChart3, 
@@ -15,11 +17,13 @@ import {
   Lock,
   ArrowRight,
   RefreshCw,
-  Home
+  Home,
+  Settings
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import StarterPlanPricing from './StarterPlanPricing';
+import SocialMediaSettings from './SocialMediaSettings';
 
 interface Post {
   id: string;
@@ -33,10 +37,12 @@ interface Post {
 const Dashboard = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, checkSubscription } = useSubscription();
+  const { accounts, metrics, loading: socialLoading } = useSocialAccounts();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSocialSettings, setShowSocialSettings] = useState(false);
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -85,6 +91,16 @@ const Dashboard = () => {
     });
   };
 
+  // Calculate aggregated metrics from connected social accounts
+  const aggregatedMetrics = metrics.reduce((acc, metric) => {
+    return {
+      totalFollowers: acc.totalFollowers + metric.followers_count,
+      avgEngagement: (acc.avgEngagement + metric.engagement_rate) / 2,
+      totalPosts: acc.totalPosts + metric.posts_count,
+      scheduledPosts: acc.scheduledPosts + metric.scheduled_posts_count
+    };
+  }, { totalFollowers: 0, avgEngagement: 0, totalPosts: 0, scheduledPosts: 0 });
+
   const LockedCard = ({ title, description, icon: Icon }: { title: string; description: string; icon: any }) => (
     <Card className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gray-50/80 z-10 flex items-center justify-center">
@@ -104,7 +120,7 @@ const Dashboard = () => {
     </Card>
   );
 
-  if (loading) {
+  if (loading || socialLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -114,7 +130,7 @@ const Dashboard = () => {
     );
   }
 
-  return (
+    return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
@@ -136,6 +152,10 @@ const Dashboard = () => {
               <Home className="h-4 w-4 mr-2" />
               Home
             </Button>
+            <Button variant="outline" onClick={() => setShowSocialSettings(!showSocialSettings)}>
+              <Settings className="h-4 w-4 mr-2" />
+              Social Accounts
+            </Button>
             <Button variant="outline" onClick={handleRefreshSubscription}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh Status
@@ -146,6 +166,26 @@ const Dashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* Social Media Settings */}
+        {showSocialSettings && <SocialMediaSettings />}
+
+        {/* Connection Status */}
+        {accounts.length === 0 && !showSocialSettings && (
+          <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-blue-900">Connect Social Media Accounts</h3>
+                  <p className="text-blue-700">Connect your social accounts to see real analytics and metrics</p>
+                </div>
+                <Button onClick={() => setShowSocialSettings(true)}>
+                  Connect Accounts
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Subscription Status */}
         {!subscribed && (
@@ -185,8 +225,12 @@ const Dashboard = () => {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">4.2%</div>
-                  <p className="text-xs text-muted-foreground">+0.5% from last month</p>
+                  <div className="text-2xl font-bold">
+                    {accounts.length > 0 ? `${aggregatedMetrics.avgEngagement.toFixed(1)}%` : '--'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {accounts.length > 0 ? 'From connected accounts' : 'Connect accounts to view'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -196,8 +240,12 @@ const Dashboard = () => {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">1,247</div>
-                  <p className="text-xs text-muted-foreground">+12% from last month</p>
+                  <div className="text-2xl font-bold">
+                    {accounts.length > 0 ? aggregatedMetrics.totalFollowers.toLocaleString() : '--'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {accounts.length > 0 ? 'Total across all platforms' : 'Connect accounts to view'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -207,8 +255,12 @@ const Dashboard = () => {
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">8</div>
-                  <p className="text-xs text-muted-foreground">Posts ready to publish</p>
+                  <div className="text-2xl font-bold">
+                    {accounts.length > 0 ? aggregatedMetrics.scheduledPosts : '--'}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {accounts.length > 0 ? 'Ready to publish' : 'Connect accounts to view'}
+                  </p>
                 </CardContent>
               </Card>
             </>
