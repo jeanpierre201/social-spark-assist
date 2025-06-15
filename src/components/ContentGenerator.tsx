@@ -15,7 +15,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar as CalendarIcon, Wand2, Crown, Upload, Image, Video, Clock, Edit, Save, X, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { format, addDays, startOfDay, isSameDay } from 'date-fns';
+import { format, addDays, startOfDay, isSameDay, formatInTimeZone, toZonedTime } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface GeneratedContent {
@@ -69,6 +69,9 @@ const ContentGenerator = () => {
   const isStarterOrHigher = subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
   const monthlyLimit = isStarterOrHigher ? 10 : 1;
   const planName = isStarterOrHigher ? 'Starter Plan' : 'Free Plan';
+
+  // Get user's timezone
+  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   useEffect(() => {
     const loadData = async () => {
@@ -227,13 +230,26 @@ const ContentGenerator = () => {
 
       const hashtags = editForm.hashtags.split(' ').filter(tag => tag.trim().length > 0);
 
+      // Convert scheduled time to UTC for storage
+      let scheduledDateUTC = null;
+      let scheduledTimeUTC = null;
+      
+      if (editForm.scheduledDate && editForm.scheduledTime) {
+        const localDateTime = new Date(`${format(editForm.scheduledDate, 'yyyy-MM-dd')}T${editForm.scheduledTime}`);
+        const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
+        scheduledDateUTC = format(utcDateTime, 'yyyy-MM-dd');
+        scheduledTimeUTC = format(utcDateTime, 'HH:mm:ss');
+      } else if (editForm.scheduledDate) {
+        scheduledDateUTC = format(editForm.scheduledDate, 'yyyy-MM-dd');
+      }
+
       const { error: updateError } = await supabase
         .from('posts')
         .update({
           generated_caption: editForm.caption,
           generated_hashtags: hashtags,
-          scheduled_date: editForm.scheduledDate ? format(editForm.scheduledDate, 'yyyy-MM-dd') : null,
-          scheduled_time: editForm.scheduledTime || null,
+          scheduled_date: scheduledDateUTC,
+          scheduled_time: scheduledTimeUTC,
           media_url: mediaUrl
         })
         .eq('id', editingPost.id);
@@ -249,8 +265,8 @@ const ContentGenerator = () => {
                 caption: editForm.caption,
                 hashtags: hashtags
               },
-              scheduledDate: editForm.scheduledDate ? format(editForm.scheduledDate, 'yyyy-MM-dd') : undefined,
-              scheduledTime: editForm.scheduledTime || undefined,
+              scheduledDate: scheduledDateUTC || undefined,
+              scheduledTime: scheduledTimeUTC || undefined,
               mediaUrl: mediaUrl
             }
           : post
@@ -342,6 +358,19 @@ const ContentGenerator = () => {
         }
       }
 
+      // Convert scheduled time to UTC for storage
+      let scheduledDateUTC = null;
+      let scheduledTimeUTC = null;
+      
+      if (scheduledDate && scheduledTime) {
+        const localDateTime = new Date(`${format(scheduledDate, 'yyyy-MM-dd')}T${scheduledTime}`);
+        const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
+        scheduledDateUTC = format(utcDateTime, 'yyyy-MM-dd');
+        scheduledTimeUTC = format(utcDateTime, 'HH:mm:ss');
+      } else if (scheduledDate) {
+        scheduledDateUTC = format(scheduledDate, 'yyyy-MM-dd');
+      }
+
       const { error: dbError } = await supabase
         .from('posts')
         .insert({
@@ -351,8 +380,8 @@ const ContentGenerator = () => {
           niche_info: sanitizedNicheInfo || null,
           generated_caption: newGeneratedContent.caption,
           generated_hashtags: newGeneratedContent.hashtags,
-          scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
-          scheduled_time: scheduledTime || null,
+          scheduled_date: scheduledDateUTC,
+          scheduled_time: scheduledTimeUTC,
           media_url: mediaUrl
         });
 
@@ -363,8 +392,8 @@ const ContentGenerator = () => {
           industry: sanitizedIndustry,
           goal: sanitizedGoal,
           nicheInfo: sanitizedNicheInfo,
-          scheduledDate: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : undefined,
-          scheduledTime: scheduledTime || undefined,
+          scheduledDate: scheduledDateUTC || undefined,
+          scheduledTime: scheduledTimeUTC || undefined,
           generatedContent: newGeneratedContent,
           created_at: new Date().toISOString(),
           mediaUrl
@@ -542,9 +571,12 @@ const ContentGenerator = () => {
         
         {/* Calendar days */}
         {days.map((day, index) => {
-          const dayPosts = posts.filter(post => 
-            post.scheduledDate && isSameDay(new Date(post.scheduledDate), day)
-          );
+          const dayPosts = posts.filter(post => {
+            if (!post.scheduledDate) return false;
+            // Convert UTC stored date back to local time for comparison
+            const storedDate = new Date(post.scheduledDate);
+            return isSameDay(storedDate, day);
+          });
           
           return (
             <div 
@@ -561,11 +593,22 @@ const ContentGenerator = () => {
                 {dayPosts.map((post, postIndex) => (
                   <div 
                     key={postIndex}
-                    className="text-xs bg-blue-100 rounded px-1 py-0.5 truncate"
+                    className="text-xs bg-blue-100 rounded px-1 py-0.5 truncate cursor-pointer hover:bg-blue-200 transition-colors"
                     title={post.generatedContent?.caption || ''}
+                    onClick={() => handleEditPost(post)}
                   >
                     {post.scheduledTime && (
-                      <span className="font-medium">{post.scheduledTime}</span>
+                      <span className="font-medium">
+                        {/* Convert UTC time back to local time for display */}
+                        {post.scheduledDate && post.scheduledTime ? 
+                          formatInTimeZone(
+                            new Date(`${post.scheduledDate}T${post.scheduledTime}Z`), 
+                            userTimezone, 
+                            'HH:mm'
+                          ) : 
+                          post.scheduledTime
+                        }
+                      </span>
                     )}
                     <div className="truncate">
                       {post.generatedContent?.caption?.substring(0, 20)}...
@@ -865,150 +908,27 @@ const ContentGenerator = () => {
                               <div className="flex space-x-1">
                                 {post.scheduledDate && (
                                   <Badge variant="outline" className="text-xs">
-                                    {post.scheduledDate} {post.scheduledTime && `at ${post.scheduledTime}`}
+                                    {post.scheduledDate} {post.scheduledTime && (
+                                      `at ${
+                                        post.scheduledDate && post.scheduledTime ? 
+                                          formatInTimeZone(
+                                            new Date(`${post.scheduledDate}T${post.scheduledTime}Z`), 
+                                            userTimezone, 
+                                            'HH:mm'
+                                          ) : 
+                                          post.scheduledTime
+                                      } (${userTimezone})`
+                                    )}
                                   </Badge>
                                 )}
-                                <Dialog>
-                                  <DialogTrigger asChild>
-                                    <Button 
-                                      size="sm" 
-                                      variant="ghost" 
-                                      className="h-6 w-6 p-0"
-                                      onClick={() => handleEditPost(post)}
-                                    >
-                                      <Edit className="h-3 w-3" />
-                                    </Button>
-                                  </DialogTrigger>
-                                  <DialogContent className="max-w-2xl">
-                                    <DialogHeader>
-                                      <DialogTitle>Edit Post</DialogTitle>
-                                      <DialogDescription>
-                                        Make changes to your post content and scheduling
-                                      </DialogDescription>
-                                    </DialogHeader>
-                                    <div className="space-y-4">
-                                      <div>
-                                        <Label htmlFor="edit-caption">Caption</Label>
-                                        <Textarea
-                                          id="edit-caption"
-                                          value={editForm.caption}
-                                          onChange={(e) => setEditForm(prev => ({ ...prev, caption: e.target.value }))}
-                                          rows={4}
-                                        />
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="edit-hashtags">Hashtags</Label>
-                                        <Input
-                                          id="edit-hashtags"
-                                          value={editForm.hashtags}
-                                          onChange={(e) => setEditForm(prev => ({ ...prev, hashtags: e.target.value }))}
-                                          placeholder="Enter hashtags separated by spaces"
-                                        />
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                          <Label>Scheduled Date</Label>
-                                          <Popover>
-                                            <PopoverTrigger asChild>
-                                              <Button
-                                                variant="outline"
-                                                className={cn(
-                                                  "w-full justify-start text-left font-normal",
-                                                  !editForm.scheduledDate && "text-muted-foreground"
-                                                )}
-                                              >
-                                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                                {editForm.scheduledDate ? format(editForm.scheduledDate, "PPP") : "Pick a date"}
-                                              </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
-                                              <Calendar
-                                                mode="single"
-                                                selected={editForm.scheduledDate}
-                                                onSelect={(date) => setEditForm(prev => ({ ...prev, scheduledDate: date }))}
-                                                disabled={(date) => date < new Date()}
-                                                initialFocus
-                                              />
-                                            </PopoverContent>
-                                          </Popover>
-                                        </div>
-                                        <div>
-                                          <Label htmlFor="edit-time">Scheduled Time</Label>
-                                          <Input
-                                            id="edit-time"
-                                            type="time"
-                                            value={editForm.scheduledTime}
-                                            onChange={(e) => setEditForm(prev => ({ ...prev, scheduledTime: e.target.value }))}
-                                          />
-                                        </div>
-                                      </div>
-                                      <div>
-                                        <Label htmlFor="edit-media">Update Media (Optional)</Label>
-                                        <div className="mt-2">
-                                          <Input
-                                            id="edit-media"
-                                            type="file"
-                                            accept="image/*,video/*"
-                                            onChange={handleEditMediaUpload}
-                                            className="hidden"
-                                          />
-                                          <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => document.getElementById('edit-media')?.click()}
-                                            className="w-full"
-                                          >
-                                            <Upload className="h-4 w-4 mr-2" />
-                                            {editForm.mediaFile ? editForm.mediaFile.name : 'Choose New Image or Video'}
-                                          </Button>
-                                          {editForm.mediaFile && (
-                                            <div className="mt-2 flex items-center space-x-2">
-                                              {editForm.mediaFile.type.startsWith('image/') ? (
-                                                <Image className="h-4 w-4 text-green-600" />
-                                              ) : (
-                                                <Video className="h-4 w-4 text-blue-600" />
-                                              )}
-                                              <span className="text-sm text-gray-600">{editForm.mediaFile.name}</span>
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={() => setEditForm(prev => ({ ...prev, mediaFile: null }))}
-                                                className="h-6 w-6 p-0"
-                                              >
-                                                ×
-                                              </Button>
-                                            </div>
-                                          )}
-                                        </div>
-                                      </div>
-                                      <div className="flex justify-end space-x-2">
-                                        <Button 
-                                          variant="outline" 
-                                          onClick={() => setEditingPost(null)}
-                                        >
-                                          <X className="h-4 w-4 mr-2" />
-                                          Cancel
-                                        </Button>
-                                        <Button 
-                                          onClick={handleUpdatePost}
-                                          disabled={isUpdating}
-                                        >
-                                          {isUpdating ? (
-                                            <>
-                                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                              Updating...
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Save className="h-4 w-4 mr-2" />
-                                              Update Post
-                                            </>
-                                          )}
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </DialogContent>
-                                </Dialog>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => handleEditPost(post)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
                                 <Button 
                                   size="sm" 
                                   variant="ghost" 
@@ -1099,12 +1019,12 @@ const ContentGenerator = () => {
         
         {/* Edit Post Dialog */}
         {editingPost && (
-          <Dialog open={!!editingPost} onOpenChange={() => setEditingPost(null)}>
+          <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Edit Post</DialogTitle>
                 <DialogDescription>
-                  Make changes to your post content and scheduling
+                  Make changes to your post content and scheduling (times shown in {userTimezone})
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
@@ -1154,7 +1074,7 @@ const ContentGenerator = () => {
                     </Popover>
                   </div>
                   <div>
-                    <Label htmlFor="edit-time">Scheduled Time</Label>
+                    <Label htmlFor="edit-time">Scheduled Time ({userTimezone})</Label>
                     <Input
                       id="edit-time"
                       type="time"
