@@ -67,6 +67,8 @@ const ContentGenerator = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
+  const [canCreatePosts, setCanCreatePosts] = useState(false);
 
   // Determine plan limits and features
   const isStarterOrHigher = subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
@@ -76,11 +78,72 @@ const ContentGenerator = () => {
   // Get user's timezone
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+  // Calculate available date range for scheduling
+  const getAvailableDateRange = () => {
+    if (!subscriptionStartDate || !isStarterOrHigher) {
+      return { startDate: new Date(), endDate: new Date() };
+    }
+
+    const startDate = new Date(subscriptionStartDate);
+    const endDate = addDays(startDate, 30);
+    const today = new Date();
+    
+    return {
+      startDate: startDate > today ? startDate : today,
+      endDate: endDate
+    };
+  };
+
+  const { startDate: availableStartDate, endDate: availableEndDate } = getAvailableDateRange();
+
+  const isDateDisabled = (date: Date) => {
+    if (!isStarterOrHigher || !subscriptionStartDate) {
+      return date < new Date(); // Default behavior for non-subscribers
+    }
+
+    const today = startOfDay(new Date());
+    const checkDate = startOfDay(date);
+    const subscriptionStart = startOfDay(new Date(subscriptionStartDate));
+    const subscriptionEnd = startOfDay(addDays(subscriptionStart, 30));
+
+    // Disable dates before today, before subscription start, or after 30 days from subscription start
+    return checkDate < today || checkDate < subscriptionStart || checkDate >= subscriptionEnd;
+  };
+
   useEffect(() => {
     const loadData = async () => {
       if (!user) return;
       
       try {
+        // Check subscription status and get subscription details for Starter+ users
+        if (isStarterOrHigher) {
+          const { data: subscriberData, error: subscriberError } = await supabase
+            .from('subscribers')
+            .select('*')
+            .eq('user_id', user.id)
+            .single();
+
+          if (subscriberError && subscriberError.code !== 'PGRST116') {
+            throw subscriberError;
+          }
+
+          if (subscriberData && subscriberData.subscribed && 
+              (subscriberData.subscription_tier === 'Starter' || subscriberData.subscription_tier === 'Premium' || subscriberData.subscription_tier === 'Enterprise')) {
+            
+            // Get subscription start date
+            const subscriptionStart = subscriberData.created_at;
+            setSubscriptionStartDate(subscriptionStart);
+
+            // Calculate if we're within 30 days of subscription start
+            const startDate = new Date(subscriptionStart);
+            const currentDate = new Date();
+            const daysDifference = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            const isWithinCreationWindow = daysDifference <= 30;
+            setCanCreatePosts(isWithinCreationWindow);
+          }
+        }
+
         // Get monthly post count
         const { data: countData, error: countError } = await supabase.rpc('get_monthly_post_count', {
           user_uuid: user.id
@@ -338,6 +401,15 @@ const ContentGenerator = () => {
       return;
     }
 
+    if (isStarterOrHigher && !canCreatePosts) {
+      toast({
+        title: "Subscription Required",
+        description: "Post creation is only available for 30 days from your subscription start date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (monthlyPosts >= monthlyLimit) {
       toast({
         title: "Monthly Limit Reached",
@@ -500,6 +572,15 @@ const ContentGenerator = () => {
 
   const handleGenerateAll = async () => {
     if (!isStarterOrHigher) return;
+
+    if (!canCreatePosts) {
+      toast({
+        title: "Subscription Required",
+        description: "Post creation is only available for 30 days from your subscription start date.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     const remainingPosts = monthlyLimit - monthlyPosts;
     if (remainingPosts <= 0) {
@@ -763,6 +844,11 @@ const ContentGenerator = () => {
             </CardTitle>
             <CardDescription>
               You've used {monthlyPosts} of {monthlyLimit} post{monthlyLimit > 1 ? 's' : ''} this month
+              {isStarterOrHigher && !canCreatePosts && (
+                <span className="block text-red-600 mt-1">
+                  Post creation period has expired (30 days from subscription start)
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
         </Card>
@@ -894,12 +980,17 @@ const ContentGenerator = () => {
                             mode="single"
                             selected={scheduledDate}
                             onSelect={setScheduledDate}
-                            disabled={(date) => date < new Date()}
+                            disabled={isDateDisabled}
                             initialFocus
                             className="pointer-events-auto"
                           />
                         </PopoverContent>
                       </Popover>
+                      {isStarterOrHigher && subscriptionStartDate && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Available until {format(addDays(new Date(subscriptionStartDate), 30), "PPP")}
+                        </p>
+                      )}
                     </div>
                     
                     <div>
@@ -921,7 +1012,7 @@ const ContentGenerator = () => {
               <div className="space-y-2">
                 <Button
                   onClick={handleGenerateSingle}
-                  disabled={isGenerating || isGeneratingImage || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim()}
+                  disabled={isGenerating || isGeneratingImage || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim() || (isStarterOrHigher && !canCreatePosts)}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
                   {isGenerating || isGeneratingImage ? (
@@ -940,7 +1031,7 @@ const ContentGenerator = () => {
                 {isStarterOrHigher && (
                   <Button
                     onClick={handleGenerateAll}
-                    disabled={isGenerating || isGeneratingImage || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim()}
+                    disabled={isGenerating || isGeneratingImage || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim() || !canCreatePosts}
                     variant="outline"
                     className="w-full"
                   >
@@ -1169,7 +1260,7 @@ const ContentGenerator = () => {
                           mode="single"
                           selected={editForm.scheduledDate}
                           onSelect={(date) => setEditForm(prev => ({ ...prev, scheduledDate: date }))}
-                          disabled={(date) => date < new Date()}
+                          disabled={isDateDisabled}
                           initialFocus
                         />
                       </PopoverContent>
