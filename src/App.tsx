@@ -54,7 +54,7 @@ const App = () => (
         </SocialAccountsProvider>
       </SubscriptionProvider>
     </AuthProvider>
-  </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
