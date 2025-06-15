@@ -7,8 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar, Clock, Wand2 } from 'lucide-react';
+import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar, Clock, Wand2, Lock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -29,6 +30,7 @@ interface PostData {
 
 const ContentGeneratorStarter = () => {
   const { user } = useAuth();
+  const { subscribed, subscriptionTier, createCheckout } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [industry, setIndustry] = useState('');
@@ -39,23 +41,72 @@ const ContentGeneratorStarter = () => {
   const [posts, setPosts] = useState<PostData[]>([]);
   const [generateWithImages, setGenerateWithImages] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
+  const [canCreatePosts, setCanCreatePosts] = useState(false);
+  const [daysRemaining, setDaysRemaining] = useState(0);
 
   useEffect(() => {
-    const checkMonthlyLimit = async () => {
+    const checkSubscriptionAndLimits = async () => {
       if (!user) return;
       
       try {
-        const { data, error } = await supabase.rpc('get_monthly_post_count', {
-          user_uuid: user.id
-        });
+        // Check subscription status and get subscription details
+        const { data: subscriberData, error: subscriberError } = await supabase
+          .from('subscribers')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (subscriberError && subscriberError.code !== 'PGRST116') {
+          throw subscriberError;
+        }
+
+        let subscriptionStart: string | null = null;
+        let isWithinCreationWindow = false;
+        let remainingDays = 0;
+
+        if (subscriberData && subscriberData.subscribed && 
+            (subscriberData.subscription_tier === 'Starter' || subscriberData.subscription_tier === 'Pro')) {
+          
+          // Get subscription start date from created_at or updated_at when subscription became active
+          subscriptionStart = subscriberData.created_at;
+          setSubscriptionStartDate(subscriptionStart);
+
+          // Calculate if we're within 30 days of subscription start
+          const startDate = new Date(subscriptionStart);
+          const currentDate = new Date();
+          const daysDifference = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          isWithinCreationWindow = daysDifference <= 30;
+          remainingDays = Math.max(0, 30 - daysDifference);
+          
+          console.log('Subscription check:', {
+            startDate: startDate.toISOString(),
+            currentDate: currentDate.toISOString(),
+            daysDifference,
+            isWithinCreationWindow,
+            remainingDays
+          });
+        }
+
+        setCanCreatePosts(isWithinCreationWindow);
+        setDaysRemaining(remainingDays);
+
+        // Check monthly post count only if user can create posts
+        if (isWithinCreationWindow) {
+          const { data, error } = await supabase.rpc('get_monthly_post_count', {
+            user_uuid: user.id
+          });
+          
+          if (error) throw error;
+          setMonthlyPosts(data || 0);
+        }
         
-        if (error) throw error;
-        setMonthlyPosts(data || 0);
       } catch (error) {
-        console.error('Error checking monthly limit:', error);
+        console.error('Error checking subscription and limits:', error);
         toast({
           title: "Error",
-          description: "Failed to check monthly usage limit",
+          description: "Failed to check subscription status",
           variant: "destructive",
         });
       } finally {
@@ -63,14 +114,23 @@ const ContentGeneratorStarter = () => {
       }
     };
 
-    checkMonthlyLimit();
-  }, [user, toast]);
+    checkSubscriptionAndLimits();
+  }, [user, subscribed, subscriptionTier, toast]);
 
   const handleGenerateSingle = async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
         description: "Please log in to generate content",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!canCreatePosts) {
+      toast({
+        title: "Subscription Required",
+        description: "Post creation is only available for 30 days from your subscription start date.",
         variant: "destructive",
       });
       return;
@@ -177,6 +237,15 @@ const ContentGeneratorStarter = () => {
       return;
     }
 
+    if (!canCreatePosts) {
+      toast({
+        title: "Subscription Required",
+        description: "Post creation is only available for 30 days from your subscription start date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const remainingPosts = 10 - monthlyPosts;
     if (remainingPosts <= 0) {
       toast({
@@ -277,6 +346,14 @@ const ContentGeneratorStarter = () => {
     }
   };
 
+  const handleUpgrade = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    await createCheckout();
+  };
+
   const handleGoHome = () => {
     navigate('/');
   };
@@ -289,6 +366,70 @@ const ContentGeneratorStarter = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  // Show upgrade prompt if user doesn't have access
+  if (!subscribed || !canCreatePosts) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="mb-8 flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Content Generator</h1>
+              <p className="text-muted-foreground">Upgrade to access AI-powered content generation</p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Button variant="outline" onClick={handleGoBack} className="flex items-center space-x-2">
+                <ArrowLeft className="h-4 w-4" />
+                <span>Dashboard</span>
+              </Button>
+              <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
+                <Home className="h-4 w-4" />
+                <span>Home</span>
+              </Button>
+            </div>
+          </div>
+
+          <Card className="text-center p-8">
+            <CardHeader>
+              <div className="mx-auto w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-4">
+                <Lock className="h-8 w-8 text-purple-600" />
+              </div>
+              <CardTitle className="text-2xl mb-2">
+                {!subscribed ? "Upgrade Required" : "Creation Period Expired"}
+              </CardTitle>
+              <CardDescription className="text-lg">
+                {!subscribed 
+                  ? "Subscribe to the Starter or Pro plan to access AI content generation"
+                  : `Post creation is only available for 30 days from subscription start. Your creation period has ended.`
+                }
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {!subscribed ? (
+                <Button 
+                  onClick={handleUpgrade}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                  size="lg"
+                >
+                  <Sparkles className="h-5 w-5 mr-2" />
+                  Upgrade to Starter Plan
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Contact support if you need to extend your content creation period.
+                  </p>
+                  <Button variant="outline" onClick={handleGoHome}>
+                    Return to Home
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -313,18 +454,32 @@ const ContentGeneratorStarter = () => {
           </div>
         </div>
 
-        {/* Usage Indicator */}
-        <Card className="mb-6 border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Sparkles className="h-5 w-5 text-blue-600 mr-2" />
-              Starter Plan Usage
-            </CardTitle>
-            <CardDescription>
-              You've used {monthlyPosts} of 10 posts this month
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        {/* Usage and Time Limit Indicators */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Sparkles className="h-5 w-5 text-blue-600 mr-2" />
+                Monthly Usage
+              </CardTitle>
+              <CardDescription>
+                You've used {monthlyPosts} of 10 posts this month
+              </CardDescription>
+            </CardHeader>
+          </Card>
+
+          <Card className="border-green-200 bg-gradient-to-r from-green-50 to-emerald-50">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Clock className="h-5 w-5 text-green-600 mr-2" />
+                Creation Period
+              </CardTitle>
+              <CardDescription>
+                {daysRemaining} days remaining in your 30-day creation window
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Input Form */}
@@ -390,7 +545,7 @@ const ContentGeneratorStarter = () => {
               <div className="space-y-2">
                 <Button
                   onClick={handleGenerateSingle}
-                  disabled={isGenerating || monthlyPosts >= 10 || !industry.trim() || !goal.trim()}
+                  disabled={isGenerating || monthlyPosts >= 10 || !industry.trim() || !goal.trim() || !canCreatePosts}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
                   {isGenerating ? (
@@ -408,7 +563,7 @@ const ContentGeneratorStarter = () => {
 
                 <Button
                   onClick={handleGenerateAll10}
-                  disabled={isGenerating || monthlyPosts >= 10 || !industry.trim() || !goal.trim()}
+                  disabled={isGenerating || monthlyPosts >= 10 || !industry.trim() || !goal.trim() || !canCreatePosts}
                   variant="outline"
                   className="w-full"
                 >
