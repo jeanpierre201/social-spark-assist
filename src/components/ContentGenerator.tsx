@@ -6,15 +6,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar as CalendarIcon, Wand2, Crown, Upload, Image, Video, Clock, Edit, Save, X } from 'lucide-react';
+import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar as CalendarIcon, Wand2, Crown, Upload, Image, Video, Clock, Edit, Save, X, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface GeneratedContent {
@@ -62,6 +63,7 @@ const ContentGenerator = () => {
     mediaFile: null as File | null
   });
   const [isUpdating, setIsUpdating] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   // Determine plan limits and features
   const isStarterOrHigher = subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
@@ -524,6 +526,60 @@ const ContentGenerator = () => {
   const handleGoHome = () => navigate('/');
   const handleGoBack = () => navigate('/dashboard');
 
+  const renderCalendarView = () => {
+    // Create a 30-day grid starting from today
+    const startDate = new Date();
+    const days = Array.from({ length: 30 }, (_, i) => addDays(startDate, i));
+
+    return (
+      <div className="grid grid-cols-7 gap-2 p-4">
+        {/* Calendar header */}
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+          <div key={day} className="text-center text-sm font-medium text-gray-500 p-2">
+            {day}
+          </div>
+        ))}
+        
+        {/* Calendar days */}
+        {days.map((day, index) => {
+          const dayPosts = posts.filter(post => 
+            post.scheduledDate && isSameDay(new Date(post.scheduledDate), day)
+          );
+          
+          return (
+            <div 
+              key={index} 
+              className={cn(
+                "min-h-24 p-2 border rounded-lg",
+                dayPosts.length > 0 ? "bg-blue-50 border-blue-200" : "bg-gray-50"
+              )}
+            >
+              <div className="text-sm font-medium mb-1">
+                {format(day, 'd')}
+              </div>
+              <div className="space-y-1">
+                {dayPosts.map((post, postIndex) => (
+                  <div 
+                    key={postIndex}
+                    className="text-xs bg-blue-100 rounded px-1 py-0.5 truncate"
+                    title={post.generatedContent?.caption || ''}
+                  >
+                    {post.scheduledTime && (
+                      <span className="font-medium">{post.scheduledTime}</span>
+                    )}
+                    <div className="truncate">
+                      {post.generatedContent?.caption?.substring(0, 20)}...
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -786,195 +842,216 @@ const ContentGenerator = () => {
             <CardContent>
               {isStarterOrHigher ? (
                 posts.length > 0 ? (
-                  <div className="space-y-4 max-h-96 overflow-y-auto">
-                    {posts.map((post, index) => (
-                      <div key={index} className="p-3 bg-gray-50 rounded-lg border">
-                        <div className="flex justify-between items-start mb-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {post.industry}
-                          </Badge>
-                          <div className="flex space-x-1">
-                            {post.scheduledDate && (
-                              <Badge variant="outline" className="text-xs">
-                                {post.scheduledDate} {post.scheduledTime && `at ${post.scheduledTime}`}
+                  <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'list' | 'calendar')}>
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="list" className="flex items-center space-x-2">
+                        <List className="h-4 w-4" />
+                        <span>List View</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="calendar" className="flex items-center space-x-2">
+                        <CalendarIcon className="h-4 w-4" />
+                        <span>Calendar View</span>
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="list" className="mt-4">
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {posts.map((post, index) => (
+                          <div key={index} className="p-3 bg-gray-50 rounded-lg border">
+                            <div className="flex justify-between items-start mb-2">
+                              <Badge variant="secondary" className="text-xs">
+                                {post.industry}
                               </Badge>
-                            )}
-                            <Dialog>
-                              <DialogTrigger asChild>
+                              <div className="flex space-x-1">
+                                {post.scheduledDate && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {post.scheduledDate} {post.scheduledTime && `at ${post.scheduledTime}`}
+                                  </Badge>
+                                )}
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button 
+                                      size="sm" 
+                                      variant="ghost" 
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => handleEditPost(post)}
+                                    >
+                                      <Edit className="h-3 w-3" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                      <DialogTitle>Edit Post</DialogTitle>
+                                      <DialogDescription>
+                                        Make changes to your post content and scheduling
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-4">
+                                      <div>
+                                        <Label htmlFor="edit-caption">Caption</Label>
+                                        <Textarea
+                                          id="edit-caption"
+                                          value={editForm.caption}
+                                          onChange={(e) => setEditForm(prev => ({ ...prev, caption: e.target.value }))}
+                                          rows={4}
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-hashtags">Hashtags</Label>
+                                        <Input
+                                          id="edit-hashtags"
+                                          value={editForm.hashtags}
+                                          onChange={(e) => setEditForm(prev => ({ ...prev, hashtags: e.target.value }))}
+                                          placeholder="Enter hashtags separated by spaces"
+                                        />
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                          <Label>Scheduled Date</Label>
+                                          <Popover>
+                                            <PopoverTrigger asChild>
+                                              <Button
+                                                variant="outline"
+                                                className={cn(
+                                                  "w-full justify-start text-left font-normal",
+                                                  !editForm.scheduledDate && "text-muted-foreground"
+                                                )}
+                                              >
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                                {editForm.scheduledDate ? format(editForm.scheduledDate, "PPP") : "Pick a date"}
+                                              </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                              <Calendar
+                                                mode="single"
+                                                selected={editForm.scheduledDate}
+                                                onSelect={(date) => setEditForm(prev => ({ ...prev, scheduledDate: date }))}
+                                                disabled={(date) => date < new Date()}
+                                                initialFocus
+                                              />
+                                            </PopoverContent>
+                                          </Popover>
+                                        </div>
+                                        <div>
+                                          <Label htmlFor="edit-time">Scheduled Time</Label>
+                                          <Input
+                                            id="edit-time"
+                                            type="time"
+                                            value={editForm.scheduledTime}
+                                            onChange={(e) => setEditForm(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <Label htmlFor="edit-media">Update Media (Optional)</Label>
+                                        <div className="mt-2">
+                                          <Input
+                                            id="edit-media"
+                                            type="file"
+                                            accept="image/*,video/*"
+                                            onChange={handleEditMediaUpload}
+                                            className="hidden"
+                                          />
+                                          <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => document.getElementById('edit-media')?.click()}
+                                            className="w-full"
+                                          >
+                                            <Upload className="h-4 w-4 mr-2" />
+                                            {editForm.mediaFile ? editForm.mediaFile.name : 'Choose New Image or Video'}
+                                          </Button>
+                                          {editForm.mediaFile && (
+                                            <div className="mt-2 flex items-center space-x-2">
+                                              {editForm.mediaFile.type.startsWith('image/') ? (
+                                                <Image className="h-4 w-4 text-green-600" />
+                                              ) : (
+                                                <Video className="h-4 w-4 text-blue-600" />
+                                              )}
+                                              <span className="text-sm text-gray-600">{editForm.mediaFile.name}</span>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => setEditForm(prev => ({ ...prev, mediaFile: null }))}
+                                                className="h-6 w-6 p-0"
+                                              >
+                                                ×
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-end space-x-2">
+                                        <Button 
+                                          variant="outline" 
+                                          onClick={() => setEditingPost(null)}
+                                        >
+                                          <X className="h-4 w-4 mr-2" />
+                                          Cancel
+                                        </Button>
+                                        <Button 
+                                          onClick={handleUpdatePost}
+                                          disabled={isUpdating}
+                                        >
+                                          {isUpdating ? (
+                                            <>
+                                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                              Updating...
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Save className="h-4 w-4 mr-2" />
+                                              Update Post
+                                            </>
+                                          )}
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
                                 <Button 
                                   size="sm" 
                                   variant="ghost" 
                                   className="h-6 w-6 p-0"
-                                  onClick={() => handleEditPost(post)}
+                                  onClick={() => handleDownload(post.generatedContent)}
                                 >
-                                  <Edit className="h-3 w-3" />
+                                  <Download className="h-3 w-3" />
                                 </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>Edit Post</DialogTitle>
-                                  <DialogDescription>
-                                    Make changes to your post content and scheduling
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4">
-                                  <div>
-                                    <Label htmlFor="edit-caption">Caption</Label>
-                                    <Textarea
-                                      id="edit-caption"
-                                      value={editForm.caption}
-                                      onChange={(e) => setEditForm(prev => ({ ...prev, caption: e.target.value }))}
-                                      rows={4}
-                                    />
+                              </div>
+                            </div>
+                            {post.mediaUrl && (
+                              <div className="mb-2">
+                                {post.mediaUrl.includes('image') ? (
+                                  <img src={post.mediaUrl} alt="Post media" className="w-full h-20 object-cover rounded" />
+                                ) : (
+                                  <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                    <Video className="h-3 w-3" />
+                                    <span>Video attached</span>
                                   </div>
-                                  <div>
-                                    <Label htmlFor="edit-hashtags">Hashtags</Label>
-                                    <Input
-                                      id="edit-hashtags"
-                                      value={editForm.hashtags}
-                                      onChange={(e) => setEditForm(prev => ({ ...prev, hashtags: e.target.value }))}
-                                      placeholder="Enter hashtags separated by spaces"
-                                    />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                      <Label>Scheduled Date</Label>
-                                      <Popover>
-                                        <PopoverTrigger asChild>
-                                          <Button
-                                            variant="outline"
-                                            className={cn(
-                                              "w-full justify-start text-left font-normal",
-                                              !editForm.scheduledDate && "text-muted-foreground"
-                                            )}
-                                          >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {editForm.scheduledDate ? format(editForm.scheduledDate, "PPP") : "Pick a date"}
-                                          </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0" align="start">
-                                          <Calendar
-                                            mode="single"
-                                            selected={editForm.scheduledDate}
-                                            onSelect={(date) => setEditForm(prev => ({ ...prev, scheduledDate: date }))}
-                                            disabled={(date) => date < new Date()}
-                                            initialFocus
-                                          />
-                                        </PopoverContent>
-                                      </Popover>
-                                    </div>
-                                    <div>
-                                      <Label htmlFor="edit-time">Scheduled Time</Label>
-                                      <Input
-                                        id="edit-time"
-                                        type="time"
-                                        value={editForm.scheduledTime}
-                                        onChange={(e) => setEditForm(prev => ({ ...prev, scheduledTime: e.target.value }))}
-                                      />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <Label htmlFor="edit-media">Update Media (Optional)</Label>
-                                    <div className="mt-2">
-                                      <Input
-                                        id="edit-media"
-                                        type="file"
-                                        accept="image/*,video/*"
-                                        onChange={handleEditMediaUpload}
-                                        className="hidden"
-                                      />
-                                      <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => document.getElementById('edit-media')?.click()}
-                                        className="w-full"
-                                      >
-                                        <Upload className="h-4 w-4 mr-2" />
-                                        {editForm.mediaFile ? editForm.mediaFile.name : 'Choose New Image or Video'}
-                                      </Button>
-                                      {editForm.mediaFile && (
-                                        <div className="mt-2 flex items-center space-x-2">
-                                          {editForm.mediaFile.type.startsWith('image/') ? (
-                                            <Image className="h-4 w-4 text-green-600" />
-                                          ) : (
-                                            <Video className="h-4 w-4 text-blue-600" />
-                                          )}
-                                          <span className="text-sm text-gray-600">{editForm.mediaFile.name}</span>
-                                          <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => setEditForm(prev => ({ ...prev, mediaFile: null }))}
-                                            className="h-6 w-6 p-0"
-                                          >
-                                            ×
-                                          </Button>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="flex justify-end space-x-2">
-                                    <Button 
-                                      variant="outline" 
-                                      onClick={() => setEditingPost(null)}
-                                    >
-                                      <X className="h-4 w-4 mr-2" />
-                                      Cancel
-                                    </Button>
-                                    <Button 
-                                      onClick={handleUpdatePost}
-                                      disabled={isUpdating}
-                                    >
-                                      {isUpdating ? (
-                                        <>
-                                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                          Updating...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <Save className="h-4 w-4 mr-2" />
-                                          Update Post
-                                        </>
-                                      )}
-                                    </Button>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                            <Button 
-                              size="sm" 
-                              variant="ghost" 
-                              className="h-6 w-6 p-0"
-                              onClick={() => handleDownload(post.generatedContent)}
-                            >
-                              <Download className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        {post.mediaUrl && (
-                          <div className="mb-2">
-                            {post.mediaUrl.includes('image') ? (
-                              <img src={post.mediaUrl} alt="Post media" className="w-full h-20 object-cover rounded" />
-                            ) : (
-                              <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                <Video className="h-3 w-3" />
-                                <span>Video attached</span>
+                                )}
                               </div>
                             )}
+                            {post.generatedContent && (
+                              <>
+                                <p className="text-sm text-gray-700 mb-2 line-clamp-2">
+                                  {post.generatedContent.caption}
+                                </p>
+                                <p className="text-xs text-blue-600">
+                                  {post.generatedContent.hashtags.slice(0, 3).join(' ')}...
+                                </p>
+                              </>
+                            )}
                           </div>
-                        )}
-                        {post.generatedContent && (
-                          <>
-                            <p className="text-sm text-gray-700 mb-2 line-clamp-2">
-                              {post.generatedContent.caption}
-                            </p>
-                            <p className="text-xs text-blue-600">
-                              {post.generatedContent.hashtags.slice(0, 3).join(' ')}...
-                            </p>
-                          </>
-                        )}
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="calendar" className="mt-4">
+                      <div className="max-h-96 overflow-y-auto">
+                        {renderCalendarView()}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -995,7 +1072,7 @@ const ContentGenerator = () => {
                       <Label>Hashtags</Label>
                       <div className="p-3 bg-gray-50 rounded-lg mt-1">
                         <p className="text-sm text-blue-600">
-                          {generatedContent.hashtags.join(' ')}
+                          {generatedContent.hashtags.join('')}
                         </p>
                       </div>
                     </div>
@@ -1019,6 +1096,141 @@ const ContentGenerator = () => {
             </CardContent>
           </Card>
         </div>
+        
+        {/* Edit Post Dialog */}
+        {editingPost && (
+          <Dialog open={!!editingPost} onOpenChange={() => setEditingPost(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Edit Post</DialogTitle>
+                <DialogDescription>
+                  Make changes to your post content and scheduling
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-caption">Caption</Label>
+                  <Textarea
+                    id="edit-caption"
+                    value={editForm.caption}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, caption: e.target.value }))}
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-hashtags">Hashtags</Label>
+                  <Input
+                    id="edit-hashtags"
+                    value={editForm.hashtags}
+                    onChange={(e) => setEditForm(prev => ({ ...prev, hashtags: e.target.value }))}
+                    placeholder="Enter hashtags separated by spaces"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Scheduled Date</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !editForm.scheduledDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {editForm.scheduledDate ? format(editForm.scheduledDate, "PPP") : "Pick a date"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={editForm.scheduledDate}
+                          onSelect={(date) => setEditForm(prev => ({ ...prev, scheduledDate: date }))}
+                          disabled={(date) => date < new Date()}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-time">Scheduled Time</Label>
+                    <Input
+                      id="edit-time"
+                      type="time"
+                      value={editForm.scheduledTime}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="edit-media">Update Media (Optional)</Label>
+                  <div className="mt-2">
+                    <Input
+                      id="edit-media"
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={handleEditMediaUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => document.getElementById('edit-media')?.click()}
+                      className="w-full"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {editForm.mediaFile ? editForm.mediaFile.name : 'Choose New Image or Video'}
+                    </Button>
+                    {editForm.mediaFile && (
+                      <div className="mt-2 flex items-center space-x-2">
+                        {editForm.mediaFile.type.startsWith('image/') ? (
+                          <Image className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Video className="h-4 w-4 text-blue-600" />
+                        )}
+                        <span className="text-sm text-gray-600">{editForm.mediaFile.name}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditForm(prev => ({ ...prev, mediaFile: null }))}
+                          className="h-6 w-6 p-0"
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditingPost(null)}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleUpdatePost}
+                    disabled={isUpdating}
+                  >
+                    {isUpdating ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Update Post
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
     </div>
   );
