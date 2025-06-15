@@ -15,7 +15,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar as CalendarIcon, Wand2, Crown, Upload, Image, Video, Clock, Edit, Save, X, List } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { format, addDays, startOfDay, isSameDay, formatInTimeZone, toZonedTime } from 'date-fns';
+import { format, addDays, startOfDay, isSameDay } from 'date-fns';
+import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import { cn } from '@/lib/utils';
 
 interface GeneratedContent {
