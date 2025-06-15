@@ -23,6 +23,7 @@ interface GeneratedContent {
   caption: string;
   hashtags: string[];
   image?: string;
+  imagePrompt?: string;
 }
 
 interface PostData {
@@ -65,6 +66,7 @@ const ContentGenerator = () => {
   });
   const [isUpdating, setIsUpdating] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   // Determine plan limits and features
   const isStarterOrHigher = subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
@@ -291,6 +293,41 @@ const ContentGenerator = () => {
     }
   };
 
+  const generateImageFromContent = async (caption: string, industry: string): Promise<{ image: string; imagePrompt: string } | null> => {
+    try {
+      setIsGeneratingImage(true);
+      
+      // Create a prompt for image generation based on the content
+      const imagePrompt = `Professional ${industry} social media post image. ${caption.substring(0, 200)}. High quality, modern, engaging visual for social media. Clean composition, good lighting, professional style.`;
+      
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: {
+          prompt: imagePrompt,
+          size: '1024x1024',
+          quality: 'standard',
+          style: 'vivid'
+        }
+      });
+
+      if (error) throw error;
+
+      return {
+        image: data.image,
+        imagePrompt: data.revisedPrompt || imagePrompt
+      };
+    } catch (error) {
+      console.error('Error generating image:', error);
+      toast({
+        title: "Image Generation Failed",
+        description: "Failed to generate AI image. Content saved without image.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   const handleGenerateSingle = async () => {
     if (!user) {
       toast({
@@ -341,6 +378,15 @@ const ContentGenerator = () => {
         hashtags: data.hashtags
       };
 
+      // Generate AI image if requested
+      if (generateWithImages) {
+        const imageResult = await generateImageFromContent(newGeneratedContent.caption, sanitizedIndustry);
+        if (imageResult) {
+          newGeneratedContent.image = imageResult.image;
+          newGeneratedContent.imagePrompt = imageResult.imagePrompt;
+        }
+      }
+
       // Upload media file if present
       let mediaUrl = null;
       if (mediaFile) {
@@ -356,6 +402,29 @@ const ContentGenerator = () => {
             .from('media')
             .getPublicUrl(fileName);
           mediaUrl = urlData.publicUrl;
+        }
+      }
+
+      // If we have an AI generated image, upload it to storage
+      if (newGeneratedContent.image && !mediaUrl) {
+        try {
+          // Convert base64 to blob
+          const response = await fetch(newGeneratedContent.image);
+          const blob = await response.blob();
+          
+          const fileName = `${user.id}/${Date.now()}-ai-generated.png`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('media')
+            .upload(fileName, blob);
+
+          if (!uploadError) {
+            const { data: urlData } = supabase.storage
+              .from('media')
+              .getPublicUrl(fileName);
+            mediaUrl = urlData.publicUrl;
+          }
+        } catch (imageUploadError) {
+          console.error('Error uploading AI generated image:', imageUploadError);
         }
       }
 
@@ -484,6 +553,15 @@ const ContentGenerator = () => {
           caption: data.caption,
           hashtags: data.hashtags
         };
+
+        // Generate AI image if requested
+        if (generateWithImages) {
+          const imageResult = await generateImageFromContent(generatedContent.caption, industry.trim());
+          if (imageResult) {
+            generatedContent.image = imageResult.image;
+            generatedContent.imagePrompt = imageResult.imagePrompt;
+          }
+        }
 
         const { error: dbError } = await supabase
           .from('posts')
@@ -623,6 +701,24 @@ const ContentGenerator = () => {
       </div>
     );
   };
+
+  const renderImageGenerationCheckbox = () => (
+    <div className="flex items-center space-x-2">
+      <input
+        type="checkbox"
+        id="generate-images"
+        checked={generateWithImages}
+        onChange={(e) => setGenerateWithImages(e.target.checked)}
+        className="rounded border-gray-300"
+      />
+      <Label htmlFor="generate-images" className="text-sm">
+        Generate AI images with DALL-E 3
+      </Label>
+      {isGeneratingImage && (
+        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+      )}
+    </div>
+  );
 
   if (isLoading) {
     return (
@@ -819,31 +915,19 @@ const ContentGenerator = () => {
                 </div>
               )}
 
-              {isStarterOrHigher && (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="generate-images"
-                    checked={generateWithImages}
-                    onChange={(e) => setGenerateWithImages(e.target.checked)}
-                    className="rounded border-gray-300"
-                  />
-                  <Label htmlFor="generate-images" className="text-sm">
-                    Generate AI images (Coming soon)
-                  </Label>
-                </div>
-              )}
+              {/* Updated AI image generation checkbox */}
+              {renderImageGenerationCheckbox()}
 
               <div className="space-y-2">
                 <Button
                   onClick={handleGenerateSingle}
-                  disabled={isGenerating || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim()}
+                  disabled={isGenerating || isGeneratingImage || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim()}
                   className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
                 >
-                  {isGenerating ? (
+                  {isGenerating || isGeneratingImage ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Generating...
+                      {isGeneratingImage ? 'Generating Image...' : 'Generating...'}
                     </>
                   ) : (
                     <>
@@ -856,7 +940,7 @@ const ContentGenerator = () => {
                 {isStarterOrHigher && (
                   <Button
                     onClick={handleGenerateAll}
-                    disabled={isGenerating || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim()}
+                    disabled={isGenerating || isGeneratingImage || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim()}
                     variant="outline"
                     className="w-full"
                   >
@@ -940,15 +1024,14 @@ const ContentGenerator = () => {
                                 </Button>
                               </div>
                             </div>
-                            {post.mediaUrl && (
+                            {(post.mediaUrl || post.generatedContent?.image) && (
                               <div className="mb-2">
-                                {post.mediaUrl.includes('image') ? (
-                                  <img src={post.mediaUrl} alt="Post media" className="w-full h-20 object-cover rounded" />
-                                ) : (
-                                  <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                    <Video className="h-3 w-3" />
-                                    <span>Video attached</span>
-                                  </div>
+                                {(post.mediaUrl || post.generatedContent?.image) && (
+                                  <img 
+                                    src={post.mediaUrl || post.generatedContent?.image} 
+                                    alt="Post media" 
+                                    className="w-full h-20 object-cover rounded" 
+                                  />
                                 )}
                               </div>
                             )}
@@ -982,6 +1065,24 @@ const ContentGenerator = () => {
               ) : (
                 generatedContent ? (
                   <div className="space-y-4">
+                    {generatedContent.image && (
+                      <div>
+                        <Label>Generated Image</Label>
+                        <div className="mt-1">
+                          <img 
+                            src={generatedContent.image} 
+                            alt="AI Generated" 
+                            className="w-full rounded-lg border" 
+                          />
+                          {generatedContent.imagePrompt && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              Prompt: {generatedContent.imagePrompt}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <Label>Caption</Label>
                       <div className="p-3 bg-gray-50 rounded-lg mt-1">
@@ -993,7 +1094,7 @@ const ContentGenerator = () => {
                       <Label>Hashtags</Label>
                       <div className="p-3 bg-gray-50 rounded-lg mt-1">
                         <p className="text-sm text-blue-600">
-                          {generatedContent.hashtags.join('')}
+                          {generatedContent.hashtags.join(' ')}
                         </p>
                       </div>
                     </div>
