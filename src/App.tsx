@@ -13,6 +13,9 @@ import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ContentGeneratorPage from "./pages/ContentGeneratorPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
+import DataDeletionPage from "./pages/DataDeletionPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +33,9 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/signup" element={<SignupPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+                <Route path="/data-deletion" element={<DataDeletionPage />} />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <DashboardPage />
@@ -48,7 +54,7 @@ const App = () => (
         </SocialAccountsProvider>
       </SubscriptionProvider>
     </AuthProvider>
-  </QueryClientProvider>
+  </TooltipProvider>
 );
 
 export default App;
