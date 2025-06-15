@@ -17,7 +17,10 @@ export type Database = {
           goal: string
           id: string
           industry: string
+          media_url: string | null
           niche_info: string | null
+          scheduled_date: string | null
+          scheduled_time: string | null
           updated_at: string | null
           user_id: string
         }
@@ -28,7 +31,10 @@ export type Database = {
           goal: string
           id?: string
           industry: string
+          media_url?: string | null
           niche_info?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -39,7 +45,10 @@ export type Database = {
           goal?: string
           id?: string
           industry?: string
+          media_url?: string | null
           niche_info?: string | null
+          scheduled_date?: string | null
+          scheduled_time?: string | null
           updated_at?: string | null
           user_id?: string
         }

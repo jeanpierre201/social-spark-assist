@@ -7,10 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar as CalendarIcon, Wand2, Crown, Upload, Image, Video, Clock } from 'lucide-react';
+import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar as CalendarIcon, Wand2, Crown, Upload, Image, Video, Clock, Edit, Save, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -52,6 +53,15 @@ const ContentGenerator = () => {
   const [posts, setPosts] = useState<PostData[]>([]);
   const [generateWithImages, setGenerateWithImages] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [editingPost, setEditingPost] = useState<PostData | null>(null);
+  const [editForm, setEditForm] = useState({
+    caption: '',
+    hashtags: '',
+    scheduledDate: undefined as Date | undefined,
+    scheduledTime: '',
+    mediaFile: null as File | null
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Determine plan limits and features
   const isStarterOrHigher = subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
@@ -147,6 +157,118 @@ const ContentGenerator = () => {
       }
 
       setMediaFile(file);
+    }
+  };
+
+  const handleEditMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/mov', 'video/avi'];
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload an image (JPEG, PNG, GIF) or video (MP4, MOV, AVI)",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please upload a file smaller than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setEditForm(prev => ({ ...prev, mediaFile: file }));
+    }
+  };
+
+  const handleEditPost = (post: PostData) => {
+    setEditingPost(post);
+    setEditForm({
+      caption: post.generatedContent?.caption || '',
+      hashtags: post.generatedContent?.hashtags.join(' ') || '',
+      scheduledDate: post.scheduledDate ? new Date(post.scheduledDate) : undefined,
+      scheduledTime: post.scheduledTime || '',
+      mediaFile: null
+    });
+  };
+
+  const handleUpdatePost = async () => {
+    if (!editingPost || !user) return;
+
+    setIsUpdating(true);
+
+    try {
+      // Upload new media file if present
+      let mediaUrl = editingPost.mediaUrl;
+      if (editForm.mediaFile) {
+        const fileName = `${user.id}/${Date.now()}-${editForm.mediaFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('media')
+          .upload(fileName, editForm.mediaFile);
+
+        if (uploadError) {
+          console.error('Media upload error:', uploadError);
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('media')
+            .getPublicUrl(fileName);
+          mediaUrl = urlData.publicUrl;
+        }
+      }
+
+      const hashtags = editForm.hashtags.split(' ').filter(tag => tag.trim().length > 0);
+
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({
+          generated_caption: editForm.caption,
+          generated_hashtags: hashtags,
+          scheduled_date: editForm.scheduledDate ? format(editForm.scheduledDate, 'yyyy-MM-dd') : null,
+          scheduled_time: editForm.scheduledTime || null,
+          media_url: mediaUrl
+        })
+        .eq('id', editingPost.id);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setPosts(prev => prev.map(post => 
+        post.id === editingPost.id 
+          ? {
+              ...post,
+              generatedContent: {
+                caption: editForm.caption,
+                hashtags: hashtags
+              },
+              scheduledDate: editForm.scheduledDate ? format(editForm.scheduledDate, 'yyyy-MM-dd') : undefined,
+              scheduledTime: editForm.scheduledTime || undefined,
+              mediaUrl: mediaUrl
+            }
+          : post
+      ));
+
+      setEditingPost(null);
+      toast({
+        title: "Post Updated!",
+        description: "Your post has been successfully updated",
+      });
+
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast({
+        title: "Update Failed",
+        description: "Failed to update post. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -677,6 +799,147 @@ const ContentGenerator = () => {
                                 {post.scheduledDate} {post.scheduledTime && `at ${post.scheduledTime}`}
                               </Badge>
                             )}
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  size="sm" 
+                                  variant="ghost" 
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => handleEditPost(post)}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Edit Post</DialogTitle>
+                                  <DialogDescription>
+                                    Make changes to your post content and scheduling
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label htmlFor="edit-caption">Caption</Label>
+                                    <Textarea
+                                      id="edit-caption"
+                                      value={editForm.caption}
+                                      onChange={(e) => setEditForm(prev => ({ ...prev, caption: e.target.value }))}
+                                      rows={4}
+                                    />
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-hashtags">Hashtags</Label>
+                                    <Input
+                                      id="edit-hashtags"
+                                      value={editForm.hashtags}
+                                      onChange={(e) => setEditForm(prev => ({ ...prev, hashtags: e.target.value }))}
+                                      placeholder="Enter hashtags separated by spaces"
+                                    />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                      <Label>Scheduled Date</Label>
+                                      <Popover>
+                                        <PopoverTrigger asChild>
+                                          <Button
+                                            variant="outline"
+                                            className={cn(
+                                              "w-full justify-start text-left font-normal",
+                                              !editForm.scheduledDate && "text-muted-foreground"
+                                            )}
+                                          >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {editForm.scheduledDate ? format(editForm.scheduledDate, "PPP") : "Pick a date"}
+                                          </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0" align="start">
+                                          <Calendar
+                                            mode="single"
+                                            selected={editForm.scheduledDate}
+                                            onSelect={(date) => setEditForm(prev => ({ ...prev, scheduledDate: date }))}
+                                            disabled={(date) => date < new Date()}
+                                            initialFocus
+                                          />
+                                        </PopoverContent>
+                                      </Popover>
+                                    </div>
+                                    <div>
+                                      <Label htmlFor="edit-time">Scheduled Time</Label>
+                                      <Input
+                                        id="edit-time"
+                                        type="time"
+                                        value={editForm.scheduledTime}
+                                        onChange={(e) => setEditForm(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label htmlFor="edit-media">Update Media (Optional)</Label>
+                                    <div className="mt-2">
+                                      <Input
+                                        id="edit-media"
+                                        type="file"
+                                        accept="image/*,video/*"
+                                        onChange={handleEditMediaUpload}
+                                        className="hidden"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => document.getElementById('edit-media')?.click()}
+                                        className="w-full"
+                                      >
+                                        <Upload className="h-4 w-4 mr-2" />
+                                        {editForm.mediaFile ? editForm.mediaFile.name : 'Choose New Image or Video'}
+                                      </Button>
+                                      {editForm.mediaFile && (
+                                        <div className="mt-2 flex items-center space-x-2">
+                                          {editForm.mediaFile.type.startsWith('image/') ? (
+                                            <Image className="h-4 w-4 text-green-600" />
+                                          ) : (
+                                            <Video className="h-4 w-4 text-blue-600" />
+                                          )}
+                                          <span className="text-sm text-gray-600">{editForm.mediaFile.name}</span>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setEditForm(prev => ({ ...prev, mediaFile: null }))}
+                                            className="h-6 w-6 p-0"
+                                          >
+                                            ×
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end space-x-2">
+                                    <Button 
+                                      variant="outline" 
+                                      onClick={() => setEditingPost(null)}
+                                    >
+                                      <X className="h-4 w-4 mr-2" />
+                                      Cancel
+                                    </Button>
+                                    <Button 
+                                      onClick={handleUpdatePost}
+                                      disabled={isUpdating}
+                                    >
+                                      {isUpdating ? (
+                                        <>
+                                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                          Updating...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Save className="h-4 w-4 mr-2" />
+                                          Update Post
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
                             <Button 
                               size="sm" 
                               variant="ghost" 
