@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar, Wand2, Crown } from 'lucide-react';
+import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar as CalendarIcon, Wand2, Crown, Upload, Image, Video, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface GeneratedContent {
   caption: string;
@@ -28,6 +31,8 @@ interface PostData {
   scheduledTime?: string;
   generatedContent?: GeneratedContent;
   created_at?: string;
+  mediaFile?: File;
+  mediaUrl?: string;
 }
 
 const ContentGenerator = () => {
@@ -38,6 +43,9 @@ const ContentGenerator = () => {
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
   const [nicheInfo, setNicheInfo] = useState('');
+  const [scheduledDate, setScheduledDate] = useState<Date>();
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
   const [monthlyPosts, setMonthlyPosts] = useState(0);
@@ -79,11 +87,14 @@ const ContentGenerator = () => {
             industry: post.industry,
             goal: post.goal,
             nicheInfo: post.niche_info || '',
+            scheduledDate: post.scheduled_date,
+            scheduledTime: post.scheduled_time,
             generatedContent: {
               caption: post.generated_caption,
               hashtags: post.generated_hashtags
             },
-            created_at: post.created_at
+            created_at: post.created_at,
+            mediaUrl: post.media_url
           }));
 
           setPosts(formattedPosts);
@@ -109,6 +120,34 @@ const ContentGenerator = () => {
 
   const sanitizeInput = (text: string) => {
     return text.trim().replace(/[<>]/g, '');
+  };
+
+  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/mov', 'video/avi'];
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload an image (JPEG, PNG, GIF) or video (MP4, MOV, AVI)",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: "File Too Large",
+          description: "Please upload a file smaller than 10MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setMediaFile(file);
+    }
   };
 
   const handleGenerateSingle = async () => {
@@ -161,6 +200,24 @@ const ContentGenerator = () => {
         hashtags: data.hashtags
       };
 
+      // Upload media file if present
+      let mediaUrl = null;
+      if (mediaFile) {
+        const fileName = `${user.id}/${Date.now()}-${mediaFile.name}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('media')
+          .upload(fileName, mediaFile);
+
+        if (uploadError) {
+          console.error('Media upload error:', uploadError);
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('media')
+            .getPublicUrl(fileName);
+          mediaUrl = urlData.publicUrl;
+        }
+      }
+
       const { error: dbError } = await supabase
         .from('posts')
         .insert({
@@ -169,7 +226,10 @@ const ContentGenerator = () => {
           goal: sanitizedGoal,
           niche_info: sanitizedNicheInfo || null,
           generated_caption: newGeneratedContent.caption,
-          generated_hashtags: newGeneratedContent.hashtags
+          generated_hashtags: newGeneratedContent.hashtags,
+          scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
+          scheduled_time: scheduledTime || null,
+          media_url: mediaUrl
         });
 
       if (dbError) throw dbError;
@@ -179,13 +239,19 @@ const ContentGenerator = () => {
           industry: sanitizedIndustry,
           goal: sanitizedGoal,
           nicheInfo: sanitizedNicheInfo,
+          scheduledDate: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : undefined,
+          scheduledTime: scheduledTime || undefined,
           generatedContent: newGeneratedContent,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          mediaUrl
         };
         setPosts(prev => [newPost, ...prev]);
         setIndustry('');
         setGoal('');
         setNicheInfo('');
+        setScheduledDate(undefined);
+        setScheduledTime('');
+        setMediaFile(null);
       } else {
         setGeneratedContent(newGeneratedContent);
       }
@@ -392,7 +458,7 @@ const ContentGenerator = () => {
                 Create Content
               </CardTitle>
               <CardDescription>
-                {isStarterOrHigher ? 'Generate single posts or batch create content' : 'Generate your monthly post'}
+                {isStarterOrHigher ? 'Generate single posts or batch create content with scheduling' : 'Generate your monthly post'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -439,6 +505,97 @@ const ContentGenerator = () => {
                   {nicheInfo.length}/300 characters
                 </p>
               </div>
+
+              {/* Media Upload */}
+              <div>
+                <Label htmlFor="media">Upload Image or Video (Optional)</Label>
+                <div className="mt-2">
+                  <Input
+                    id="media"
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleMediaUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('media')?.click()}
+                    className="w-full"
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {mediaFile ? mediaFile.name : 'Choose Image or Video'}
+                  </Button>
+                  {mediaFile && (
+                    <div className="mt-2 flex items-center space-x-2">
+                      {mediaFile.type.startsWith('image/') ? (
+                        <Image className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Video className="h-4 w-4 text-blue-600" />
+                      )}
+                      <span className="text-sm text-gray-600">{mediaFile.name}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setMediaFile(null)}
+                        className="h-6 w-6 p-0"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Scheduling Section */}
+              {isStarterOrHigher && (
+                <div className="space-y-3">
+                  <Label className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Schedule Post (Optional)
+                  </Label>
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="date" className="text-sm">Date</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              "w-full justify-start text-left font-normal",
+                              !scheduledDate && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {scheduledDate ? format(scheduledDate, "PPP") : "Pick a date"}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={scheduledDate}
+                            onSelect={setScheduledDate}
+                            disabled={(date) => date < new Date()}
+                            initialFocus
+                            className="pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="time" className="text-sm">Time</Label>
+                      <Input
+                        id="time"
+                        type="time"
+                        value={scheduledTime}
+                        onChange={(e) => setScheduledTime(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {isStarterOrHigher && (
                 <div className="flex items-center space-x-2">
@@ -494,7 +651,7 @@ const ContentGenerator = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 {isStarterOrHigher ? (
-                  <Calendar className="h-5 w-5 text-green-600 mr-2" />
+                  <CalendarIcon className="h-5 w-5 text-green-600 mr-2" />
                 ) : (
                   <Sparkles className="h-5 w-5 text-green-600 mr-2" />
                 )}
@@ -515,9 +672,11 @@ const ContentGenerator = () => {
                             {post.industry}
                           </Badge>
                           <div className="flex space-x-1">
-                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
-                              <Calendar className="h-3 w-3" />
-                            </Button>
+                            {post.scheduledDate && (
+                              <Badge variant="outline" className="text-xs">
+                                {post.scheduledDate} {post.scheduledTime && `at ${post.scheduledTime}`}
+                              </Badge>
+                            )}
                             <Button 
                               size="sm" 
                               variant="ghost" 
@@ -528,6 +687,18 @@ const ContentGenerator = () => {
                             </Button>
                           </div>
                         </div>
+                        {post.mediaUrl && (
+                          <div className="mb-2">
+                            {post.mediaUrl.includes('image') ? (
+                              <img src={post.mediaUrl} alt="Post media" className="w-full h-20 object-cover rounded" />
+                            ) : (
+                              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                <Video className="h-3 w-3" />
+                                <span>Video attached</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                         {post.generatedContent && (
                           <>
                             <p className="text-sm text-gray-700 mb-2 line-clamp-2">
@@ -543,7 +714,7 @@ const ContentGenerator = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
-                    <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No posts generated yet. Create your first post!</p>
                   </div>
                 )
