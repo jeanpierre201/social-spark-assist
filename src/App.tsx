@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ContentGeneratorPage from "./pages/ContentGeneratorPage";
+import ContentGeneratorStarterPage from "./pages/ContentGeneratorStarterPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DataDeletionPage from "./pages/DataDeletionPage";
@@ -44,6 +44,11 @@ const App = () => (
                 <Route path="/content-generator" element={
                   <ProtectedRoute>
                     <ContentGeneratorPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/content-generator-starter" element={
+                  <ProtectedRoute>
+                    <ContentGeneratorStarterPage />
                   </ProtectedRoute>
                 } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
