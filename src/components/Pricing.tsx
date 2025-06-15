@@ -26,7 +26,7 @@ const Pricing = () => {
 
     // Check if user already has Starter plan or higher
     if (subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise')) {
-      navigate('/content-generator-starter');
+      navigate('/content-generator');
     } else {
       // User needs to upgrade - redirect to Stripe checkout
       await createCheckout();

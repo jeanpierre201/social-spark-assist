@@ -46,11 +46,6 @@ const App = () => (
                     <ContentGeneratorPage />
                   </ProtectedRoute>
                 } />
-                <Route path="/content-generator-starter" element={
-                  <ProtectedRoute>
-                    <ContentGeneratorStarterPage />
-                  </ProtectedRoute>
-                } />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
