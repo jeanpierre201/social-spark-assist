@@ -18,12 +18,19 @@ import { useNavigate } from 'react-router-dom';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import { cn } from '@/lib/utils';
+import ContentVariations from './ContentVariations';
 
 interface GeneratedContent {
   caption: string;
   hashtags: string[];
   image?: string;
   imagePrompt?: string;
+}
+
+interface ContentVariation {
+  caption: string;
+  hashtags: string[];
+  variation: string;
 }
 
 interface PostData {
@@ -52,6 +59,7 @@ const ContentGenerator = () => {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
+  const [contentVariations, setContentVariations] = useState<ContentVariation[]>([]);
   const [monthlyPosts, setMonthlyPosts] = useState(0);
   const [posts, setPosts] = useState<PostData[]>([]);
   const [generateWithImages, setGenerateWithImages] = useState(false);
@@ -72,8 +80,9 @@ const ContentGenerator = () => {
 
   // Determine plan limits and features
   const isStarterOrHigher = subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
-  const monthlyLimit = isStarterOrHigher ? 10 : 1;
-  const planName = isStarterOrHigher ? 'Starter Plan' : 'Free Plan';
+  const isProOrHigher = subscribed && (subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
+  const monthlyLimit = isStarterOrHigher ? (isProOrHigher ? 100 : 10) : 1;
+  const planName = isProOrHigher ? 'Pro Plan' : isStarterOrHigher ? 'Starter Plan' : 'Free Plan';
 
   // Get user's timezone
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -391,6 +400,38 @@ const ContentGenerator = () => {
     }
   };
 
+  const handleSelectVariation = (variation: ContentVariation) => {
+    setGeneratedContent({
+      caption: variation.caption,
+      hashtags: variation.hashtags
+    });
+    setContentVariations([]);
+    
+    toast({
+      title: "Variation Selected",
+      description: "Content variation has been selected for use",
+    });
+  };
+
+  const handleDownloadVariation = (variation: ContentVariation) => {
+    const contentText = `Caption:\n${variation.caption}\n\nHashtags:\n${variation.hashtags.map(tag => `#${tag}`).join(' ')}`;
+    
+    const blob = new Blob([contentText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${variation.variation.toLowerCase().replace(/\s+/g, '-')}-content.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Downloaded!",
+      description: `${variation.variation} content has been downloaded`,
+    });
+  };
+
   const handleGenerateSingle = async () => {
     if (!user) {
       toast({
@@ -429,134 +470,151 @@ const ContentGenerator = () => {
     }
 
     setIsGenerating(true);
+    setContentVariations([]); // Clear previous variations
 
     try {
       const sanitizedIndustry = sanitizeInput(industry);
       const sanitizedGoal = sanitizeInput(goal);
       const sanitizedNicheInfo = sanitizeInput(nicheInfo);
 
+      // For Pro users, generate variations by default
+      const shouldGenerateVariations = isProOrHigher;
+
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: {
           industry: sanitizedIndustry,
           goal: sanitizedGoal,
-          nicheInfo: sanitizedNicheInfo
+          nicheInfo: sanitizedNicheInfo,
+          generateVariations: shouldGenerateVariations,
+          variationCount: shouldGenerateVariations ? 3 : undefined
         }
       });
 
       if (error) throw error;
 
-      const newGeneratedContent: GeneratedContent = {
-        caption: data.caption,
-        hashtags: data.hashtags
-      };
+      if (shouldGenerateVariations && data.variations) {
+        // Pro plan - show variations
+        setContentVariations(data.variations);
+        
+        toast({
+          title: "Variations Generated!",
+          description: `${data.variations.length} content variations ready to choose from`,
+        });
+      } else {
+        // Single content generation
+        const newGeneratedContent: GeneratedContent = {
+          caption: data.caption,
+          hashtags: data.hashtags
+        };
 
-      // Generate AI image if requested
-      if (generateWithImages) {
-        const imageResult = await generateImageFromContent(newGeneratedContent.caption, sanitizedIndustry);
-        if (imageResult) {
-          newGeneratedContent.image = imageResult.image;
-          newGeneratedContent.imagePrompt = imageResult.imagePrompt;
+        // Generate AI image if requested
+        if (generateWithImages) {
+          const imageResult = await generateImageFromContent(newGeneratedContent.caption, sanitizedIndustry);
+          if (imageResult) {
+            newGeneratedContent.image = imageResult.image;
+            newGeneratedContent.imagePrompt = imageResult.imagePrompt;
+          }
         }
-      }
 
-      // Upload media file if present
-      let mediaUrl = null;
-      if (mediaFile) {
-        const fileName = `${user.id}/${Date.now()}-${mediaFile.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('media')
-          .upload(fileName, mediaFile);
-
-        if (uploadError) {
-          console.error('Media upload error:', uploadError);
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('media')
-            .getPublicUrl(fileName);
-          mediaUrl = urlData.publicUrl;
-        }
-      }
-
-      // If we have an AI generated image, upload it to storage
-      if (newGeneratedContent.image && !mediaUrl) {
-        try {
-          // Convert base64 to blob
-          const response = await fetch(newGeneratedContent.image);
-          const blob = await response.blob();
-          
-          const fileName = `${user.id}/${Date.now()}-ai-generated.png`;
+        // Upload media file if present
+        let mediaUrl = null;
+        if (mediaFile) {
+          const fileName = `${user.id}/${Date.now()}-${mediaFile.name}`;
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('media')
-            .upload(fileName, blob);
+            .upload(fileName, mediaFile);
 
-          if (!uploadError) {
+          if (uploadError) {
+            console.error('Media upload error:', uploadError);
+          } else {
             const { data: urlData } = supabase.storage
               .from('media')
               .getPublicUrl(fileName);
             mediaUrl = urlData.publicUrl;
           }
-        } catch (imageUploadError) {
-          console.error('Error uploading AI generated image:', imageUploadError);
         }
-      }
 
-      // Convert scheduled time to UTC for storage
-      let scheduledDateUTC = null;
-      let scheduledTimeUTC = null;
-      
-      if (scheduledDate && scheduledTime) {
-        const localDateTime = new Date(`${format(scheduledDate, 'yyyy-MM-dd')}T${scheduledTime}`);
-        const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
-        scheduledDateUTC = format(utcDateTime, 'yyyy-MM-dd');
-        scheduledTimeUTC = format(utcDateTime, 'HH:mm:ss');
-      } else if (scheduledDate) {
-        scheduledDateUTC = format(scheduledDate, 'yyyy-MM-dd');
-      }
+        // If we have an AI generated image, upload it to storage
+        if (newGeneratedContent.image && !mediaUrl) {
+          try {
+            // Convert base64 to blob
+            const response = await fetch(newGeneratedContent.image);
+            const blob = await response.blob();
+            
+            const fileName = `${user.id}/${Date.now()}-ai-generated.png`;
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('media')
+              .upload(fileName, blob);
 
-      const { error: dbError } = await supabase
-        .from('posts')
-        .insert({
-          user_id: user.id,
-          industry: sanitizedIndustry,
-          goal: sanitizedGoal,
-          niche_info: sanitizedNicheInfo || null,
-          generated_caption: newGeneratedContent.caption,
-          generated_hashtags: newGeneratedContent.hashtags,
-          scheduled_date: scheduledDateUTC,
-          scheduled_time: scheduledTimeUTC,
-          media_url: mediaUrl
+            if (!uploadError) {
+              const { data: urlData } = supabase.storage
+                .from('media')
+                .getPublicUrl(fileName);
+              mediaUrl = urlData.publicUrl;
+            }
+          } catch (imageUploadError) {
+            console.error('Error uploading AI generated image:', imageUploadError);
+          }
+        }
+
+        // Convert scheduled time to UTC for storage
+        let scheduledDateUTC = null;
+        let scheduledTimeUTC = null;
+        
+        if (scheduledDate && scheduledTime) {
+          const localDateTime = new Date(`${format(scheduledDate, 'yyyy-MM-dd')}T${scheduledTime}`);
+          const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
+          scheduledDateUTC = format(utcDateTime, 'yyyy-MM-dd');
+          scheduledTimeUTC = format(utcDateTime, 'HH:mm:ss');
+        } else if (scheduledDate) {
+          scheduledDateUTC = format(scheduledDate, 'yyyy-MM-dd');
+        }
+
+        const { error: dbError } = await supabase
+          .from('posts')
+          .insert({
+            user_id: user.id,
+            industry: sanitizedIndustry,
+            goal: sanitizedGoal,
+            niche_info: sanitizedNicheInfo || null,
+            generated_caption: newGeneratedContent.caption,
+            generated_hashtags: newGeneratedContent.hashtags,
+            scheduled_date: scheduledDateUTC,
+            scheduled_time: scheduledTimeUTC,
+            media_url: mediaUrl
+          });
+
+        if (dbError) throw dbError;
+
+        if (isStarterOrHigher) {
+          const newPost: PostData = {
+            industry: sanitizedIndustry,
+            goal: sanitizedGoal,
+            nicheInfo: sanitizedNicheInfo,
+            scheduledDate: scheduledDateUTC || undefined,
+            scheduledTime: scheduledTimeUTC || undefined,
+            generatedContent: newGeneratedContent,
+            created_at: new Date().toISOString(),
+            mediaUrl
+          };
+          setPosts(prev => [newPost, ...prev]);
+          setIndustry('');
+          setGoal('');
+          setNicheInfo('');
+          setScheduledDate(undefined);
+          setScheduledTime('');
+          setMediaFile(null);
+        } else {
+          setGeneratedContent(newGeneratedContent);
+        }
+
+        setMonthlyPosts(prev => prev + 1);
+
+        toast({
+          title: "Content Generated!",
+          description: isStarterOrHigher ? "Post added to your collection" : "Your content is ready to download",
         });
-
-      if (dbError) throw dbError;
-
-      if (isStarterOrHigher) {
-        const newPost: PostData = {
-          industry: sanitizedIndustry,
-          goal: sanitizedGoal,
-          nicheInfo: sanitizedNicheInfo,
-          scheduledDate: scheduledDateUTC || undefined,
-          scheduledTime: scheduledTimeUTC || undefined,
-          generatedContent: newGeneratedContent,
-          created_at: new Date().toISOString(),
-          mediaUrl
-        };
-        setPosts(prev => [newPost, ...prev]);
-        setIndustry('');
-        setGoal('');
-        setNicheInfo('');
-        setScheduledDate(undefined);
-        setScheduledTime('');
-        setMediaFile(null);
-      } else {
-        setGeneratedContent(newGeneratedContent);
       }
-
-      setMonthlyPosts(prev => prev + 1);
-
-      toast({
-        title: "Content Generated!",
-        description: isStarterOrHigher ? "Post added to your collection" : "Your content is ready to download",
-      });
 
     } catch (error) {
       console.error('Error generating content:', error);
@@ -816,7 +874,9 @@ const ContentGenerator = () => {
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">AI Content Generator</h1>
             <p className="text-muted-foreground">
-              {isStarterOrHigher ? 'Generate up to 10 posts per month with advanced features' : 'Generate 1 post per month - upgrade for more!'}
+              {isProOrHigher ? 'Generate up to 100 posts per month with advanced AI features' : 
+               isStarterOrHigher ? 'Generate up to 10 posts per month with advanced features' : 
+               'Generate 1 post per month - upgrade for more!'}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -832,10 +892,14 @@ const ContentGenerator = () => {
         </div>
 
         {/* Usage Indicator */}
-        <Card className={`mb-6 ${isStarterOrHigher ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50' : 'border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50'}`}>
+        <Card className={`mb-6 ${isProOrHigher ? 'border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50' : 
+                                    isStarterOrHigher ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50' : 
+                                    'border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50'}`}>
           <CardHeader>
             <CardTitle className="flex items-center">
-              {isStarterOrHigher ? (
+              {isProOrHigher ? (
+                <Crown className="h-5 w-5 text-purple-600 mr-2" />
+              ) : isStarterOrHigher ? (
                 <Crown className="h-5 w-5 text-blue-600 mr-2" />
               ) : (
                 <AlertCircle className="h-5 w-5 text-orange-600 mr-2" />
@@ -844,6 +908,7 @@ const ContentGenerator = () => {
             </CardTitle>
             <CardDescription>
               You've used {monthlyPosts} of {monthlyLimit} post{monthlyLimit > 1 ? 's' : ''} this month
+              {isProOrHigher && <span className="block text-purple-600 mt-1">✨ Content Variations enabled</span>}
               {isStarterOrHigher && !canCreatePosts && (
                 <span className="block text-red-600 mt-1">
                   Post creation period has expired (30 days from subscription start)
@@ -853,6 +918,17 @@ const ContentGenerator = () => {
           </CardHeader>
         </Card>
 
+        {/* Content Variations for Pro users */}
+        {contentVariations.length > 0 && (
+          <div className="mb-6">
+            <ContentVariations
+              variations={contentVariations}
+              onSelectVariation={handleSelectVariation}
+              onDownloadVariation={handleDownloadVariation}
+            />
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Input Form */}
           <Card>
@@ -860,9 +936,12 @@ const ContentGenerator = () => {
               <CardTitle className="flex items-center">
                 <Plus className="h-5 w-5 text-purple-600 mr-2" />
                 Create Content
+                {isProOrHigher && <Badge className="ml-2 bg-purple-600">Pro Features</Badge>}
               </CardTitle>
               <CardDescription>
-                {isStarterOrHigher ? 'Generate single posts or batch create content with scheduling' : 'Generate your monthly post'}
+                {isProOrHigher ? 'Generate multiple content variations with advanced AI features' :
+                 isStarterOrHigher ? 'Generate single posts or batch create content with scheduling' : 
+                 'Generate your monthly post'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1023,7 +1102,7 @@ const ContentGenerator = () => {
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4 mr-2" />
-                      Generate {isStarterOrHigher ? 'Single Post' : 'Content'}
+                      {isProOrHigher ? 'Generate Variations' : isStarterOrHigher ? 'Generate Single Post' : 'Generate Content'}
                     </>
                   )}
                 </Button>

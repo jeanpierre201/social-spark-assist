@@ -13,6 +13,8 @@ interface RequestBody {
   industry: string;
   goal: string;
   nicheInfo?: string;
+  generateVariations?: boolean;
+  variationCount?: number;
 }
 
 // Rate limiting store (in production, use Redis or similar)
@@ -64,6 +66,95 @@ const sanitizeInput = (text: string): string => {
   return text.trim().replace(/[<>]/g, '');
 };
 
+const generateSingleContent = async (industry: string, goal: string, nicheInfo: string, variationPrompt?: string) => {
+  const basePrompt = `Create a social media post for the ${industry} industry. 
+Goal: ${goal}
+${nicheInfo ? `Additional context: ${nicheInfo}` : ''}
+${variationPrompt ? `Style variation: ${variationPrompt}` : ''}
+
+Please provide:
+1. An engaging caption (max 150 words)
+2. 5-8 relevant hashtags
+
+Make the content professional, engaging, and appropriate for social media platforms like Instagram, LinkedIn, and Twitter.`;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openAIApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { 
+          role: 'system', 
+          content: 'You are a professional social media content creator. Generate engaging, authentic content that drives engagement. Format your response as JSON with "caption" and "hashtags" fields. The hashtags field should be an array of strings without the # symbol.' 
+        },
+        { role: 'user', content: basePrompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const generatedText = data.choices[0].message.content;
+
+  // Try to parse as JSON first, fallback to text parsing
+  let caption = '';
+  let hashtags: string[] = [];
+
+  try {
+    const parsed = JSON.parse(generatedText);
+    caption = parsed.caption || '';
+    hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
+  } catch {
+    // Fallback: extract caption and hashtags from text
+    const lines = generatedText.split('\n').filter(line => line.trim());
+    
+    const captionLines = lines.filter(line => 
+      !line.includes('#') && 
+      !line.toLowerCase().includes('hashtag') && 
+      line.trim().length > 10
+    );
+    caption = captionLines.join(' ').substring(0, 300);
+
+    const hashtagMatches = generatedText.match(/#[\w]+/g) || [];
+    hashtags = hashtagMatches.map(tag => tag.substring(1)).slice(0, 8);
+    
+    if (hashtags.length === 0) {
+      hashtags = [
+        industry.toLowerCase().replace(/\s+/g, ''),
+        'socialmedia',
+        'business',
+        'marketing'
+      ];
+    }
+  }
+
+  if (!caption || caption.trim().length === 0) {
+    caption = `Exciting updates in the ${industry} industry! ${goal}`;
+  }
+
+  if (hashtags.length === 0) {
+    hashtags = [
+      industry.toLowerCase().replace(/\s+/g, ''),
+      'socialmedia',
+      'business'
+    ];
+  }
+
+  return {
+    caption: caption.trim(),
+    hashtags: hashtags.slice(0, 8)
+  };
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -71,7 +162,6 @@ serve(async (req) => {
   }
 
   try {
-    // Check if OpenAI API key is configured
     if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
       return new Response(
@@ -85,11 +175,9 @@ serve(async (req) => {
 
     console.log('Processing content generation request...');
 
-    // Get user ID from authorization header for rate limiting
     const authHeader = req.headers.get('authorization');
     const userId = authHeader ? authHeader.split(' ')[1] : 'anonymous';
 
-    // Check rate limit
     if (!checkRateLimit(userId)) {
       console.error('Rate limit exceeded for user:', userId);
       return new Response(
@@ -104,7 +192,6 @@ serve(async (req) => {
     const body: RequestBody = await req.json();
     console.log('Request body:', body);
 
-    // Validate input
     const validationError = validateInput(body);
     if (validationError) {
       console.error('Validation error:', validationError);
@@ -117,119 +204,60 @@ serve(async (req) => {
       );
     }
 
-    // Sanitize inputs
     const industry = sanitizeInput(body.industry);
     const goal = sanitizeInput(body.goal);
     const nicheInfo = body.nicheInfo ? sanitizeInput(body.nicheInfo) : '';
 
     console.log('Sanitized inputs:', { industry, goal, nicheInfo });
 
-    // Prepare prompt for OpenAI
-    const prompt = `Create a social media post for the ${industry} industry. 
-Goal: ${goal}
-${nicheInfo ? `Additional context: ${nicheInfo}` : ''}
-
-Please provide:
-1. An engaging caption (max 150 words)
-2. 5-8 relevant hashtags
-
-Make the content professional, engaging, and appropriate for social media platforms like Instagram, LinkedIn, and Twitter.`;
-
-    console.log('Making OpenAI API call...');
-
-    // Call OpenAI API with gpt-4o-mini model
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          { 
-            role: 'system', 
-            content: 'You are a professional social media content creator. Generate engaging, authentic content that drives engagement. Format your response as JSON with "caption" and "hashtags" fields. The hashtags field should be an array of strings without the # symbol.' 
-          },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OpenAI API error: ${response.status} - ${errorText}`);
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('OpenAI response:', data);
-    
-    const generatedText = data.choices[0].message.content;
-    console.log('Generated text:', generatedText);
-
-    // Try to parse as JSON first, fallback to text parsing
-    let caption = '';
-    let hashtags: string[] = [];
-
-    try {
-      const parsed = JSON.parse(generatedText);
-      caption = parsed.caption || '';
-      hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
-    } catch {
-      console.log('JSON parsing failed, using text parsing fallback');
-      // Fallback: extract caption and hashtags from text
-      const lines = generatedText.split('\n').filter(line => line.trim());
-      
-      // Find caption (usually first substantial text)
-      const captionLines = lines.filter(line => 
-        !line.includes('#') && 
-        !line.toLowerCase().includes('hashtag') && 
-        line.trim().length > 10
-      );
-      caption = captionLines.join(' ').substring(0, 300);
-
-      // Extract hashtags
-      const hashtagMatches = generatedText.match(/#[\w]+/g) || [];
-      hashtags = hashtagMatches.map(tag => tag.substring(1)).slice(0, 8);
-      
-      // If no hashtags found, generate basic ones
-      if (hashtags.length === 0) {
-        hashtags = [
-          industry.toLowerCase().replace(/\s+/g, ''),
-          'socialmedia',
-          'business',
-          'marketing'
-        ];
-      }
-    }
-
-    // Ensure we have valid content
-    if (!caption || caption.trim().length === 0) {
-      caption = `Exciting updates in the ${industry} industry! ${goal}`;
-    }
-
-    if (hashtags.length === 0) {
-      hashtags = [
-        industry.toLowerCase().replace(/\s+/g, ''),
-        'socialmedia',
-        'business'
+    // Generate multiple variations if requested
+    if (body.generateVariations) {
+      const variationCount = Math.min(body.variationCount || 3, 5);
+      const variationPrompts = [
+        "Write in a professional, authoritative tone",
+        "Use a friendly, conversational style with emojis",
+        "Focus on storytelling and emotional connection",
+        "Emphasize data, statistics, and credibility",
+        "Create urgency and call-to-action focused content"
       ];
-    }
 
-    console.log('Final result:', { caption, hashtags });
+      const variations = [];
+      
+      // Generate base version first
+      const baseContent = await generateSingleContent(industry, goal, nicheInfo);
+      variations.push({ ...baseContent, variation: 'Original' });
 
-    return new Response(
-      JSON.stringify({ 
-        caption: caption.trim(), 
-        hashtags: hashtags.slice(0, 8) 
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      // Generate additional variations
+      for (let i = 1; i < variationCount; i++) {
+        const variationPrompt = variationPrompts[i - 1];
+        const variationContent = await generateSingleContent(industry, goal, nicheInfo, variationPrompt);
+        variations.push({ 
+          ...variationContent, 
+          variation: `Variation ${i}` 
+        });
       }
-    );
+
+      console.log('Generated variations:', variations.length);
+
+      return new Response(
+        JSON.stringify({ variations }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    } else {
+      // Generate single content (existing functionality)
+      const content = await generateSingleContent(industry, goal, nicheInfo);
+      
+      console.log('Final result:', content);
+
+      return new Response(
+        JSON.stringify(content),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
   } catch (error) {
     console.error('Error in generate-content function:', error);
