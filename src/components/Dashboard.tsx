@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,10 @@ const Dashboard = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSocialSettings, setShowSocialSettings] = useState(false);
+
+  // Check if user has Pro plan
+  const isProUser = subscribed && subscriptionTier === 'Pro';
+  const isStarterUser = subscribed && subscriptionTier === 'Starter';
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -101,17 +106,17 @@ const Dashboard = () => {
     };
   }, { totalFollowers: 0, avgEngagement: 0, totalPosts: 0, scheduledPosts: 0 });
 
-  const LockedCard = ({ title, description, icon: Icon }: { title: string; description: string; icon: any }) => (
+  const LockedCard = ({ title, description, icon: Icon, planRequired }: { title: string; description: string; icon: any; planRequired: string }) => (
     <Card className="relative overflow-hidden">
       <div className="absolute inset-0 bg-gray-50/80 z-10 flex items-center justify-center">
         <div className="text-center">
           <Lock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm text-gray-600 font-medium">Starter Plan Required</p>
+          <p className="text-sm text-gray-600 font-medium">{planRequired} Plan Required</p>
         </div>
       </div>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <Icon className={`h-4 w-4 ${planRequired === 'Pro' ? 'text-purple-500' : 'text-muted-foreground'}`} />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold text-gray-300">--</div>
@@ -140,8 +145,8 @@ const Dashboard = () => {
             <p className="text-muted-foreground">
               Welcome back, {user?.email}
               {subscribed && (
-                <Badge variant="secondary" className="ml-2 bg-green-100 text-green-800">
-                  <Crown className="h-3 w-3 mr-1" />
+                <Badge variant="secondary" className={`ml-2 ${isProUser ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>
+                  <Crown className={`h-3 w-3 mr-1 ${isProUser ? 'text-purple-600' : ''}`} />
                   {subscriptionTier}
                 </Badge>
               )}
@@ -161,7 +166,7 @@ const Dashboard = () => {
               Refresh Status
             </Button>
             <Button onClick={() => navigate('/content-generator')}>
-              <Sparkles className="h-4 w-4 mr-2" />
+              <Sparkles className={`h-4 w-4 mr-2 ${isProUser ? 'text-purple-500' : ''}`} />
               Generate Content
             </Button>
           </div>
@@ -204,6 +209,27 @@ const Dashboard = () => {
           </Card>
         )}
 
+        {/* Pro Plan Upgrade Prompt for Starter Users */}
+        {isStarterUser && (
+          <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-purple-900">Unlock Pro Features</h3>
+                  <p className="text-purple-700">Get advanced AI features, content variations, and unlimited posts</p>
+                </div>
+                <Button 
+                  onClick={() => navigate('/upgrade-pro')}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  Upgrade to Pro
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card>
@@ -222,7 +248,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-500' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -237,7 +263,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Followers</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Users className={`h-4 w-4 ${isProUser ? 'text-purple-500' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -252,7 +278,7 @@ const Dashboard = () => {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Scheduled Posts</CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-500' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -270,16 +296,19 @@ const Dashboard = () => {
                 title="Engagement Rate" 
                 description="Track your social media performance"
                 icon={TrendingUp}
+                planRequired="Starter"
               />
               <LockedCard 
                 title="Followers" 
                 description="Monitor your audience growth"
                 icon={Users}
+                planRequired="Starter"
               />
               <LockedCard 
                 title="Scheduled Posts" 
                 description="Manage your content calendar"
                 icon={Calendar}
+                planRequired="Starter"
               />
             </>
           )}
@@ -294,11 +323,11 @@ const Dashboard = () => {
           <CardContent>
             {posts.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <Sparkles className={`h-12 w-12 mx-auto mb-4 opacity-50 ${isProUser ? 'text-purple-400' : ''}`} />
                 <p className="text-lg font-medium">No content generated yet</p>
                 <p className="mb-4">Start creating engaging social media content with AI</p>
                 <Button onClick={() => navigate('/content-generator')}>
-                  <Sparkles className="h-4 w-4 mr-2" />
+                  <Sparkles className={`h-4 w-4 mr-2 ${isProUser ? 'text-purple-500' : ''}`} />
                   Generate Your First Post
                 </Button>
               </div>

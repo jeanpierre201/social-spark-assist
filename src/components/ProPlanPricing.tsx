@@ -45,7 +45,7 @@ const ProPlanPricing = () => {
     navigate('/dashboard');
   };
 
-  const isProUser = subscribed && (subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
+  const isProUser = subscribed && subscriptionTier === 'Pro';
 
   if (loading) {
     return (
@@ -105,7 +105,7 @@ const ProPlanPricing = () => {
               {isProUser ? (
                 <div className="space-y-4">
                   <div className="text-center text-sm text-muted-foreground">
-                    Current Plan: <strong>{subscriptionTier}</strong>
+                    Current Plan: <strong className="text-purple-600">{subscriptionTier}</strong>
                     {subscriptionEnd && (
                       <div>Renews on {formatDate(subscriptionEnd)}</div>
                     )}
@@ -113,7 +113,7 @@ const ProPlanPricing = () => {
                   <Button 
                     onClick={openCustomerPortal} 
                     variant="outline" 
-                    className="w-full"
+                    className="w-full border-purple-200 hover:bg-purple-50"
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Manage Subscription

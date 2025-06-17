@@ -1,882 +1,185 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from '@/components/ui/calendar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Download, AlertCircle, Loader2, Home, ArrowLeft, Plus, Calendar as CalendarIcon, Wand2, Crown, Upload, Image, Video, Clock, Edit, Save, X, List } from 'lucide-react';
+import { 
+  Sparkles, 
+  Wand2, 
+  Calendar, 
+  Clock, 
+  Image as ImageIcon, 
+  Copy, 
+  Download,
+  Home,
+  ArrowLeft,
+  Crown,
+  Lock
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { format, addDays, startOfDay, isSameDay } from 'date-fns';
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
-import { cn } from '@/lib/utils';
 import ContentVariations from './ContentVariations';
+import UpgradePrompt from './starter/UpgradePrompt';
 
-interface GeneratedContent {
+interface GeneratedPost {
   caption: string;
   hashtags: string[];
-  image?: string;
-  imagePrompt?: string;
-}
-
-interface ContentVariation {
-  caption: string;
-  hashtags: string[];
-  variation: string;
-}
-
-interface PostData {
-  id?: string;
-  industry: string;
-  goal: string;
-  nicheInfo: string;
-  scheduledDate?: string;
-  scheduledTime?: string;
-  generatedContent?: GeneratedContent;
-  created_at?: string;
-  mediaFile?: File;
-  mediaUrl?: string;
+  imageUrl?: string;
+  variations?: Array<{
+    caption: string;
+    hashtags: string[];
+    style: string;
+  }>;
 }
 
 const ContentGenerator = () => {
   const { user } = useAuth();
-  const { subscribed, subscriptionTier } = useSubscription();
+  const { subscribed, subscriptionTier, createCheckout } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Check if user has Pro plan
+  const isProUser = subscribed && subscriptionTier === 'Pro';
+  const isStarterUser = subscribed && subscriptionTier === 'Starter';
+
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
-  const [nicheInfo, setNicheInfo] = useState('');
-  const [scheduledDate, setScheduledDate] = useState<Date>();
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState<GeneratedContent | null>(null);
-  const [contentVariations, setContentVariations] = useState<ContentVariation[]>([]);
-  const [monthlyPosts, setMonthlyPosts] = useState(0);
-  const [posts, setPosts] = useState<PostData[]>([]);
-  const [generateWithImages, setGenerateWithImages] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [editingPost, setEditingPost] = useState<PostData | null>(null);
-  const [editForm, setEditForm] = useState({
-    caption: '',
-    hashtags: '',
-    scheduledDate: undefined as Date | undefined,
-    scheduledTime: '',
-    mediaFile: null as File | null
-  });
-  const [isUpdating, setIsUpdating] = useState(false);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
-  const [canCreatePosts, setCanCreatePosts] = useState(false);
-
-  // Determine plan limits and features
-  const isStarterOrHigher = subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
-  const isProOrHigher = subscribed && (subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
-  const monthlyLimit = isStarterOrHigher ? (isProOrHigher ? 100 : 10) : 1;
-  const planName = isProOrHigher ? 'Pro Plan' : isStarterOrHigher ? 'Starter Plan' : 'Free Plan';
-
-  // Get user's timezone
-  const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-
-  // Calculate available date range for scheduling
-  const getAvailableDateRange = () => {
-    if (!subscriptionStartDate || !isStarterOrHigher) {
-      return { startDate: new Date(), endDate: new Date() };
-    }
-
-    const startDate = new Date(subscriptionStartDate);
-    const endDate = addDays(startDate, 30);
-    const today = new Date();
-    
-    return {
-      startDate: startDate > today ? startDate : today,
-      endDate: endDate
-    };
-  };
-
-  const { startDate: availableStartDate, endDate: availableEndDate } = getAvailableDateRange();
-
-  const isDateDisabled = (date: Date) => {
-    if (!isStarterOrHigher || !subscriptionStartDate) {
-      return date < new Date(); // Default behavior for non-subscribers
-    }
-
-    const today = startOfDay(new Date());
-    const checkDate = startOfDay(date);
-    const subscriptionStart = startOfDay(new Date(subscriptionStartDate));
-    const subscriptionEnd = startOfDay(addDays(subscriptionStart, 30));
-
-    // Disable dates before today, before subscription start, or after 30 days from subscription start
-    return checkDate < today || checkDate < subscriptionStart || checkDate >= subscriptionEnd;
-  };
+  const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
+  const [scheduledTime, setScheduledTime] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadData = async () => {
-      if (!user) return;
-      
-      try {
-        // Check subscription status and get subscription details for Starter+ users
-        if (isStarterOrHigher) {
-          const { data: subscriberData, error: subscriberError } = await supabase
-            .from('subscribers')
-            .select('*')
-            .eq('user_id', user.id)
-            .single();
+    // Load any existing scheduled content or settings from local storage or database
+  }, []);
 
-          if (subscriberError && subscriberError.code !== 'PGRST116') {
-            throw subscriberError;
-          }
-
-          if (subscriberData && subscriberData.subscribed && 
-              (subscriberData.subscription_tier === 'Starter' || subscriberData.subscription_tier === 'Premium' || subscriberData.subscription_tier === 'Enterprise')) {
-            
-            // Get subscription start date
-            const subscriptionStart = subscriberData.created_at;
-            setSubscriptionStartDate(subscriptionStart);
-
-            // Calculate if we're within 30 days of subscription start
-            const startDate = new Date(subscriptionStart);
-            const currentDate = new Date();
-            const daysDifference = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-            
-            const isWithinCreationWindow = daysDifference <= 30;
-            setCanCreatePosts(isWithinCreationWindow);
-          }
-        }
-
-        // Get monthly post count
-        const { data: countData, error: countError } = await supabase.rpc('get_monthly_post_count', {
-          user_uuid: user.id
-        });
-        
-        if (countError) throw countError;
-        setMonthlyPosts(countData || 0);
-
-        // Load existing posts for Starter+ users
-        if (isStarterOrHigher) {
-          const { data: postsData, error: postsError } = await supabase
-            .from('posts')
-            .select('*')
-            .eq('user_id', user.id)
-            .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString())
-            .order('created_at', { ascending: false });
-
-          if (postsError) throw postsError;
-
-          const formattedPosts: PostData[] = (postsData || []).map(post => ({
-            id: post.id,
-            industry: post.industry,
-            goal: post.goal,
-            nicheInfo: post.niche_info || '',
-            scheduledDate: post.scheduled_date,
-            scheduledTime: post.scheduled_time,
-            generatedContent: {
-              caption: post.generated_caption,
-              hashtags: post.generated_hashtags
-            },
-            created_at: post.created_at,
-            mediaUrl: post.media_url
-          }));
-
-          setPosts(formattedPosts);
-        }
-      } catch (error) {
-        console.error('Error loading data:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load your data",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadData();
-  }, [user, isStarterOrHigher, toast]);
-
-  const validateInput = (text: string, maxLength: number) => {
-    return text.trim().length > 0 && text.length <= maxLength;
+  const handleIndustryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setIndustry(e.target.value);
   };
 
-  const sanitizeInput = (text: string) => {
-    return text.trim().replace(/[<>]/g, '');
+  const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setGoal(e.target.value);
   };
 
-  const handleMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/mov', 'video/avi'];
-      if (!validTypes.includes(file.type)) {
-        toast({
-          title: "Invalid File Type",
-          description: "Please upload an image (JPEG, PNG, GIF) or video (MP4, MOV, AVI)",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
-          description: "Please upload a file smaller than 10MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setMediaFile(file);
-    }
-  };
-
-  const handleEditMediaUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      // Validate file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'video/mp4', 'video/mov', 'video/avi'];
-      if (!validTypes.includes(file.type)) {
-        toast({
-          title: "Invalid File Type",
-          description: "Please upload an image (JPEG, PNG, GIF) or video (MP4, MOV, AVI)",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
-        toast({
-          title: "File Too Large",
-          description: "Please upload a file smaller than 10MB",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      setEditForm(prev => ({ ...prev, mediaFile: file }));
-    }
-  };
-
-  const handleEditPost = (post: PostData) => {
-    setEditingPost(post);
-    setEditForm({
-      caption: post.generatedContent?.caption || '',
-      hashtags: post.generatedContent?.hashtags.join(' ') || '',
-      scheduledDate: post.scheduledDate ? new Date(post.scheduledDate) : undefined,
-      scheduledTime: post.scheduledTime || '',
-      mediaFile: null
-    });
-  };
-
-  const handleUpdatePost = async () => {
-    if (!editingPost || !user) return;
-
-    setIsUpdating(true);
-
-    try {
-      // Upload new media file if present
-      let mediaUrl = editingPost.mediaUrl;
-      if (editForm.mediaFile) {
-        const fileName = `${user.id}/${Date.now()}-${editForm.mediaFile.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('media')
-          .upload(fileName, editForm.mediaFile);
-
-        if (uploadError) {
-          console.error('Media upload error:', uploadError);
-        } else {
-          const { data: urlData } = supabase.storage
-            .from('media')
-            .getPublicUrl(fileName);
-          mediaUrl = urlData.publicUrl;
-        }
-      }
-
-      const hashtags = editForm.hashtags.split(' ').filter(tag => tag.trim().length > 0);
-
-      // Convert scheduled time to UTC for storage
-      let scheduledDateUTC = null;
-      let scheduledTimeUTC = null;
-      
-      if (editForm.scheduledDate && editForm.scheduledTime) {
-        const localDateTime = new Date(`${format(editForm.scheduledDate, 'yyyy-MM-dd')}T${editForm.scheduledTime}`);
-        const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
-        scheduledDateUTC = format(utcDateTime, 'yyyy-MM-dd');
-        scheduledTimeUTC = format(utcDateTime, 'HH:mm:ss');
-      } else if (editForm.scheduledDate) {
-        scheduledDateUTC = format(editForm.scheduledDate, 'yyyy-MM-dd');
-      }
-
-      const { error: updateError } = await supabase
-        .from('posts')
-        .update({
-          generated_caption: editForm.caption,
-          generated_hashtags: hashtags,
-          scheduled_date: scheduledDateUTC,
-          scheduled_time: scheduledTimeUTC,
-          media_url: mediaUrl
-        })
-        .eq('id', editingPost.id);
-
-      if (updateError) throw updateError;
-
-      // Update local state
-      setPosts(prev => prev.map(post => 
-        post.id === editingPost.id 
-          ? {
-              ...post,
-              generatedContent: {
-                caption: editForm.caption,
-                hashtags: hashtags
-              },
-              scheduledDate: scheduledDateUTC || undefined,
-              scheduledTime: scheduledTimeUTC || undefined,
-              mediaUrl: mediaUrl
-            }
-          : post
-      ));
-
-      setEditingPost(null);
-      toast({
-        title: "Post Updated!",
-        description: "Your post has been successfully updated",
-      });
-
-    } catch (error) {
-      console.error('Error updating post:', error);
-      toast({
-        title: "Update Failed",
-        description: "Failed to update post. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdating(false);
-    }
-  };
-
-  const generateImageFromContent = async (caption: string, industry: string): Promise<{ image: string; imagePrompt: string } | null> => {
-    try {
-      setIsGeneratingImage(true);
-      
-      // Create a prompt for image generation based on the content
-      const imagePrompt = `Professional ${industry} social media post image. ${caption.substring(0, 200)}. High quality, modern, engaging visual for social media. Clean composition, good lighting, professional style.`;
-      
-      const { data, error } = await supabase.functions.invoke('generate-image', {
-        body: {
-          prompt: imagePrompt,
-          size: '1024x1024',
-          quality: 'standard',
-          style: 'vivid'
-        }
-      });
-
-      if (error) throw error;
-
-      return {
-        image: data.image,
-        imagePrompt: data.revisedPrompt || imagePrompt
-      };
-    } catch (error) {
-      console.error('Error generating image:', error);
-      toast({
-        title: "Image Generation Failed",
-        description: "Failed to generate AI image. Content saved without image.",
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setIsGeneratingImage(false);
-    }
-  };
-
-  const handleSelectVariation = (variation: ContentVariation) => {
-    setGeneratedContent({
-      caption: variation.caption,
-      hashtags: variation.hashtags
-    });
-    setContentVariations([]);
-    
-    toast({
-      title: "Variation Selected",
-      description: "Content variation has been selected for use",
-    });
-  };
-
-  const handleDownloadVariation = (variation: ContentVariation) => {
-    const contentText = `Caption:\n${variation.caption}\n\nHashtags:\n${variation.hashtags.map(tag => `#${tag}`).join(' ')}`;
-    
-    const blob = new Blob([contentText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${variation.variation.toLowerCase().replace(/\s+/g, '-')}-content.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Downloaded!",
-      description: `${variation.variation} content has been downloaded`,
-    });
-  };
-
-  const handleGenerateSingle = async () => {
+  const handleGenerate = async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
         description: "Please log in to generate content",
         variant: "destructive",
       });
+      navigate('/login');
       return;
     }
 
-    if (isStarterOrHigher && !canCreatePosts) {
+    if (!industry || !goal) {
       toast({
-        title: "Subscription Required",
-        description: "Post creation is only available for 30 days from your subscription start date.",
+        title: "Missing Information",
+        description: "Please select an industry and enter a goal",
         variant: "destructive",
       });
       return;
     }
 
-    if (monthlyPosts >= monthlyLimit) {
-      toast({
-        title: "Monthly Limit Reached",
-        description: `You've reached your ${planName.toLowerCase()} limit of ${monthlyLimit} post${monthlyLimit > 1 ? 's' : ''} per month.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!validateInput(industry, 100) || !validateInput(goal, 200)) {
-      toast({
-        title: "Invalid Input",
-        description: "Please fill in the required fields with valid data",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsGenerating(true);
-    setContentVariations([]); // Clear previous variations
-
+    setLoading(true);
     try {
-      const sanitizedIndustry = sanitizeInput(industry);
-      const sanitizedGoal = sanitizeInput(goal);
-      const sanitizedNicheInfo = sanitizeInput(nicheInfo);
-
-      // For Pro users, generate variations by default
-      const shouldGenerateVariations = isProOrHigher;
-
+      // Call Supabase function to generate content
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: {
-          industry: sanitizedIndustry,
-          goal: sanitizedGoal,
-          nicheInfo: sanitizedNicheInfo,
-          generateVariations: shouldGenerateVariations,
-          variationCount: shouldGenerateVariations ? 3 : undefined
+          industry: industry,
+          goal: goal,
+          userId: user.id
         }
       });
 
-      if (error) throw error;
-
-      if (shouldGenerateVariations && data.variations) {
-        // Pro plan - show variations
-        setContentVariations(data.variations);
-        
-        toast({
-          title: "Variations Generated!",
-          description: `${data.variations.length} content variations ready to choose from`,
-        });
-      } else {
-        // Single content generation
-        const newGeneratedContent: GeneratedContent = {
-          caption: data.caption,
-          hashtags: data.hashtags
-        };
-
-        // Generate AI image if requested
-        if (generateWithImages) {
-          const imageResult = await generateImageFromContent(newGeneratedContent.caption, sanitizedIndustry);
-          if (imageResult) {
-            newGeneratedContent.image = imageResult.image;
-            newGeneratedContent.imagePrompt = imageResult.imagePrompt;
-          }
-        }
-
-        // Upload media file if present
-        let mediaUrl = null;
-        if (mediaFile) {
-          const fileName = `${user.id}/${Date.now()}-${mediaFile.name}`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('media')
-            .upload(fileName, mediaFile);
-
-          if (uploadError) {
-            console.error('Media upload error:', uploadError);
-          } else {
-            const { data: urlData } = supabase.storage
-              .from('media')
-              .getPublicUrl(fileName);
-            mediaUrl = urlData.publicUrl;
-          }
-        }
-
-        // If we have an AI generated image, upload it to storage
-        if (newGeneratedContent.image && !mediaUrl) {
-          try {
-            // Convert base64 to blob
-            const response = await fetch(newGeneratedContent.image);
-            const blob = await response.blob();
-            
-            const fileName = `${user.id}/${Date.now()}-ai-generated.png`;
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('media')
-              .upload(fileName, blob);
-
-            if (!uploadError) {
-              const { data: urlData } = supabase.storage
-                .from('media')
-                .getPublicUrl(fileName);
-              mediaUrl = urlData.publicUrl;
-            }
-          } catch (imageUploadError) {
-            console.error('Error uploading AI generated image:', imageUploadError);
-          }
-        }
-
-        // Convert scheduled time to UTC for storage
-        let scheduledDateUTC = null;
-        let scheduledTimeUTC = null;
-        
-        if (scheduledDate && scheduledTime) {
-          const localDateTime = new Date(`${format(scheduledDate, 'yyyy-MM-dd')}T${scheduledTime}`);
-          const utcDateTime = new Date(localDateTime.getTime() - localDateTime.getTimezoneOffset() * 60000);
-          scheduledDateUTC = format(utcDateTime, 'yyyy-MM-dd');
-          scheduledTimeUTC = format(utcDateTime, 'HH:mm:ss');
-        } else if (scheduledDate) {
-          scheduledDateUTC = format(scheduledDate, 'yyyy-MM-dd');
-        }
-
-        const { error: dbError } = await supabase
-          .from('posts')
-          .insert({
-            user_id: user.id,
-            industry: sanitizedIndustry,
-            goal: sanitizedGoal,
-            niche_info: sanitizedNicheInfo || null,
-            generated_caption: newGeneratedContent.caption,
-            generated_hashtags: newGeneratedContent.hashtags,
-            scheduled_date: scheduledDateUTC,
-            scheduled_time: scheduledTimeUTC,
-            media_url: mediaUrl
-          });
-
-        if (dbError) throw dbError;
-
-        if (isStarterOrHigher) {
-          const newPost: PostData = {
-            industry: sanitizedIndustry,
-            goal: sanitizedGoal,
-            nicheInfo: sanitizedNicheInfo,
-            scheduledDate: scheduledDateUTC || undefined,
-            scheduledTime: scheduledTimeUTC || undefined,
-            generatedContent: newGeneratedContent,
-            created_at: new Date().toISOString(),
-            mediaUrl
-          };
-          setPosts(prev => [newPost, ...prev]);
-          setIndustry('');
-          setGoal('');
-          setNicheInfo('');
-          setScheduledDate(undefined);
-          setScheduledTime('');
-          setMediaFile(null);
-        } else {
-          setGeneratedContent(newGeneratedContent);
-        }
-
-        setMonthlyPosts(prev => prev + 1);
-
-        toast({
-          title: "Content Generated!",
-          description: isStarterOrHigher ? "Post added to your collection" : "Your content is ready to download",
-        });
+      if (error) {
+        throw error;
       }
 
-    } catch (error) {
-      console.error('Error generating content:', error);
+      // Parse the generated caption and hashtags from the response
+      const generatedCaption = data.generated_caption;
+      const generatedHashtags = data.generated_hashtags;
+
+      // Update the state with the generated content
+      setGeneratedPost({
+        caption: generatedCaption,
+        hashtags: generatedHashtags
+      });
+
       toast({
-        title: "Generation Failed",
+        title: "Content Generated",
+        description: "Your social media content has been generated",
+      });
+    } catch (error: any) {
+      console.error("Error generating content:", error);
+      toast({
+        title: "Error",
         description: "Failed to generate content. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      setLoading(false);
     }
   };
 
-  const handleGenerateAll = async () => {
-    if (!isStarterOrHigher) return;
-
-    if (!canCreatePosts) {
+  const handleCopyCaption = () => {
+    if (generatedPost) {
+      navigator.clipboard.writeText(generatedPost.caption);
       toast({
-        title: "Subscription Required",
-        description: "Post creation is only available for 30 days from your subscription start date.",
-        variant: "destructive",
+        title: "Caption Copied",
+        description: "The generated caption has been copied to your clipboard",
       });
-      return;
-    }
-
-    const remainingPosts = monthlyLimit - monthlyPosts;
-    if (remainingPosts <= 0) {
-      toast({
-        title: "Monthly Limit Reached",
-        description: "You've already used all your posts for this month",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!validateInput(industry, 100) || !validateInput(goal, 200)) {
-      toast({
-        title: "Invalid Input",
-        description: "Please fill in the required fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsGenerating(true);
-
-    try {
-      const variations = [
-        "Promote brand awareness",
-        "Drive engagement", 
-        "Showcase product features",
-        "Share industry insights",
-        "Build community",
-        "Educate audience",
-        "Announce updates",
-        "Share behind the scenes",
-        "Celebrate milestones",
-        "Gather feedback"
-      ];
-
-      for (let i = 0; i < Math.min(remainingPosts, 10); i++) {
-        const currentGoal = i === 0 ? goal.trim() : `${goal.trim()} - ${variations[i % variations.length]}`;
-        
-        const { data, error } = await supabase.functions.invoke('generate-content', {
-          body: {
-            industry: industry.trim(),
-            goal: currentGoal,
-            nicheInfo: nicheInfo.trim()
-          }
-        });
-
-        if (error) throw error;
-
-        const generatedContent: GeneratedContent = {
-          caption: data.caption,
-          hashtags: data.hashtags
-        };
-
-        // Generate AI image if requested
-        if (generateWithImages) {
-          const imageResult = await generateImageFromContent(generatedContent.caption, industry.trim());
-          if (imageResult) {
-            generatedContent.image = imageResult.image;
-            generatedContent.imagePrompt = imageResult.imagePrompt;
-          }
-        }
-
-        const { error: dbError } = await supabase
-          .from('posts')
-          .insert({
-            user_id: user.id,
-            industry: industry.trim(),
-            goal: currentGoal,
-            niche_info: nicheInfo.trim() || null,
-            generated_caption: generatedContent.caption,
-            generated_hashtags: generatedContent.hashtags
-          });
-
-        if (dbError) throw dbError;
-
-        const newPost: PostData = {
-          industry: industry.trim(),
-          goal: currentGoal,
-          nicheInfo: nicheInfo.trim(),
-          generatedContent,
-          created_at: new Date().toISOString()
-        };
-
-        setPosts(prev => [newPost, ...prev]);
-        setMonthlyPosts(prev => prev + 1);
-      }
-
-      setIndustry('');
-      setGoal('');
-      setNicheInfo('');
-
-      toast({
-        title: "Batch Generation Complete!",
-        description: `Generated ${Math.min(remainingPosts, 10)} posts successfully`,
-      });
-
-    } catch (error) {
-      console.error('Error generating content:', error);
-      toast({
-        title: "Generation Failed",
-        description: "Failed to generate content. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsGenerating(false);
     }
   };
 
-  const handleDownload = (content?: GeneratedContent) => {
-    const contentToDownload = content || generatedContent;
-    if (!contentToDownload) return;
-
-    const contentText = `Caption:\n${contentToDownload.caption}\n\nHashtags:\n${contentToDownload.hashtags.join(' ')}`;
-    
-    const blob = new Blob([contentText], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `social-media-content-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Downloaded!",
-      description: "Your content has been downloaded successfully",
-    });
+  const handleDownloadCaption = () => {
+    if (generatedPost) {
+      const element = document.createElement("a");
+      const file = new Blob([generatedPost.caption], { type: 'text/plain' });
+      element.href = URL.createObjectURL(file);
+      element.download = "generated_caption.txt";
+      document.body.appendChild(element); // Required for this to work in FireFox
+      element.click();
+    }
   };
 
-  const handleGoHome = () => navigate('/');
-  const handleGoBack = () => navigate('/dashboard');
-
-  const renderCalendarView = () => {
-    // Create a 30-day grid starting from today
-    const startDate = new Date();
-    const days = Array.from({ length: 30 }, (_, i) => addDays(startDate, i));
-
-    return (
-      <div className="grid grid-cols-7 gap-2 p-4">
-        {/* Calendar header */}
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-          <div key={day} className="text-center text-sm font-medium text-gray-500 p-2">
-            {day}
-          </div>
-        ))}
-        
-        {/* Calendar days */}
-        {days.map((day, index) => {
-          const dayPosts = posts.filter(post => {
-            if (!post.scheduledDate) return false;
-            // Convert UTC stored date back to local time for comparison
-            const storedDate = new Date(post.scheduledDate);
-            return isSameDay(storedDate, day);
-          });
-          
-          return (
-            <div 
-              key={index} 
-              className={cn(
-                "min-h-24 p-2 border rounded-lg",
-                dayPosts.length > 0 ? "bg-blue-50 border-blue-200" : "bg-gray-50"
-              )}
-            >
-              <div className="text-sm font-medium mb-1">
-                {format(day, 'd')}
-              </div>
-              <div className="space-y-1">
-                {dayPosts.map((post, postIndex) => (
-                  <div 
-                    key={postIndex}
-                    className="text-xs bg-blue-100 rounded px-1 py-0.5 truncate cursor-pointer hover:bg-blue-200 transition-colors"
-                    title={post.generatedContent?.caption || ''}
-                    onClick={() => handleEditPost(post)}
-                  >
-                    {post.scheduledTime && (
-                      <span className="font-medium">
-                        {/* Convert UTC time back to local time for display */}
-                        {post.scheduledDate && post.scheduledTime ? 
-                          formatInTimeZone(
-                            new Date(`${post.scheduledDate}T${post.scheduledTime}Z`), 
-                            userTimezone, 
-                            'HH:mm'
-                          ) : 
-                          post.scheduledTime
-                        }
-                      </span>
-                    )}
-                    <div className="truncate">
-                      {post.generatedContent?.caption?.substring(0, 20)}...
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    );
+  const handleGoHome = () => {
+    navigate('/');
   };
 
-  const renderImageGenerationCheckbox = () => (
-    <div className="flex items-center space-x-2">
-      <input
-        type="checkbox"
-        id="generate-images"
-        checked={generateWithImages}
-        onChange={(e) => setGenerateWithImages(e.target.checked)}
-        className="rounded border-gray-300"
-      />
-      <Label htmlFor="generate-images" className="text-sm">
-        Generate AI images with DALL-E 3
-      </Label>
-      {isGeneratingImage && (
-        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-      )}
-    </div>
-  );
+  const handleGoBack = () => {
+    navigate('/dashboard');
+  };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  const handleUpgradeFromContent = () => {
+    if (isStarterUser) {
+      navigate('/upgrade-pro');
+    } else {
+      createCheckout();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">AI Content Generator</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Content Generator</h1>
             <p className="text-muted-foreground">
-              {isProOrHigher ? 'Generate up to 100 posts per month with advanced AI features' : 
-               isStarterOrHigher ? 'Generate up to 10 posts per month with advanced features' : 
-               'Generate 1 post per month - upgrade for more!'}
+              Create engaging social media content with AI
+              {isProUser && (
+                <Badge className="ml-2 bg-purple-100 text-purple-800">
+                  <Crown className="h-3 w-3 mr-1 text-purple-600" />
+                  Pro Features Active
+                </Badge>
+              )}
             </p>
           </div>
           <div className="flex items-center space-x-3">
@@ -888,540 +191,197 @@ const ContentGenerator = () => {
               <Home className="h-4 w-4" />
               <span>Home</span>
             </Button>
+            {!isProUser && (
+              <Button 
+                onClick={handleUpgradeFromContent}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                <Crown className="h-4 w-4 mr-2" />
+                {isStarterUser ? 'Upgrade to Pro' : 'Get Pro'}
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Usage Indicator */}
-        <Card className={`mb-6 ${isProOrHigher ? 'border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50' : 
-                                    isStarterOrHigher ? 'border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50' : 
-                                    'border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50'}`}>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              {isProOrHigher ? (
-                <Crown className="h-5 w-5 text-purple-600 mr-2" />
-              ) : isStarterOrHigher ? (
-                <Crown className="h-5 w-5 text-blue-600 mr-2" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-orange-600 mr-2" />
-              )}
-              {planName} Usage
-            </CardTitle>
-            <CardDescription>
-              You've used {monthlyPosts} of {monthlyLimit} post{monthlyLimit > 1 ? 's' : ''} this month
-              {isProOrHigher && <span className="block text-purple-600 mt-1">✨ Content Variations enabled</span>}
-              {isStarterOrHigher && !canCreatePosts && (
-                <span className="block text-red-600 mt-1">
-                  Post creation period has expired (30 days from subscription start)
-                </span>
-              )}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-
-        {/* Content Variations for Pro users */}
-        {contentVariations.length > 0 && (
-          <div className="mb-6">
-            <ContentVariations
-              variations={contentVariations}
-              onSelectVariation={handleSelectVariation}
-              onDownloadVariation={handleDownloadVariation}
-            />
-          </div>
+        {/* Pro Features Showcase */}
+        {!isProUser && (
+          <Card className="mb-6 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-purple-900 mb-2">Unlock Pro AI Features</h3>
+                  <ul className="text-purple-700 space-y-1 text-sm">
+                    <li>• Generate 3-5 content variations per post</li>
+                    <li>• 100 posts per month (vs 10 for Starter)</li>
+                    <li>• Advanced AI optimization</li>
+                    <li>• Priority support & faster generation</li>
+                  </ul>
+                </div>
+                <Button 
+                  onClick={handleUpgradeFromContent}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  Go Pro
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Input Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Plus className="h-5 w-5 text-purple-600 mr-2" />
-                Create Content
-                {isProOrHigher && <Badge className="ml-2 bg-purple-600">Pro Features</Badge>}
-              </CardTitle>
-              <CardDescription>
-                {isProOrHigher ? 'Generate multiple content variations with advanced AI features' :
-                 isStarterOrHigher ? 'Generate single posts or batch create content with scheduling' : 
-                 'Generate your monthly post'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        {/* Content Generation Form */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Sparkles className={`h-6 w-6 ${isProUser ? 'text-purple-500' : 'text-blue-500'}`} />
+              <span>Generate Content</span>
+            </CardTitle>
+            <CardDescription>
+              Tell us about your content goals and we'll create engaging posts for you
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="industry">Industry *</Label>
-                <Input
-                  id="industry"
-                  placeholder="e.g., Technology, Fashion, Food..."
-                  value={industry}
-                  onChange={(e) => setIndustry(e.target.value)}
-                  maxLength={100}
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {industry.length}/100 characters
-                </p>
+                <Label htmlFor="industry">Industry</Label>
+                <Select onValueChange={setIndustry}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select an industry" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Technology">Technology</SelectItem>
+                    <SelectItem value="Healthcare">Healthcare</SelectItem>
+                    <SelectItem value="Finance">Finance</SelectItem>
+                    <SelectItem value="Education">Education</SelectItem>
+                    <SelectItem value="Real Estate">Real Estate</SelectItem>
+                    <SelectItem value="Marketing">Marketing</SelectItem>
+                    <SelectItem value="E-commerce">E-commerce</SelectItem>
+                    <SelectItem value="Food & Beverage">Food &amp; Beverage</SelectItem>
+                    <SelectItem value="Travel & Tourism">Travel &amp; Tourism</SelectItem>
+                    <SelectItem value="Fashion">Fashion</SelectItem>
+                    <SelectItem value="Fitness">Fitness</SelectItem>
+                    <SelectItem value="Arts & Entertainment">Arts &amp; Entertainment</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-
               <div>
-                <Label htmlFor="goal">Content Goal *</Label>
-                <Textarea
-                  id="goal"
-                  placeholder="e.g., Promote new product launch, increase brand awareness..."
+                <Label htmlFor="goal">Goal</Label>
+                <Input 
+                  type="text" 
+                  id="goal" 
+                  placeholder="e.g., Increase brand awareness" 
                   value={goal}
-                  onChange={(e) => setGoal(e.target.value)}
-                  maxLength={200}
-                  rows={3}
+                  onChange={handleGoalChange}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {goal.length}/200 characters
-                </p>
               </div>
+            </div>
 
-              <div>
-                <Label htmlFor="niche">Niche Information (Optional)</Label>
-                <Textarea
-                  id="niche"
-                  placeholder="Any specific details about your target audience or niche..."
-                  value={nicheInfo}
-                  onChange={(e) => setNicheInfo(e.target.value)}
-                  maxLength={300}
-                  rows={2}
+            <div className="flex space-x-4">
+              <Button 
+                onClick={handleGenerate} 
+                disabled={loading || !industry || !goal}
+                className={`flex-1 ${isProUser ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}`}
+              >
+                {loading ? (
+                  <>
+                    <Wand2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className={`h-4 w-4 mr-2 ${isProUser ? 'text-white' : ''}`} />
+                    Generate Content
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {/* Pro Feature: Content Variations */}
+            {generatedPost && isProUser && (
+              <div className="pt-4 border-t">
+                <ContentVariations 
+                  originalPost={generatedPost}
+                  industry={industry}
+                  goal={goal}
+                  onVariationSelect={(variation) => {
+                    setGeneratedPost({
+                      ...generatedPost,
+                      caption: variation.caption,
+                      hashtags: variation.hashtags
+                    });
+                  }}
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {nicheInfo.length}/300 characters
-                </p>
               </div>
+            )}
 
-              {/* Media Upload */}
-              <div>
-                <Label htmlFor="media">Upload Image or Video (Optional)</Label>
-                <div className="mt-2">
-                  <Input
-                    id="media"
-                    type="file"
-                    accept="image/*,video/*"
-                    onChange={handleMediaUpload}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => document.getElementById('media')?.click()}
-                    className="w-full"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {mediaFile ? mediaFile.name : 'Choose Image or Video'}
-                  </Button>
-                  {mediaFile && (
-                    <div className="mt-2 flex items-center space-x-2">
-                      {mediaFile.type.startsWith('image/') ? (
-                        <Image className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Video className="h-4 w-4 text-blue-600" />
-                      )}
-                      <span className="text-sm text-gray-600">{mediaFile.name}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => setMediaFile(null)}
-                        className="h-6 w-6 p-0"
-                      >
-                        ×
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Scheduling Section */}
-              {isStarterOrHigher && (
-                <div className="space-y-3">
-                  <Label className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2" />
-                    Schedule Post (Optional)
-                  </Label>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label htmlFor="date" className="text-sm">Date</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !scheduledDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {scheduledDate ? format(scheduledDate, "PPP") : "Pick a date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={scheduledDate}
-                            onSelect={setScheduledDate}
-                            disabled={isDateDisabled}
-                            initialFocus
-                            className="pointer-events-auto"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                      {isStarterOrHigher && subscriptionStartDate && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Available until {format(addDays(new Date(subscriptionStartDate), 30), "PPP")}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <Label htmlFor="time" className="text-sm">Time</Label>
-                      <Input
-                        id="time"
-                        type="time"
-                        value={scheduledTime}
-                        onChange={(e) => setScheduledTime(e.target.value)}
-                      />
+            {/* Locked variations for non-Pro users */}
+            {generatedPost && !isProUser && (
+              <div className="pt-4 border-t">
+                <Card className="relative overflow-hidden border-purple-200">
+                  <div className="absolute inset-0 bg-gray-50/80 z-10 flex items-center justify-center">
+                    <div className="text-center">
+                      <Lock className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+                      <p className="text-sm text-purple-600 font-medium">Pro Feature</p>
+                      <p className="text-xs text-purple-500">Generate multiple content variations</p>
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* Updated AI image generation checkbox */}
-              {renderImageGenerationCheckbox()}
-
-              <div className="space-y-2">
-                <Button
-                  onClick={handleGenerateSingle}
-                  disabled={isGenerating || isGeneratingImage || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim() || (isStarterOrHigher && !canCreatePosts)}
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                >
-                  {isGenerating || isGeneratingImage ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      {isGeneratingImage ? 'Generating Image...' : 'Generating...'}
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      {isProOrHigher ? 'Generate Variations' : isStarterOrHigher ? 'Generate Single Post' : 'Generate Content'}
-                    </>
-                  )}
-                </Button>
-
-                {isStarterOrHigher && (
-                  <Button
-                    onClick={handleGenerateAll}
-                    disabled={isGenerating || isGeneratingImage || monthlyPosts >= monthlyLimit || !industry.trim() || !goal.trim() || !canCreatePosts}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    <Wand2 className="h-4 w-4 mr-2" />
-                    Generate Remaining Posts ({monthlyLimit - monthlyPosts} left)
-                  </Button>
-                )}
+                  <CardHeader>
+                    <CardTitle className="text-lg text-purple-700">Content Variations</CardTitle>
+                    <CardDescription>Generate 3-5 different versions of your content</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3 opacity-30">
+                      <div className="p-3 border rounded bg-gray-50">
+                        <p className="text-sm font-medium">Professional Style</p>
+                        <p className="text-xs text-muted-foreground">Formal, business-focused tone</p>
+                      </div>
+                      <div className="p-3 border rounded bg-gray-50">
+                        <p className="text-sm font-medium">Casual & Fun</p>
+                        <p className="text-xs text-muted-foreground">Relaxed, engaging tone</p>
+                      </div>
+                      <div className="p-3 border rounded bg-gray-50">
+                        <p className="text-sm font-medium">Story-driven</p>
+                        <p className="text-xs text-muted-foreground">Narrative approach</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Generated Content Display */}
+        {/* Generated Content Display */}
+        {generatedPost && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                {isStarterOrHigher ? (
-                  <CalendarIcon className="h-5 w-5 text-green-600 mr-2" />
-                ) : (
-                  <Sparkles className="h-5 w-5 text-green-600 mr-2" />
-                )}
-                {isStarterOrHigher ? `Generated Posts (${posts.length})` : 'Generated Content'}
+              <CardTitle className="flex items-center space-x-2">
+                <Sparkles className={`h-5 w-5 ${isProUser ? 'text-purple-500' : 'text-green-500'}`} />
+                <span>Generated Content</span>
+                {isProUser && <Badge className="bg-purple-100 text-purple-800">Pro</Badge>}
               </CardTitle>
-              <CardDescription>
-                {isStarterOrHigher ? 'Your generated content ready for scheduling' : 'Your AI-generated caption and hashtags'}
-              </CardDescription>
             </CardHeader>
-            <CardContent>
-              {isStarterOrHigher ? (
-                posts.length > 0 ? (
-                  <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'list' | 'calendar')}>
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="list" className="flex items-center space-x-2">
-                        <List className="h-4 w-4" />
-                        <span>List View</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="calendar" className="flex items-center space-x-2">
-                        <CalendarIcon className="h-4 w-4" />
-                        <span>Calendar View</span>
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="list" className="mt-4">
-                      <div className="space-y-4 max-h-96 overflow-y-auto">
-                        {posts.map((post, index) => (
-                          <div key={index} className="p-3 bg-gray-50 rounded-lg border">
-                            <div className="flex justify-between items-start mb-2">
-                              <Badge variant="secondary" className="text-xs">
-                                {post.industry}
-                              </Badge>
-                              <div className="flex space-x-1">
-                                {post.scheduledDate && (
-                                  <Badge variant="outline" className="text-xs">
-                                    {post.scheduledDate} {post.scheduledTime && (
-                                      `at ${
-                                        post.scheduledDate && post.scheduledTime ? 
-                                          formatInTimeZone(
-                                            new Date(`${post.scheduledDate}T${post.scheduledTime}Z`), 
-                                            userTimezone, 
-                                            'HH:mm'
-                                          ) : 
-                                          post.scheduledTime
-                                      } (${userTimezone})`
-                                    )}
-                                  </Badge>
-                                )}
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => handleEditPost(post)}
-                                >
-                                  <Edit className="h-3 w-3" />
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="ghost" 
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => handleDownload(post.generatedContent)}
-                                >
-                                  <Download className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                            {(post.mediaUrl || post.generatedContent?.image) && (
-                              <div className="mb-2">
-                                {(post.mediaUrl || post.generatedContent?.image) && (
-                                  <img 
-                                    src={post.mediaUrl || post.generatedContent?.image} 
-                                    alt="Post media" 
-                                    className="w-full h-20 object-cover rounded" 
-                                  />
-                                )}
-                              </div>
-                            )}
-                            {post.generatedContent && (
-                              <>
-                                <p className="text-sm text-gray-700 mb-2 line-clamp-2">
-                                  {post.generatedContent.caption}
-                                </p>
-                                <p className="text-xs text-blue-600">
-                                  {post.generatedContent.hashtags.slice(0, 3).join(' ')}...
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="calendar" className="mt-4">
-                      <div className="max-h-96 overflow-y-auto">
-                        {renderCalendarView()}
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>No posts generated yet. Create your first post!</p>
-                  </div>
-                )
-              ) : (
-                generatedContent ? (
-                  <div className="space-y-4">
-                    {generatedContent.image && (
-                      <div>
-                        <Label>Generated Image</Label>
-                        <div className="mt-1">
-                          <img 
-                            src={generatedContent.image} 
-                            alt="AI Generated" 
-                            className="w-full rounded-lg border" 
-                          />
-                          {generatedContent.imagePrompt && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              Prompt: {generatedContent.imagePrompt}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    <div>
-                      <Label>Caption</Label>
-                      <div className="p-3 bg-gray-50 rounded-lg mt-1">
-                        <p className="text-sm">{generatedContent.caption}</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label>Hashtags</Label>
-                      <div className="p-3 bg-gray-50 rounded-lg mt-1">
-                        <p className="text-sm text-blue-600">
-                          {generatedContent.hashtags.join(' ')}
-                        </p>
-                      </div>
-                    </div>
-
-                    <Button
-                      onClick={() => handleDownload()}
-                      variant="outline"
-                      className="w-full"
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Content
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p>Fill out the form and click "Generate Content" to get started</p>
-                  </div>
-                )
-              )}
+            <CardContent className="space-y-6">
+              <Textarea 
+                value={generatedPost.caption}
+                readOnly
+                className="resize-none"
+              />
+              <div className="text-blue-500">
+                {generatedPost.hashtags.map(tag => `#${tag} `)}
+              </div>
+              <div className="flex space-x-4">
+                <Button variant="outline" className="flex-1" onClick={handleCopyCaption}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Caption
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={handleDownloadCaption}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        </div>
-        
-        {/* Edit Post Dialog */}
-        {editingPost && (
-          <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Edit Post</DialogTitle>
-                <DialogDescription>
-                  Make changes to your post content and scheduling (times shown in {userTimezone})
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="edit-caption">Caption</Label>
-                  <Textarea
-                    id="edit-caption"
-                    value={editForm.caption}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, caption: e.target.value }))}
-                    rows={4}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-hashtags">Hashtags</Label>
-                  <Input
-                    id="edit-hashtags"
-                    value={editForm.hashtags}
-                    onChange={(e) => setEditForm(prev => ({ ...prev, hashtags: e.target.value }))}
-                    placeholder="Enter hashtags separated by spaces"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label>Scheduled Date</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !editForm.scheduledDate && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {editForm.scheduledDate ? format(editForm.scheduledDate, "PPP") : "Pick a date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={editForm.scheduledDate}
-                          onSelect={(date) => setEditForm(prev => ({ ...prev, scheduledDate: date }))}
-                          disabled={isDateDisabled}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div>
-                    <Label htmlFor="edit-time">Scheduled Time ({userTimezone})</Label>
-                    <Input
-                      id="edit-time"
-                      type="time"
-                      value={editForm.scheduledTime}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, scheduledTime: e.target.value }))}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="edit-media">Update Media (Optional)</Label>
-                  <div className="mt-2">
-                    <Input
-                      id="edit-media"
-                      type="file"
-                      accept="image/*,video/*"
-                      onChange={handleEditMediaUpload}
-                      className="hidden"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('edit-media')?.click()}
-                      className="w-full"
-                    >
-                      <Upload className="h-4 w-4 mr-2" />
-                      {editForm.mediaFile ? editForm.mediaFile.name : 'Choose New Image or Video'}
-                    </Button>
-                    {editForm.mediaFile && (
-                      <div className="mt-2 flex items-center space-x-2">
-                        {editForm.mediaFile.type.startsWith('image/') ? (
-                          <Image className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <Video className="h-4 w-4 text-blue-600" />
-                        )}
-                        <span className="text-sm text-gray-600">{editForm.mediaFile.name}</span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditForm(prev => ({ ...prev, mediaFile: null }))}
-                          className="h-6 w-6 p-0"
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setEditingPost(null)}
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleUpdatePost}
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Updating...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Update Post
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
         )}
       </div>
     </div>

@@ -26,7 +26,7 @@ const Pricing = () => {
     }
 
     // Check if user already has Starter plan or higher
-    if (subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise')) {
+    if (subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Pro')) {
       navigate('/content-generator');
     } else {
       // User needs to upgrade - redirect to Stripe checkout
@@ -74,7 +74,7 @@ const Pricing = () => {
         "Email support",
         "Content calendar"
       ],
-      buttonText: subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise') 
+      buttonText: subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Pro') 
         ? "Access Features" 
         : "Start Starter Plan",
       popular: true,
@@ -97,7 +97,7 @@ const Pricing = () => {
         "Team collaboration",
         "Custom branding"
       ],
-      buttonText: subscribed && (subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise')
+      buttonText: subscribed && subscriptionTier === 'Pro'
         ? "Access Pro Features"
         : "Go Pro",
       popular: false,
@@ -128,6 +128,8 @@ const Pricing = () => {
               className={`relative hover:shadow-xl transition-all duration-300 hover:-translate-y-2 ${
                 plan.popular 
                   ? 'border-purple-200 shadow-lg ring-2 ring-purple-100' 
+                  : plan.name === 'Pro Plan'
+                  ? 'border-purple-200 hover:border-purple-300'
                   : 'border-gray-200 hover:border-purple-200'
               }`}
             >
@@ -154,9 +156,11 @@ const Pricing = () => {
                   className={`w-full mb-6 ${
                     plan.popular 
                       ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
+                      : plan.name === 'Pro Plan'
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white'
                       : ''
                   }`}
-                  variant={plan.buttonVariant}
+                  variant={plan.name === 'Pro Plan' ? 'default' : plan.buttonVariant}
                   size="lg"
                   onClick={plan.onClick}
                 >

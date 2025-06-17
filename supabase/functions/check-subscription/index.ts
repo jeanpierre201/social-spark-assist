@@ -75,8 +75,22 @@ serve(async (req) => {
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
-      subscriptionTier = "Starter";
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
+      
+      // Determine subscription tier from price
+      const priceId = subscription.items.data[0].price.id;
+      const price = await stripe.prices.retrieve(priceId);
+      const amount = price.unit_amount || 0;
+      
+      // €12 = 1200 cents for Starter, €25 = 2500 cents for Pro
+      if (amount >= 2500) {
+        subscriptionTier = "Pro";
+      } else if (amount >= 1200) {
+        subscriptionTier = "Starter";
+      } else {
+        subscriptionTier = "Basic";
+      }
+      
+      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, tier: subscriptionTier, amount });
     } else {
       logStep("No active subscription found");
     }
