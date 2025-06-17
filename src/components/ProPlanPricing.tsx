@@ -1,0 +1,145 @@
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Check, Crown, Settings, Home, ArrowLeft, Sparkles, Zap, BarChart3, Users } from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+
+const ProPlanPricing = () => {
+  const { user } = useAuth();
+  const { subscribed, subscriptionTier, subscriptionEnd, openCustomerPortal, loading } = useSubscription();
+  const navigate = useNavigate();
+
+  const features = [
+    { icon: Sparkles, text: "100 posts per month" },
+    { icon: Zap, text: "Multiple content variations (3-5 versions per post)" },
+    { icon: BarChart3, text: "Advanced analytics & insights" },
+    { icon: Users, text: "Team collaboration tools" },
+    { icon: Crown, text: "Priority support" },
+    { icon: Check, text: "Auto-posting to all platforms" },
+    { icon: Check, text: "Custom branding options" },
+    { icon: Check, text: "Advanced AI optimization" }
+  ];
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const handleUpgrade = () => {
+    // For now, show coming soon message
+    // Later this will integrate with Stripe for Pro plan
+    console.log('Pro plan upgrade - Coming soon!');
+  };
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  const handleGoBack = () => {
+    navigate('/dashboard');
+  };
+
+  const isProUser = subscribed && (subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise');
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Pro Plan</h1>
+            <p className="text-muted-foreground">Unlock advanced AI features and unlimited possibilities</p>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Button variant="outline" onClick={handleGoBack} className="flex items-center space-x-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span>Dashboard</span>
+            </Button>
+            <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
+              <Home className="h-4 w-4" />
+              <span>Home</span>
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <Card className={`w-full max-w-lg ${isProUser ? 'border-purple-500 bg-purple-50' : 'border-purple-200'}`}>
+            <CardHeader className="text-center">
+              <div className="flex items-center justify-center space-x-2">
+                <Crown className="h-8 w-8 text-purple-600" />
+                <CardTitle className="text-3xl">Pro Plan</CardTitle>
+                {isProUser && <Badge variant="secondary" className="bg-purple-100 text-purple-800">Active</Badge>}
+              </div>
+              <CardDescription className="text-lg">
+                Advanced AI features for growing businesses
+              </CardDescription>
+              <div className="text-4xl font-bold text-purple-600">
+                €25<span className="text-lg font-normal text-muted-foreground">/month</span>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-3">
+                {features.map((feature, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <feature.icon className="h-5 w-5 text-purple-600" />
+                    <span className="text-sm">{feature.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {isProUser ? (
+                <div className="space-y-4">
+                  <div className="text-center text-sm text-muted-foreground">
+                    Current Plan: <strong>{subscriptionTier}</strong>
+                    {subscriptionEnd && (
+                      <div>Renews on {formatDate(subscriptionEnd)}</div>
+                    )}
+                  </div>
+                  <Button 
+                    onClick={openCustomerPortal} 
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage Subscription
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <Button 
+                    onClick={handleUpgrade} 
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    size="lg"
+                  >
+                    <Crown className="h-5 w-5 mr-2" />
+                    Upgrade to Pro - Coming Soon!
+                  </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Pro plan features are being finalized. Contact support for early access.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProPlanPricing;

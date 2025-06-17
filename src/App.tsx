@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +18,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DataDeletionPage from "./pages/DataDeletionPage";
 import NotFound from "./pages/NotFound";
+import UpgradeProPage from "./pages/UpgradeProPage";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +38,11 @@ const App = () => (
                 <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="/terms-of-service" element={<TermsOfServicePage />} />
                 <Route path="/data-deletion" element={<DataDeletionPage />} />
+                <Route path="/upgrade-pro" element={
+                  <ProtectedRoute>
+                    <UpgradeProPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/support" element={
                   <ProtectedRoute>
                     <SupportPage />

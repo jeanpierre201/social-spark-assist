@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, Star } from 'lucide-react';
@@ -31,6 +32,15 @@ const Pricing = () => {
       // User needs to upgrade - redirect to Stripe checkout
       await createCheckout();
     }
+  };
+
+  const handleProPlan = () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    // Navigate to Pro Plan upgrade page
+    navigate('/upgrade-pro');
   };
 
   const plans = [
@@ -79,6 +89,7 @@ const Pricing = () => {
       features: [
         "Everything in Starter",
         "100 posts per month",
+        "Multiple content variations",
         "Advanced AI features",
         "Auto-posting to all platforms",
         "Advanced analytics",
@@ -86,10 +97,12 @@ const Pricing = () => {
         "Team collaboration",
         "Custom branding"
       ],
-      buttonText: "Go Pro",
+      buttonText: subscribed && (subscriptionTier === 'Premium' || subscriptionTier === 'Enterprise')
+        ? "Access Pro Features"
+        : "Go Pro",
       popular: false,
       buttonVariant: "outline" as const,
-      onClick: () => console.log('Pro plan coming soon!')
+      onClick: handleProPlan
     }
   ];
 

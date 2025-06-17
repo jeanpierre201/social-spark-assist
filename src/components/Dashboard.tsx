@@ -152,10 +152,6 @@ const Dashboard = () => {
               <Home className="h-4 w-4 mr-2" />
               Home
             </Button>
-            <Button variant="outline" onClick={() => setShowSocialSettings(!showSocialSettings)}>
-              <Settings className="h-4 w-4 mr-2" />
-              Social Accounts
-            </Button>
             <Button variant="outline" onClick={() => navigate('/support')}>
               <Mail className="h-4 w-4 mr-2" />
               Support
