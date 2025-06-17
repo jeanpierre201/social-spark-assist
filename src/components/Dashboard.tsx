@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,7 +17,8 @@ import {
   ArrowRight,
   RefreshCw,
   Home,
-  Settings
+  Settings,
+  Mail
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -130,7 +130,7 @@ const Dashboard = () => {
     );
   }
 
-    return (
+  return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
@@ -155,6 +155,10 @@ const Dashboard = () => {
             <Button variant="outline" onClick={() => setShowSocialSettings(!showSocialSettings)}>
               <Settings className="h-4 w-4 mr-2" />
               Social Accounts
+            </Button>
+            <Button variant="outline" onClick={() => navigate('/support')}>
+              <Mail className="h-4 w-4 mr-2" />
+              Support
             </Button>
             <Button variant="outline" onClick={handleRefreshSubscription}>
               <RefreshCw className="h-4 w-4 mr-2" />

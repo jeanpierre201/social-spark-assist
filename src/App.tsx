@@ -14,6 +14,7 @@ import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ContentGeneratorPage from "./pages/ContentGeneratorPage";
 import ContentGeneratorStarterPage from "./pages/ContentGeneratorStarterPage";
+import SupportPage from "./pages/SupportPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DataDeletionPage from "./pages/DataDeletionPage";
@@ -37,6 +38,11 @@ const App = () => (
                 <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="/terms-of-service" element={<TermsOfServicePage />} />
                 <Route path="/data-deletion" element={<DataDeletionPage />} />
+                <Route path="/support" element={
+                  <ProtectedRoute>
+                    <SupportPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/dashboard" element={
                   <ProtectedRoute>
                     <DashboardPage />
