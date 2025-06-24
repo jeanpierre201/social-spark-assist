@@ -35,7 +35,7 @@ interface GeneratedPost {
   variations?: Array<{
     caption: string;
     hashtags: string[];
-    style: string;
+    variation: string; // Changed from 'style' to 'variation' to match ContentVariation interface
   }>;
 }
 
