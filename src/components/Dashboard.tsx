@@ -18,12 +18,18 @@ import {
   ArrowRight,
   RefreshCw,
   Home,
-  Mail
+  Mail,
+  UserPlus,
+  Activity,
+  Target,
+  Zap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import StarterPlanPricing from './StarterPlanPricing';
 import SocialMediaSettings from './SocialMediaSettings';
+import ProAnalytics from './ProAnalytics';
+import TeamCollaboration from './TeamCollaboration';
 
 interface Post {
   id: string;
@@ -164,12 +170,36 @@ const Dashboard = () => {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh Status
             </Button>
-            <Button onClick={() => navigate('/content-generator')}>
-              <Sparkles className={`h-4 w-4 mr-2 ${isProUser ? 'text-purple-500' : ''}`} />
+            <Button 
+              onClick={() => navigate('/content-generator')}
+              className={isProUser ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}
+            >
+              <Sparkles className={`h-4 w-4 mr-2 ${isProUser ? 'text-white' : ''}`} />
               Generate Content
             </Button>
           </div>
         </div>
+
+        {/* Pro Features Banner */}
+        {isProUser && (
+          <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-purple-900 flex items-center">
+                    <Crown className="h-5 w-5 mr-2 text-purple-600" />
+                    Pro Features Active
+                  </h3>
+                  <p className="text-purple-700">Advanced analytics, team collaboration, and unlimited content variations</p>
+                </div>
+                <Badge className="bg-purple-100 text-purple-800">
+                  <Zap className="h-3 w-3 mr-1" />
+                  Premium
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Social Media Settings */}
         {showSocialSettings && <SocialMediaSettings />}
@@ -207,6 +237,12 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Pro Advanced Analytics */}
+        {isProUser && <ProAnalytics metrics={metrics} />}
+
+        {/* Pro Team Collaboration */}
+        {isProUser && <TeamCollaboration />}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
