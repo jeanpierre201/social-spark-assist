@@ -1,140 +1,53 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useAuth } from '@/hooks/useAuth';
-import { useSubscription } from '@/hooks/useSubscription';
-import { useSocialAccounts } from '@/hooks/useSocialAccounts';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  BarChart3, 
-  TrendingUp, 
-  Users, 
-  Calendar, 
-  Sparkles, 
-  Crown,
-  Lock,
-  ArrowRight,
-  RefreshCw,
-  Home,
-  Mail,
-  UserPlus,
-  Activity,
-  Target,
-  Zap
-} from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import StarterPlanPricing from './StarterPlanPricing';
-import SocialMediaSettings from './SocialMediaSettings';
+import { 
+  Sparkles, 
+  BarChart3, 
+  Users, 
+  Calendar,
+  Settings,
+  Crown,
+  Zap,
+  TrendingUp,
+  Target,
+  MessageSquare
+} from 'lucide-react';
 import ProAnalytics from './ProAnalytics';
 import TeamCollaboration from './TeamCollaboration';
 
-interface Post {
-  id: string;
-  industry: string;
-  goal: string;
-  generated_caption: string;
-  generated_hashtags: string[];
-  created_at: string;
-}
-
 const Dashboard = () => {
   const { user } = useAuth();
-  const { subscribed, subscriptionTier, checkSubscription } = useSubscription();
-  const { accounts, metrics, loading: socialLoading } = useSocialAccounts();
-  const { toast } = useToast();
+  const { subscribed, subscriptionTier, loading } = useSubscription();
   const navigate = useNavigate();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showSocialSettings, setShowSocialSettings] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
 
-  // Check if user has Pro plan
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      if (!user) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
+  console.log('Dashboard: Current subscription info', { subscribed, subscriptionTier, isProUser, isStarterUser });
 
-        if (error) throw error;
-        setPosts(data || []);
-      } catch (error) {
-        console.error('Error fetching posts:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load your content history",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPosts();
-  }, [user, toast]);
-
-  const handleRefreshSubscription = async () => {
-    await checkSubscription();
-    toast({
-      title: "Refreshed",
-      description: "Subscription status updated",
-    });
+  const handleContentGeneration = () => {
+    if (isProUser) {
+      navigate('/content-generator');
+    } else if (isStarterUser) {
+      navigate('/content-generator-starter');
+    } else {
+      navigate('/content-generator');
+    }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  // Calculate aggregated metrics from connected social accounts
-  const aggregatedMetrics = metrics.reduce((acc, metric) => {
-    return {
-      totalFollowers: acc.totalFollowers + metric.followers_count,
-      avgEngagement: (acc.avgEngagement + metric.engagement_rate) / 2,
-      totalPosts: acc.totalPosts + metric.posts_count,
-      scheduledPosts: acc.scheduledPosts + metric.scheduled_posts_count
-    };
-  }, { totalFollowers: 0, avgEngagement: 0, totalPosts: 0, scheduledPosts: 0 });
-
-  const LockedCard = ({ title, description, icon: Icon, planRequired }: { title: string; description: string; icon: any; planRequired: string }) => (
-    <Card className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-gray-50/80 z-10 flex items-center justify-center">
-        <div className="text-center">
-          <Lock className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-          <p className="text-sm text-gray-600 font-medium">{planRequired} Plan Required</p>
-        </div>
-      </div>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <Icon className={`h-4 w-4 ${planRequired === 'Pro' ? 'text-purple-500' : 'text-muted-foreground'}`} />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold text-gray-300">--</div>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </CardContent>
-    </Card>
-  );
-
-  if (loading || socialLoading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">Loading dashboard...</div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -142,250 +55,267 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">
-              Welcome back, {user?.email}
-              {subscribed && (
-                <Badge variant="secondary" className={`ml-2 ${isProUser ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>
-                  <Crown className={`h-3 w-3 mr-1 ${isProUser ? 'text-purple-600' : ''}`} />
-                  {subscriptionTier}
-                </Badge>
-              )}
-            </p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button variant="outline" onClick={() => navigate('/')}>
-              <Home className="h-4 w-4 mr-2" />
-              Home
-            </Button>
-            <Button variant="outline" onClick={() => navigate('/support')}>
-              <Mail className="h-4 w-4 mr-2" />
-              Support
-            </Button>
-            <Button variant="outline" onClick={handleRefreshSubscription}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh Status
-            </Button>
-            <Button 
-              onClick={() => navigate('/content-generator')}
-              className={isProUser ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                {isProUser ? 'Pro Dashboard' : isStarterUser ? 'Starter Dashboard' : 'Dashboard'}
+              </h1>
+              <p className="text-muted-foreground flex items-center gap-2">
+                Welcome back, {user?.email}
+                {isProUser && (
+                  <Badge className="bg-purple-100 text-purple-800">
+                    <Crown className="h-3 w-3 mr-1 text-purple-600" />
+                    Pro Plan
+                  </Badge>
+                )}
+                {isStarterUser && (
+                  <Badge className="bg-blue-100 text-blue-800">
+                    <Zap className="h-3 w-3 mr-1 text-blue-600" />
+                    Starter Plan
+                  </Badge>
+                )}
+              </p>
+            </div>
+            <Button
+              onClick={handleContentGeneration}
+              className={`flex items-center space-x-2 ${
+                isProUser 
+                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
+                  : ''
+              }`}
             >
-              <Sparkles className={`h-4 w-4 mr-2 ${isProUser ? 'text-white' : ''}`} />
-              Generate Content
+              <Sparkles className="h-4 w-4" />
+              <span>Generate Content</span>
             </Button>
           </div>
         </div>
 
-        {/* Pro Features Banner */}
+        {/* Navigation Tabs for Pro Users */}
         {isProUser && (
-          <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-purple-900 flex items-center">
-                    <Crown className="h-5 w-5 mr-2 text-purple-600" />
-                    Pro Features Active
-                  </h3>
-                  <p className="text-purple-700">Advanced analytics, team collaboration, and unlimited content variations</p>
-                </div>
-                <Badge className="bg-purple-100 text-purple-800">
-                  <Zap className="h-3 w-3 mr-1" />
-                  Premium
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('overview')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'overview'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => setActiveTab('analytics')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'analytics'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Advanced Analytics
+                </button>
+                <button
+                  onClick={() => setActiveTab('team')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'team'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Team Collaboration
+                </button>
+              </nav>
+            </div>
+          </div>
         )}
 
-        {/* Social Media Settings */}
-        {showSocialSettings && <SocialMediaSettings />}
+        {/* Tab Content */}
+        {isProUser && activeTab === 'analytics' && <ProAnalytics />}
+        {isProUser && activeTab === 'team' && <TeamCollaboration />}
+        
+        {/* Overview Tab or Default View */}
+        {(!isProUser || activeTab === 'overview') && (
+          <>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : ""}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Content Generated</CardTitle>
+                  <Sparkles className={`h-4 w-4 ${isProUser ? 'text-purple-600' : 'text-muted-foreground'}`} />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">24</div>
+                  <p className="text-xs text-muted-foreground">+12% from last month</p>
+                </CardContent>
+              </Card>
 
-        {/* Connection Status */}
-        {accounts.length === 0 && !showSocialSettings && (
-          <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-blue-900">Connect Social Media Accounts</h3>
-                  <p className="text-blue-700">Connect your social accounts to see real analytics and metrics</p>
-                </div>
-                <Button onClick={() => setShowSocialSettings(true)}>
-                  Connect Accounts
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Subscription Status */}
-        {!subscribed && (
-          <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-yellow-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-orange-900">Upgrade to Starter Plan</h3>
-                  <p className="text-orange-700">Unlock unlimited content generation and premium features</p>
-                </div>
-                <div className="flex-shrink-0">
-                  <StarterPlanPricing />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Pro Advanced Analytics */}
-        {isProUser && <ProAnalytics metrics={metrics} />}
-
-        {/* Pro Team Collaboration */}
-        {isProUser && <TeamCollaboration />}
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Posts Generated</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{posts.length}</div>
-              <p className="text-xs text-muted-foreground">All-time content created</p>
-            </CardContent>
-          </Card>
-
-          {subscribed ? (
-            <>
-              <Card>
+              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : ""}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
-                  <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-500' : 'text-muted-foreground'}`} />
+                  <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {accounts.length > 0 ? `${aggregatedMetrics.avgEngagement.toFixed(1)}%` : '--'}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {accounts.length > 0 ? 'From connected accounts' : 'Connect accounts to view'}
-                  </p>
+                  <div className="text-2xl font-bold">4.2%</div>
+                  <p className="text-xs text-muted-foreground">+0.8% from last week</p>
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Followers</CardTitle>
-                  <Users className={`h-4 w-4 ${isProUser ? 'text-purple-500' : 'text-muted-foreground'}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {accounts.length > 0 ? aggregatedMetrics.totalFollowers.toLocaleString() : '--'}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {accounts.length > 0 ? 'Total across all platforms' : 'Connect accounts to view'}
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
+              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : ""}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Scheduled Posts</CardTitle>
-                  <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-500' : 'text-muted-foreground'}`} />
+                  <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {accounts.length > 0 ? aggregatedMetrics.scheduledPosts : '--'}
-                  </div>
+                  <div className="text-2xl font-bold">8</div>
+                  <p className="text-xs text-muted-foreground">Next 7 days</p>
+                </CardContent>
+              </Card>
+
+              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : ""}>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    {isProUser ? 'Team Members' : 'Total Reach'}
+                  </CardTitle>
+                  {isProUser ? (
+                    <Users className="h-4 w-4 text-purple-600" />
+                  ) : (
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{isProUser ? '3' : '12.4K'}</div>
                   <p className="text-xs text-muted-foreground">
-                    {accounts.length > 0 ? 'Ready to publish' : 'Connect accounts to view'}
+                    {isProUser ? 'Active collaborators' : '+2.1K this month'}
                   </p>
                 </CardContent>
               </Card>
-            </>
-          ) : (
-            <>
-              <LockedCard 
-                title="Engagement Rate" 
-                description="Track your social media performance"
-                icon={TrendingUp}
-                planRequired="Starter"
-              />
-              <LockedCard 
-                title="Followers" 
-                description="Monitor your audience growth"
-                icon={Users}
-                planRequired="Starter"
-              />
-              <LockedCard 
-                title="Scheduled Posts" 
-                description="Manage your content calendar"
-                icon={Calendar}
-                planRequired="Starter"
-              />
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* Recent Content */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Content</CardTitle>
-            <CardDescription>Your latest AI-generated social media posts</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {posts.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Sparkles className={`h-12 w-12 mx-auto mb-4 opacity-50 ${isProUser ? 'text-purple-400' : ''}`} />
-                <p className="text-lg font-medium">No content generated yet</p>
-                <p className="mb-4">Start creating engaging social media content with AI</p>
-                <Button onClick={() => navigate('/content-generator')}>
-                  <Sparkles className={`h-4 w-4 mr-2 ${isProUser ? 'text-purple-500' : ''}`} />
-                  Generate Your First Post
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {posts.map((post) => (
-                  <div key={post.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="outline">{post.industry}</Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {formatDate(post.created_at)}
-                        </span>
+            {/* Action Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Sparkles className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-blue-600'}`} />
+                    Content Generation
+                  </CardTitle>
+                  <CardDescription>
+                    {isProUser 
+                      ? 'Create unlimited content with AI assistance and advanced variations'
+                      : isStarterUser
+                        ? 'Generate up to 10 posts per month with AI assistance'
+                        : 'Create engaging social media content with AI'
+                    }
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    onClick={handleContentGeneration}
+                    className={`w-full ${
+                      isProUser 
+                        ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
+                        : ''
+                    }`}
+                  >
+                    Generate Content
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <BarChart3 className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-green-600'}`} />
+                    {isProUser ? 'Advanced Analytics' : 'Analytics'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isProUser 
+                      ? 'Deep insights, competitor analysis, and performance tracking'
+                      : 'View your content performance and engagement metrics'
+                    }
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => isProUser && setActiveTab('analytics')}
+                    disabled={!isProUser}
+                  >
+                    {isProUser ? 'View Analytics' : 'Coming Soon'}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <Users className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-orange-600'}`} />
+                    {isProUser ? 'Team Collaboration' : 'Social Accounts'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isProUser 
+                      ? 'Manage team members, roles, and collaborative workflows'
+                      : 'Connect and manage your social media accounts'
+                    }
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => isProUser ? setActiveTab('team') : navigate('/settings')}
+                  >
+                    {isProUser ? 'Manage Team' : 'Connect Accounts'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Pro Features Preview for Non-Pro Users */}
+            {!isProUser && (
+              <div className="mt-8">
+                <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-purple-700">
+                      <Crown className="h-5 w-5 mr-2" />
+                      Upgrade to Pro
+                    </CardTitle>
+                    <CardDescription>
+                      Unlock advanced features for professional content creation
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="flex items-center">
+                        <BarChart3 className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-sm">Advanced Analytics</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-sm">Team Collaboration</span>
+                      </div>
+                      <div className="flex items-center">
+                        <MessageSquare className="h-4 w-4 text-purple-600 mr-2" />
+                        <span className="text-sm">Content Variations</span>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Goal:</h3>
-                      <p className="text-sm">{post.goal}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Generated Caption:</h3>
-                      <p className="text-sm bg-gray-50 p-3 rounded">{post.generated_caption}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground mb-1">Hashtags:</h3>
-                      <p className="text-sm text-blue-600">
-                        {post.generated_hashtags.map(tag => `#${tag}`).join(' ')}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-                
-                {posts.length >= 5 && (
-                  <div className="text-center pt-4">
-                    <Button variant="outline" onClick={() => navigate('/content-generator')}>
-                      View All Content
-                      <ArrowRight className="h-4 w-4 ml-2" />
+                    <Button 
+                      onClick={() => navigate('/upgrade-pro')}
+                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                    >
+                      Upgrade Now
                     </Button>
-                  </div>
-                )}
+                  </CardContent>
+                </Card>
               </div>
             )}
-          </CardContent>
-        </Card>
+          </>
+        )}
       </div>
     </div>
   );
