@@ -159,6 +159,24 @@ const ContentGenerator = () => {
     navigate('/dashboard');
   };
 
+  const handleSelectVariation = (variation: any) => {
+    setGeneratedPost({
+      ...generatedPost!,
+      caption: variation.caption,
+      hashtags: variation.hashtags
+    });
+  };
+
+  const handleDownloadVariation = (variation: any) => {
+    const element = document.createElement("a");
+    const contentText = `${variation.caption}\n\n${variation.hashtags.map((tag: string) => `#${tag}`).join(' ')}`;
+    const file = new Blob([contentText], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `${variation.variation}_content.txt`;
+    document.body.appendChild(element);
+    element.click();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -255,19 +273,12 @@ const ContentGenerator = () => {
             </div>
 
             {/* Pro Feature: Content Variations */}
-            {generatedPost && isProUser && (
+            {generatedPost && isProUser && generatedPost.variations && (
               <div className="pt-4 border-t">
                 <ContentVariations 
-                  post={generatedPost}
-                  industry={industry}
-                  goal={goal}
-                  onVariationSelect={(variation) => {
-                    setGeneratedPost({
-                      ...generatedPost,
-                      caption: variation.caption,
-                      hashtags: variation.hashtags
-                    });
-                  }}
+                  variations={generatedPost.variations}
+                  onSelectVariation={handleSelectVariation}
+                  onDownloadVariation={handleDownloadVariation}
                 />
               </div>
             )}
