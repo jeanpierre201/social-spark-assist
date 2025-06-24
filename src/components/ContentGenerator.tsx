@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +41,7 @@ interface GeneratedPost {
 
 const ContentGenerator = () => {
   const { user } = useAuth();
-  const { subscribed, subscriptionTier, createCheckout } = useSubscription();
+  const { subscribed, subscriptionTier } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -158,14 +159,6 @@ const ContentGenerator = () => {
     navigate('/dashboard');
   };
 
-  const handleUpgradeFromContent = () => {
-    if (isStarterUser) {
-      navigate('/upgrade-pro');
-    } else {
-      createCheckout();
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -191,43 +184,8 @@ const ContentGenerator = () => {
               <Home className="h-4 w-4" />
               <span>Home</span>
             </Button>
-            {!isProUser && (
-              <Button 
-                onClick={handleUpgradeFromContent}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-              >
-                <Crown className="h-4 w-4 mr-2" />
-                {isStarterUser ? 'Upgrade to Pro' : 'Get Pro'}
-              </Button>
-            )}
           </div>
         </div>
-
-        {/* Pro Features Showcase */}
-        {!isProUser && (
-          <Card className="mb-6 border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-purple-900 mb-2">Unlock Pro AI Features</h3>
-                  <ul className="text-purple-700 space-y-1 text-sm">
-                    <li>• Generate 3-5 content variations per post</li>
-                    <li>• 100 posts per month (vs 10 for Starter)</li>
-                    <li>• Advanced AI optimization</li>
-                    <li>• Priority support & faster generation</li>
-                  </ul>
-                </div>
-                <Button 
-                  onClick={handleUpgradeFromContent}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                >
-                  <Crown className="h-4 w-4 mr-2" />
-                  Go Pro
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Content Generation Form */}
         <Card className="mb-8">
@@ -300,7 +258,7 @@ const ContentGenerator = () => {
             {generatedPost && isProUser && (
               <div className="pt-4 border-t">
                 <ContentVariations 
-                  originalPost={generatedPost}
+                  post={generatedPost}
                   industry={industry}
                   goal={goal}
                   onVariationSelect={(variation) => {

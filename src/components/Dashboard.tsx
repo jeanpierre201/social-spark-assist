@@ -18,7 +18,6 @@ import {
   ArrowRight,
   RefreshCw,
   Home,
-  Settings,
   Mail
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -204,27 +203,6 @@ const Dashboard = () => {
                 <div className="flex-shrink-0">
                   <StarterPlanPricing />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Pro Plan Upgrade Prompt for Starter Users */}
-        {isStarterUser && (
-          <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-indigo-50">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-lg font-semibold text-purple-900">Unlock Pro Features</h3>
-                  <p className="text-purple-700">Get advanced AI features, content variations, and unlimited posts</p>
-                </div>
-                <Button 
-                  onClick={() => navigate('/upgrade-pro')}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                >
-                  <Crown className="h-4 w-4 mr-2" />
-                  Upgrade to Pro
-                </Button>
               </div>
             </CardContent>
           </Card>
