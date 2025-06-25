@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import ProAnalytics from './ProAnalytics';
 import TeamCollaboration from './TeamCollaboration';
+import SocialMediaSettings from './SocialMediaSettings';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -81,16 +82,13 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {isStarterUser && (
-                <Button
-                  onClick={() => navigate('/upgrade-pro')}
-                  variant="outline"
-                  className="border-purple-200 text-purple-700 hover:bg-purple-50"
-                >
-                  <Crown className="h-4 w-4 mr-2" />
-                  Upgrade to Pro
-                </Button>
-              )}
+              <Button
+                onClick={() => navigate('/')}
+                variant="outline"
+                className="flex items-center space-x-2"
+              >
+                <span>Home</span>
+              </Button>
               <Button
                 onClick={handleContentGeneration}
                 className={`flex items-center space-x-2 ${
@@ -143,6 +141,16 @@ const Dashboard = () => {
                 >
                   Team Collaboration
                 </button>
+                <button
+                  onClick={() => setActiveTab('social')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'social'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  Social Accounts
+                </button>
               </nav>
             </div>
           </div>
@@ -151,6 +159,7 @@ const Dashboard = () => {
         {/* Tab Content for Pro Users */}
         {isProUser && activeTab === 'analytics' && <ProAnalytics />}
         {isProUser && activeTab === 'team' && <TeamCollaboration />}
+        {isProUser && activeTab === 'social' && <SocialMediaSettings />}
         
         {/* Overview Tab or Default View */}
         {(!isProUser || activeTab === 'overview') && (
@@ -291,7 +300,7 @@ const Dashboard = () => {
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => isProUser ? setActiveTab('team') : navigate('/settings')}
+                    onClick={() => isProUser ? setActiveTab('team') : setActiveTab('social')}
                   >
                     {isProUser ? 'Manage Team' : 'Connect Accounts'}
                   </Button>
@@ -299,45 +308,14 @@ const Dashboard = () => {
               </Card>
             </div>
 
-            {/* Upgrade Prompts */}
-            {isStarterUser && (
+            {/* Show Social Accounts tab for Starter users */}
+            {isStarterUser && activeTab === 'social' && (
               <div className="mt-8">
-                <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center text-purple-700">
-                      <Crown className="h-5 w-5 mr-2" />
-                      Upgrade to Pro
-                    </CardTitle>
-                    <CardDescription>
-                      Unlock advanced features for professional content creation
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                      <div className="flex items-center">
-                        <BarChart3 className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-sm">Advanced Analytics</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-sm">Team Collaboration</span>
-                      </div>
-                      <div className="flex items-center">
-                        <MessageSquare className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-sm">Unlimited Content</span>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={() => navigate('/upgrade-pro')}
-                      className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                    >
-                      Upgrade Now
-                    </Button>
-                  </CardContent>
-                </Card>
+                <SocialMediaSettings />
               </div>
             )}
 
+            {/* Upgrade Prompts for non-subscribed users only */}
             {!subscribed && (
               <div className="mt-8">
                 <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50">

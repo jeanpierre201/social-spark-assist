@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -12,6 +11,7 @@ import UsageIndicators from '@/components/starter/UsageIndicators';
 import ContentCreationForm from '@/components/starter/ContentCreationForm';
 import GeneratedPostsPreview from '@/components/starter/GeneratedPostsPreview';
 import UpgradePrompt from '@/components/starter/UpgradePrompt';
+import CalendarView from '@/components/starter/CalendarView';
 
 interface GeneratedContent {
   caption: string;
@@ -121,6 +121,7 @@ const ContentGeneratorStarter = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
+        {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Starter Content Generator</h1>
@@ -182,19 +183,7 @@ const ContentGeneratorStarter = () => {
             ) : viewMode === 'list' ? (
               <GeneratedPostsPreview posts={posts} />
             ) : (
-              <div className="bg-white rounded-lg border p-6 text-center">
-                <CalendarIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Calendar View</h3>
-                <p className="text-gray-600 mb-4">Calendar view is coming soon! View your scheduled posts in a calendar format.</p>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setViewMode('list')}
-                  className="flex items-center space-x-2"
-                >
-                  <List className="h-4 w-4" />
-                  <span>Switch to List View</span>
-                </Button>
-              </div>
+              <CalendarView posts={posts} setViewMode={setViewMode} />
             )}
           </div>
         </div>
