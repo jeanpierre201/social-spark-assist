@@ -33,6 +33,7 @@ const Dashboard = () => {
   console.log('Dashboard: Current subscription info', { subscribed, subscriptionTier, isProUser, isStarterUser });
 
   const handleContentGeneration = () => {
+    console.log('Navigating to content generator for user:', { subscriptionTier, subscribed });
     if (isProUser) {
       navigate('/content-generator');
     } else if (isStarterUser) {
@@ -79,17 +80,31 @@ const Dashboard = () => {
                 )}
               </p>
             </div>
-            <Button
-              onClick={handleContentGeneration}
-              className={`flex items-center space-x-2 ${
-                isProUser 
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
-                  : ''
-              }`}
-            >
-              <Sparkles className="h-4 w-4" />
-              <span>Generate Content</span>
-            </Button>
+            <div className="flex items-center gap-3">
+              {isStarterUser && (
+                <Button
+                  onClick={() => navigate('/upgrade-pro')}
+                  variant="outline"
+                  className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                >
+                  <Crown className="h-4 w-4 mr-2" />
+                  Upgrade to Pro
+                </Button>
+              )}
+              <Button
+                onClick={handleContentGeneration}
+                className={`flex items-center space-x-2 ${
+                  isProUser 
+                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
+                    : isStarterUser
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : ''
+                }`}
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>Generate Content</span>
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -142,40 +157,42 @@ const Dashboard = () => {
           <>
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : ""}>
+              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Content Generated</CardTitle>
-                  <Sparkles className={`h-4 w-4 ${isProUser ? 'text-purple-600' : 'text-muted-foreground'}`} />
+                  <Sparkles className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">24</div>
-                  <p className="text-xs text-muted-foreground">+12% from last month</p>
+                  <div className="text-2xl font-bold">{isStarterUser ? '8' : '24'}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {isStarterUser ? '+4 this month' : '+12% from last month'}
+                  </p>
                 </CardContent>
               </Card>
 
-              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : ""}>
+              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
-                  <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-600' : 'text-muted-foreground'}`} />
+                  <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">4.2%</div>
+                  <div className="text-2xl font-bold">{isStarterUser ? '3.1%' : '4.2%'}</div>
                   <p className="text-xs text-muted-foreground">+0.8% from last week</p>
                 </CardContent>
               </Card>
 
-              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : ""}>
+              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Scheduled Posts</CardTitle>
-                  <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-600' : 'text-muted-foreground'}`} />
+                  <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">8</div>
+                  <div className="text-2xl font-bold">{isStarterUser ? '3' : '8'}</div>
                   <p className="text-xs text-muted-foreground">Next 7 days</p>
                 </CardContent>
               </Card>
 
-              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : ""}>
+              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
                     {isProUser ? 'Team Members' : 'Total Reach'}
@@ -183,11 +200,11 @@ const Dashboard = () => {
                   {isProUser ? (
                     <Users className="h-4 w-4 text-purple-600" />
                   ) : (
-                    <Target className="h-4 w-4 text-muted-foreground" />
+                    <Target className={`h-4 w-4 ${isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                   )}
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{isProUser ? '3' : '12.4K'}</div>
+                  <div className="text-2xl font-bold">{isProUser ? '3' : isStarterUser ? '8.2K' : '12.4K'}</div>
                   <p className="text-xs text-muted-foreground">
                     {isProUser ? 'Active collaborators' : '+2.1K this month'}
                   </p>
@@ -200,7 +217,7 @@ const Dashboard = () => {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Sparkles className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-blue-600'}`} />
+                    <Sparkles className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-blue-600'}`} />
                     Content Generation
                   </CardTitle>
                   <CardDescription>
@@ -218,7 +235,9 @@ const Dashboard = () => {
                     className={`w-full ${
                       isProUser 
                         ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
-                        : ''
+                        : isStarterUser
+                          ? 'bg-blue-600 hover:bg-blue-700'
+                          : ''
                     }`}
                   >
                     Generate Content
@@ -229,13 +248,15 @@ const Dashboard = () => {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <BarChart3 className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-green-600'}`} />
+                    <BarChart3 className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-green-600'}`} />
                     {isProUser ? 'Advanced Analytics' : 'Analytics'}
                   </CardTitle>
                   <CardDescription>
                     {isProUser 
                       ? 'Deep insights, competitor analysis, and performance tracking'
-                      : 'View your content performance and engagement metrics'
+                      : isStarterUser
+                        ? 'View your content performance and basic analytics'
+                        : 'View your content performance and engagement metrics'
                     }
                   </CardDescription>
                 </CardHeader>
@@ -244,9 +265,9 @@ const Dashboard = () => {
                     variant="outline" 
                     className="w-full"
                     onClick={() => isProUser && setActiveTab('analytics')}
-                    disabled={!isProUser}
+                    disabled={!isProUser && !isStarterUser}
                   >
-                    {isProUser ? 'View Analytics' : 'Coming Soon'}
+                    {isProUser ? 'View Analytics' : isStarterUser ? 'Basic Analytics' : 'Coming Soon'}
                   </Button>
                 </CardContent>
               </Card>
@@ -254,7 +275,7 @@ const Dashboard = () => {
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Users className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-orange-600'}`} />
+                    <Users className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-orange-600'}`} />
                     {isProUser ? 'Team Collaboration' : 'Social Accounts'}
                   </CardTitle>
                   <CardDescription>
@@ -276,8 +297,8 @@ const Dashboard = () => {
               </Card>
             </div>
 
-            {/* Pro Features Preview for Non-Pro Users */}
-            {!isProUser && (
+            {/* Upgrade Prompts */}
+            {isStarterUser && (
               <div className="mt-8">
                 <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
                   <CardHeader>
@@ -301,7 +322,7 @@ const Dashboard = () => {
                       </div>
                       <div className="flex items-center">
                         <MessageSquare className="h-4 w-4 text-purple-600 mr-2" />
-                        <span className="text-sm">Content Variations</span>
+                        <span className="text-sm">Unlimited Content</span>
                       </div>
                     </div>
                     <Button 
@@ -310,6 +331,54 @@ const Dashboard = () => {
                     >
                       Upgrade Now
                     </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {!subscribed && (
+              <div className="mt-8">
+                <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-cyan-50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center text-blue-700">
+                      <Zap className="h-5 w-5 mr-2" />
+                      Get Started with Starter Plan
+                    </CardTitle>
+                    <CardDescription>
+                      Unlock AI-powered content generation and scheduling
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <div className="flex items-center">
+                        <Sparkles className="h-4 w-4 text-blue-600 mr-2" />
+                        <span className="text-sm">10 AI-Generated Posts</span>
+                      </div>
+                      <div className="flex items-center">
+                        <Calendar className="h-4 w-4 text-blue-600 mr-2" />
+                        <span className="text-sm">Post Scheduling</span>
+                      </div>
+                      <div className="flex items-center">
+                        <BarChart3 className="h-4 w-4 text-blue-600 mr-2" />
+                        <span className="text-sm">Basic Analytics</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button 
+                        onClick={() => navigate('/#pricing')}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Start with Starter Plan
+                      </Button>
+                      <Button 
+                        onClick={() => navigate('/upgrade-pro')}
+                        variant="outline"
+                        className="border-purple-200 text-purple-700 hover:bg-purple-50"
+                      >
+                        <Crown className="h-4 w-4 mr-2" />
+                        Go Pro Instead
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </div>

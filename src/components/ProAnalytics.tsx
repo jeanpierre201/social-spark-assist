@@ -38,10 +38,10 @@ interface SocialMetric {
 }
 
 interface ProAnalyticsProps {
-  metrics: SocialMetric[];
+  metrics?: SocialMetric[];
 }
 
-const ProAnalytics = ({ metrics }: ProAnalyticsProps) => {
+const ProAnalytics = ({ metrics = [] }: ProAnalyticsProps) => {
   // Mock data for demonstration (in real app, this would come from API)
   const engagementData = [
     { month: 'Jan', engagement: 2.4, reach: 12000, impressions: 45000 },
@@ -52,12 +52,16 @@ const ProAnalytics = ({ metrics }: ProAnalyticsProps) => {
     { month: 'Jun', engagement: 3.9, reach: 20000, impressions: 72000 },
   ];
 
-  const platformData = metrics.map(metric => ({
+  const platformData = metrics.length > 0 ? metrics.map(metric => ({
     platform: metric.platform,
     followers: metric.followers_count,
     engagement: metric.engagement_rate,
     posts: metric.posts_count,
-  }));
+  })) : [
+    { platform: 'Instagram', followers: 15000, engagement: 3.2, posts: 45 },
+    { platform: 'LinkedIn', followers: 8500, engagement: 4.1, posts: 32 },
+    { platform: 'Twitter', followers: 12000, engagement: 2.8, posts: 67 },
+  ];
 
   const contentPerformance = [
     { type: 'Video', count: 45, avgEngagement: 4.2 },

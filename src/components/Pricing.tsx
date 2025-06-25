@@ -27,9 +27,9 @@ const Pricing = () => {
 
     // Check if user already has Starter plan or higher
     if (subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Pro')) {
-      navigate('/content-generator');
+      navigate('/dashboard');
     } else {
-      // User needs to upgrade - redirect to Stripe checkout
+      // User needs to upgrade - redirect to Stripe checkout for Starter plan
       await createCheckout();
     }
   };
@@ -39,8 +39,14 @@ const Pricing = () => {
       navigate('/login');
       return;
     }
-    // Navigate to Pro Plan upgrade page
-    navigate('/upgrade-pro');
+    
+    // If user is already Pro, go to dashboard
+    if (subscribed && subscriptionTier === 'Pro') {
+      navigate('/dashboard');
+    } else {
+      // Navigate to Pro Plan upgrade page (for both free and starter users)
+      navigate('/upgrade-pro');
+    }
   };
 
   const plans = [
@@ -77,7 +83,7 @@ const Pricing = () => {
       buttonText: subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Pro') 
         ? "Access Features" 
         : "Start Starter Plan",
-      popular: true,
+      popular: !subscribed || subscriptionTier === 'Free',
       buttonVariant: "default" as const,
       onClick: handleStarterPlan
     },
@@ -88,7 +94,7 @@ const Pricing = () => {
       description: "For agencies and growing businesses",
       features: [
         "Everything in Starter",
-        "100 posts per month",
+        "Unlimited posts per month",
         "Multiple content variations",
         "Advanced AI features",
         "Auto-posting to all platforms",
@@ -99,9 +105,11 @@ const Pricing = () => {
       ],
       buttonText: subscribed && subscriptionTier === 'Pro'
         ? "Access Pro Features"
-        : "Go Pro",
-      popular: false,
-      buttonVariant: "outline" as const,
+        : subscriptionTier === 'Starter'
+          ? "Upgrade to Pro"
+          : "Go Pro",
+      popular: subscriptionTier === 'Starter',
+      buttonVariant: subscriptionTier === 'Starter' ? "default" as const : "outline" as const,
       onClick: handleProPlan
     }
   ];
@@ -119,6 +127,14 @@ const Pricing = () => {
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
             Choose the perfect plan for your social media needs. Start free and scale as you grow.
           </p>
+          {subscribed && (
+            <div className="mt-4">
+              <p className="text-lg font-medium text-green-600">
+                Current Plan: {subscriptionTier}
+                {subscriptionTier === 'Starter' && " - Ready to upgrade to Pro?"}
+              </p>
+            </div>
+          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
@@ -137,7 +153,7 @@ const Pricing = () => {
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center">
                     <Star className="w-4 h-4 mr-1 fill-current" />
-                    Most Popular
+                    {subscriptionTier === 'Starter' && plan.name === 'Pro Plan' ? 'Recommended Upgrade' : 'Most Popular'}
                   </div>
                 </div>
               )}
