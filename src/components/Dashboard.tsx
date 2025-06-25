@@ -108,7 +108,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Navigation Tabs for Pro Users */}
+        {/* Navigation Tabs for Pro Users Only */}
         {isProUser && (
           <div className="mb-6">
             <div className="border-b border-gray-200">
@@ -148,7 +148,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Tab Content */}
+        {/* Tab Content for Pro Users */}
         {isProUser && activeTab === 'analytics' && <ProAnalytics />}
         {isProUser && activeTab === 'team' && <TeamCollaboration />}
         
@@ -163,9 +163,9 @@ const Dashboard = () => {
                   <Sparkles className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{isStarterUser ? '8' : '24'}</div>
+                  <div className="text-2xl font-bold">{isStarterUser ? '8' : isProUser ? '24' : '0'}</div>
                   <p className="text-xs text-muted-foreground">
-                    {isStarterUser ? '+4 this month' : '+12% from last month'}
+                    {isStarterUser ? '+4 this month' : isProUser ? '+12% from last month' : 'Start creating'}
                   </p>
                 </CardContent>
               </Card>
@@ -176,8 +176,10 @@ const Dashboard = () => {
                   <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{isStarterUser ? '3.1%' : '4.2%'}</div>
-                  <p className="text-xs text-muted-foreground">+0.8% from last week</p>
+                  <div className="text-2xl font-bold">{isStarterUser ? '3.1%' : isProUser ? '4.2%' : '--'}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {(isStarterUser || isProUser) ? '+0.8% from last week' : 'No data yet'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -187,7 +189,7 @@ const Dashboard = () => {
                   <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{isStarterUser ? '3' : '8'}</div>
+                  <div className="text-2xl font-bold">{isStarterUser ? '3' : isProUser ? '8' : '0'}</div>
                   <p className="text-xs text-muted-foreground">Next 7 days</p>
                 </CardContent>
               </Card>
@@ -204,9 +206,11 @@ const Dashboard = () => {
                   )}
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{isProUser ? '3' : isStarterUser ? '8.2K' : '12.4K'}</div>
+                  <div className="text-2xl font-bold">
+                    {isProUser ? '3' : isStarterUser ? '8.2K' : '0'}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    {isProUser ? 'Active collaborators' : '+2.1K this month'}
+                    {isProUser ? 'Active collaborators' : isStarterUser ? '+2.1K this month' : 'Start posting'}
                   </p>
                 </CardContent>
               </Card>
@@ -245,37 +249,35 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
 
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <BarChart3 className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-green-600'}`} />
-                    {isProUser ? 'Advanced Analytics' : 'Analytics'}
-                  </CardTitle>
-                  <CardDescription>
-                    {isProUser 
-                      ? 'Deep insights, competitor analysis, and performance tracking'
-                      : isStarterUser
-                        ? 'View your content performance and basic analytics'
-                        : 'View your content performance and engagement metrics'
-                    }
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => isProUser && setActiveTab('analytics')}
-                    disabled={!isProUser && !isStarterUser}
-                  >
-                    {isProUser ? 'View Analytics' : isStarterUser ? 'Basic Analytics' : 'Coming Soon'}
-                  </Button>
-                </CardContent>
-              </Card>
+              {/* Analytics Card - Only show for Pro users */}
+              {isProUser && (
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <BarChart3 className="h-5 w-5 mr-2 text-purple-600" />
+                      Advanced Analytics
+                    </CardTitle>
+                    <CardDescription>
+                      Deep insights, competitor analysis, and performance tracking
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setActiveTab('analytics')}
+                    >
+                      View Analytics
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
 
+              {/* Social Accounts / Team Card */}
               <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <Users className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-orange-600'}`} />
+                    <Users className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-blue-600'}`} />
                     {isProUser ? 'Team Collaboration' : 'Social Accounts'}
                   </CardTitle>
                   <CardDescription>
