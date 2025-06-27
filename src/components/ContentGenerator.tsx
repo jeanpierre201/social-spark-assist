@@ -228,7 +228,7 @@ const ContentGenerator = () => {
         {/* Show upgrade prompt for non-subscribers */}
         {!hasAnyPlan && (
           <div className="mb-8">
-            <UpgradePrompt />
+            <UpgradePrompt subscribed={subscribed} canCreatePosts={true} />
           </div>
         )}
 
