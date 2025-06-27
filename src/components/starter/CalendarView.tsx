@@ -132,30 +132,30 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
         <h3 className="text-lg font-semibold text-foreground">Calendar View</h3>
       </div>
 
-      {/* Full-width Calendar */}
+      {/* Centered Full-width Calendar */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center">
+          <CardTitle className="flex items-center justify-center">
             <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
             Schedule Calendar
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-center">
+          <div className="flex justify-center w-full">
             <CalendarComponent
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              className="rounded-md border w-full max-w-4xl"
+              className="rounded-md border w-full"
               classNames={{
-                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
-                month: "space-y-4 w-full",
+                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full justify-center",
+                month: "space-y-4 w-full max-w-none",
                 table: "w-full border-collapse space-y-1",
-                head_row: "flex",
-                head_cell: "text-muted-foreground rounded-md w-16 h-12 font-normal text-[0.8rem] flex items-center justify-center",
+                head_row: "flex w-full",
+                head_cell: "text-muted-foreground rounded-md flex-1 h-16 font-normal text-sm flex items-center justify-center",
                 row: "flex w-full mt-2",
-                cell: "h-16 w-16 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                day: "h-16 w-16 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                cell: "flex-1 h-20 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: "h-20 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
               }}
               modifiers={{
                 hasPost: getDatesWithPosts()
@@ -182,7 +182,7 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
         </CardContent>
       </Card>
 
-      {/* Selected Date Posts - Full width below calendar */}
+      {/* Full-width Selected Date Posts */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
@@ -192,11 +192,11 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
         </CardHeader>
         <CardContent>
           {selectedDatePosts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
               {selectedDatePosts.map((post, index) => (
                 <div 
                   key={post.id || index} 
-                  className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors w-full"
                   onClick={() => handlePostClick(post)}
                 >
                   <div className="flex items-start justify-between mb-2">
