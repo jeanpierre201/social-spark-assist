@@ -110,32 +110,16 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
 
   const selectedDatePosts = selectedDate ? getPostsForDate(selectedDate) : [];
 
-  // Custom day content to show post previews
+  // Custom day content to show post indicators
   const renderDayContent = (date: Date) => {
     const dayPosts = getPostsForDate(date);
     
     return (
-      <div className="w-full h-full relative">
-        <span className="text-sm">{date.getDate()}</span>
+      <div className="w-full h-full relative flex flex-col items-center justify-center">
+        <span className="text-sm font-medium">{date.getDate()}</span>
         {dayPosts.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0">
-            {dayPosts.slice(0, 2).map((post, idx) => (
-              <div
-                key={post.id || idx}
-                className="bg-blue-100 text-blue-800 text-xs px-1 rounded mb-1 cursor-pointer hover:bg-blue-200 truncate"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePostClick(post);
-                }}
-              >
-                {post.generatedContent?.caption?.slice(0, 15) || 'Post'}...
-              </div>
-            ))}
-            {dayPosts.length > 2 && (
-              <div className="bg-gray-100 text-gray-600 text-xs px-1 rounded">
-                +{dayPosts.length - 2} more
-              </div>
-            )}
+          <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
           </div>
         )}
       </div>
@@ -148,127 +132,136 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
         <h3 className="text-lg font-semibold text-foreground">Calendar View</h3>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Calendar - Made bigger */}
-        <Card className="xl:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
-              Schedule Calendar
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex justify-center">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md border w-full max-w-none"
-                classNames={{
-                  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
-                  month: "space-y-4 w-full",
-                  table: "w-full border-collapse space-y-1",
-                  head_row: "flex",
-                  head_cell: "text-muted-foreground rounded-md w-12 h-12 font-normal text-[0.8rem] flex items-center justify-center",
-                  row: "flex w-full mt-2",
-                  cell: "h-12 w-12 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                  day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
-                }}
-                modifiers={{
-                  hasPost: getDatesWithPosts()
-                }}
-                modifiersStyles={{
-                  hasPost: { 
-                    backgroundColor: '#e0f2fe', 
-                    fontWeight: 'bold'
-                  }
-                }}
-                components={{
-                  DayContent: ({ date }) => renderDayContent(date)
-                }}
-              />
+      {/* Full-width Calendar */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
+            Schedule Calendar
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center">
+            <CalendarComponent
+              mode="single"
+              selected={selectedDate}
+              onSelect={setSelectedDate}
+              className="rounded-md border w-full max-w-4xl"
+              classNames={{
+                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+                month: "space-y-4 w-full",
+                table: "w-full border-collapse space-y-1",
+                head_row: "flex",
+                head_cell: "text-muted-foreground rounded-md w-16 h-12 font-normal text-[0.8rem] flex items-center justify-center",
+                row: "flex w-full mt-2",
+                cell: "h-16 w-16 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                day: "h-16 w-16 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+              }}
+              modifiers={{
+                hasPost: getDatesWithPosts()
+              }}
+              modifiersStyles={{
+                hasPost: { 
+                  backgroundColor: '#e0f2fe', 
+                  fontWeight: 'bold'
+                }
+              }}
+              components={{
+                DayContent: ({ date }) => renderDayContent(date)
+              }}
+            />
+          </div>
+          <div className="mt-4 text-sm text-gray-600 flex justify-center">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-blue-100 rounded border"></div>
+              <span>Days with scheduled posts</span>
+              <div className="w-2 h-2 bg-blue-500 rounded-full ml-4"></div>
+              <span>Post indicator</span>
             </div>
-            <div className="mt-4 text-sm text-gray-600">
-              <div className="flex items-center space-x-2">
-                <div className="w-3 h-3 bg-blue-100 rounded border"></div>
-                <span>Days with scheduled posts</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Selected Date Posts */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Clock className="h-5 w-5 mr-2 text-green-600" />
-              {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Select a date'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedDatePosts.length > 0 ? (
-              <div className="space-y-4">
-                {selectedDatePosts.map((post, index) => (
-                  <div 
-                    key={post.id || index} 
-                    className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50"
-                    onClick={() => handlePostClick(post)}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Badge variant="secondary" className="text-xs">
-                          {post.industry}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {post.goal}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        {post.scheduledTime && (
-                          <span className="text-sm text-gray-500">
-                            {post.scheduledTime} UTC
-                          </span>
-                        )}
-                        <Edit className="h-4 w-4 text-blue-600" />
-                      </div>
+      {/* Selected Date Posts - Full width below calendar */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Clock className="h-5 w-5 mr-2 text-green-600" />
+            Posts for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Selected Date'}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {selectedDatePosts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {selectedDatePosts.map((post, index) => (
+                <div 
+                  key={post.id || index} 
+                  className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                  onClick={() => handlePostClick(post)}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {post.industry}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {post.goal}
+                      </Badge>
                     </div>
-                    
-                    {post.generatedContent && (
-                      <div className="space-y-2">
-                        <p className="text-sm text-gray-700 line-clamp-3">
-                          {post.generatedContent.caption}
-                        </p>
-                        {post.generatedContent.hashtags && post.generatedContent.hashtags.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {post.generatedContent.hashtags.slice(0, 3).map((hashtag, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs text-green-700 border-green-200">
-                                #{hashtag.replace('#', '')}
-                              </Badge>
-                            ))}
-                            {post.generatedContent.hashtags.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{post.generatedContent.hashtags.length - 3} more
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {post.scheduledTime && (
+                        <span className="text-sm text-gray-500">
+                          {post.scheduledTime} UTC
+                        </span>
+                      )}
+                      <Edit className="h-4 w-4 text-blue-600" />
+                    </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                <CalendarIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                <p className="text-lg font-medium">No posts scheduled</p>
-                <p className="text-sm">
-                  {selectedDate ? 'for this date' : 'Select a date to view scheduled posts'}
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  
+                  {post.generatedContent && (
+                    <div className="space-y-2">
+                      <p className="text-sm text-gray-700 line-clamp-3">
+                        {post.generatedContent.caption}
+                      </p>
+                      {post.generatedContent.hashtags && post.generatedContent.hashtags.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {post.generatedContent.hashtags.slice(0, 3).map((hashtag, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs text-green-700 border-green-200">
+                              #{hashtag.replace('#', '')}
+                            </Badge>
+                          ))}
+                          {post.generatedContent.hashtags.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{post.generatedContent.hashtags.length - 3} more
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      {post.generatedContent.image && (
+                        <div className="mt-2">
+                          <img 
+                            src={post.generatedContent.image} 
+                            alt="Post media" 
+                            className="w-full h-32 object-cover rounded border"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <CalendarIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-lg font-medium">No posts scheduled</p>
+              <p className="text-sm">
+                {selectedDate ? 'for this date' : 'Select a date to view scheduled posts'}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Edit Post Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
