@@ -15,13 +15,14 @@ import {
   Wand2, 
   Calendar, 
   Clock, 
-  Image as ImageIcon, 
   Copy, 
   Download,
   Home,
   ArrowLeft,
   Crown,
-  Lock
+  Lock,
+  Plus,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
@@ -31,45 +32,40 @@ import UpgradePrompt from './starter/UpgradePrompt';
 interface GeneratedPost {
   caption: string;
   hashtags: string[];
-  imageUrl?: string;
   variations?: Array<{
     caption: string;
     hashtags: string[];
-    variation: string; // Changed from 'style' to 'variation' to match ContentVariation interface
+    variation: string;
   }>;
 }
 
 const ContentGenerator = () => {
   const { user } = useAuth();
-  const { subscribed, subscriptionTier } = useSubscription();
+  const { subscribed, subscriptionTier, loading: subscriptionLoading } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check if user has Pro plan
+  // Check user subscription status
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
+  const hasAnyPlan = subscribed && (subscriptionTier === 'Pro' || subscriptionTier === 'Starter');
 
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
+  const [nicheInfo, setNicheInfo] = useState('');
   const [generatedPost, setGeneratedPost] = useState<GeneratedPost | null>(null);
   const [loading, setLoading] = useState(false);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
-  const [scheduledTime, setScheduledTime] = useState<string | null>(null);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
 
+  // Redirect Starter users to their dedicated page
   useEffect(() => {
-    // Load any existing scheduled content or settings from local storage or database
-  }, []);
+    if (!subscriptionLoading && isStarterUser) {
+      navigate('/content-generator-starter');
+    }
+  }, [isStarterUser, subscriptionLoading, navigate]);
 
-  const handleIndustryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setIndustry(e.target.value);
-  };
-
-  const handleGoalChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGoal(e.target.value);
-  };
-
-  const handleGenerate = async () => {
+  const handleGenerate = async (generateVariations = false) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -91,32 +87,48 @@ const ContentGenerator = () => {
 
     setLoading(true);
     try {
-      // Call Supabase function to generate content
+      const requestBody: any = {
+        industry: industry,
+        goal: goal,
+        nicheInfo: nicheInfo || undefined
+      };
+
+      // Add variations for Pro users
+      if (isProUser && generateVariations) {
+        requestBody.generateVariations = true;
+        requestBody.variationCount = 3;
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: {
-          industry: industry,
-          goal: goal,
-          userId: user.id
-        }
+        body: requestBody
       });
 
       if (error) {
         throw error;
       }
 
-      // Parse the generated caption and hashtags from the response
-      const generatedCaption = data.generated_caption;
-      const generatedHashtags = data.generated_hashtags;
+      let generatedContent: GeneratedPost;
 
-      // Update the state with the generated content
-      setGeneratedPost({
-        caption: generatedCaption,
-        hashtags: generatedHashtags
-      });
+      if (data.variations) {
+        // Pro user with variations
+        generatedContent = {
+          caption: data.variations[0].caption,
+          hashtags: data.variations[0].hashtags,
+          variations: data.variations
+        };
+      } else {
+        // Single content generation
+        generatedContent = {
+          caption: data.caption,
+          hashtags: data.hashtags
+        };
+      }
+
+      setGeneratedPost(generatedContent);
 
       toast({
         title: "Content Generated",
-        description: "Your social media content has been generated",
+        description: generateVariations ? "Content with variations generated successfully" : "Your social media content has been generated",
       });
     } catch (error: any) {
       console.error("Error generating content:", error);
@@ -146,17 +158,9 @@ const ContentGenerator = () => {
       const file = new Blob([generatedPost.caption], { type: 'text/plain' });
       element.href = URL.createObjectURL(file);
       element.download = "generated_caption.txt";
-      document.body.appendChild(element); // Required for this to work in FireFox
+      document.body.appendChild(element);
       element.click();
     }
-  };
-
-  const handleGoHome = () => {
-    navigate('/');
-  };
-
-  const handleGoBack = () => {
-    navigate('/dashboard');
   };
 
   const handleSelectVariation = (variation: any) => {
@@ -177,6 +181,17 @@ const ContentGenerator = () => {
     element.click();
   };
 
+  if (subscriptionLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p>Loading subscription status...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
@@ -191,19 +206,31 @@ const ContentGenerator = () => {
                   Pro Features Active
                 </Badge>
               )}
+              {!hasAnyPlan && (
+                <Badge className="ml-2 bg-gray-100 text-gray-800">
+                  Free Trial
+                </Badge>
+              )}
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <Button variant="outline" onClick={handleGoBack} className="flex items-center space-x-2">
+            <Button variant="outline" onClick={() => navigate('/dashboard')} className="flex items-center space-x-2">
               <ArrowLeft className="h-4 w-4" />
               <span>Dashboard</span>
             </Button>
-            <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
+            <Button variant="outline" onClick={() => navigate('/')} className="flex items-center space-x-2">
               <Home className="h-4 w-4" />
               <span>Home</span>
             </Button>
           </div>
         </div>
+
+        {/* Show upgrade prompt for non-subscribers */}
+        {!hasAnyPlan && (
+          <div className="mb-8">
+            <UpgradePrompt />
+          </div>
+        )}
 
         {/* Content Generation Form */}
         <Card className="mb-8">
@@ -213,7 +240,12 @@ const ContentGenerator = () => {
               <span>Generate Content</span>
             </CardTitle>
             <CardDescription>
-              Tell us about your content goals and we'll create engaging posts for you
+              {isProUser 
+                ? "Generate multiple content variations with advanced AI features"
+                : hasAnyPlan 
+                ? "Create engaging social media content"
+                : "Try our AI content generation (limited features)"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -247,16 +279,63 @@ const ContentGenerator = () => {
                   id="goal" 
                   placeholder="e.g., Increase brand awareness" 
                   value={goal}
-                  onChange={handleGoalChange}
+                  onChange={(e) => setGoal(e.target.value)}
                 />
               </div>
             </div>
 
-            <div className="flex space-x-4">
+            {/* Pro feature: Niche Info */}
+            {hasAnyPlan && (
+              <div>
+                <Label htmlFor="niche">Niche Information (Optional)</Label>
+                <Textarea
+                  id="niche"
+                  placeholder="Any specific details about your target audience or niche..."
+                  value={nicheInfo}
+                  onChange={(e) => setNicheInfo(e.target.value)}
+                  maxLength={300}
+                  rows={2}
+                />
+              </div>
+            )}
+
+            {/* Pro feature: Scheduling */}
+            {isProUser && (
+              <div className="border-t pt-4">
+                <h4 className="text-sm font-medium mb-3 flex items-center">
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Schedule Post (Optional)
+                </h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="scheduledDate" className="text-sm">Date</Label>
+                    <Input
+                      id="scheduledDate"
+                      type="date"
+                      value={scheduledDate}
+                      onChange={(e) => setScheduledDate(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="scheduledTime" className="text-sm">Time</Label>
+                    <Input
+                      id="scheduledTime"
+                      type="time"
+                      value={scheduledTime}
+                      onChange={(e) => setScheduledTime(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
               <Button 
-                onClick={handleGenerate} 
+                onClick={() => handleGenerate(false)} 
                 disabled={loading || !industry || !goal}
-                className={`flex-1 ${isProUser ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}`}
+                className={`w-full ${isProUser ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}`}
               >
                 {loading ? (
                   <>
@@ -265,11 +344,24 @@ const ContentGenerator = () => {
                   </>
                 ) : (
                   <>
-                    <Sparkles className={`h-4 w-4 mr-2 ${isProUser ? 'text-white' : ''}`} />
+                    <Sparkles className="h-4 w-4 mr-2" />
                     Generate Content
                   </>
                 )}
               </Button>
+
+              {/* Pro feature: Generate with variations */}
+              {isProUser && (
+                <Button
+                  onClick={() => handleGenerate(true)}
+                  disabled={loading || !industry || !goal}
+                  variant="outline"
+                  className="w-full border-purple-200 text-purple-700 hover:bg-purple-50"
+                >
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  Generate with Variations (Pro)
+                </Button>
+              )}
             </div>
 
             {/* Pro Feature: Content Variations */}
@@ -334,10 +426,12 @@ const ContentGenerator = () => {
               <Textarea 
                 value={generatedPost.caption}
                 readOnly
-                className="resize-none"
+                className="resize-none min-h-[120px]"
               />
-              <div className="text-blue-500">
-                {generatedPost.hashtags.map(tag => `#${tag} `)}
+              <div className="flex flex-wrap gap-1">
+                {generatedPost.hashtags.map((tag, index) => (
+                  <span key={index} className="text-blue-500 text-sm">#{tag}</span>
+                ))}
               </div>
               <div className="flex space-x-4">
                 <Button variant="outline" className="flex-1" onClick={handleCopyCaption}>
