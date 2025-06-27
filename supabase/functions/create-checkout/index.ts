@@ -57,12 +57,12 @@ serve(async (req) => {
       line_items: [
         {
           price_data: {
-            currency: "usd",
+            currency: "eur",
             product_data: { 
               name: "Starter Plan",
               description: "Social media content generation with premium features"
             },
-            unit_amount: 1999, // $19.99
+            unit_amount: 1200, // €12.00
             recurring: { interval: "month" },
           },
           quantity: 1,

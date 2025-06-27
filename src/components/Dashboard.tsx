@@ -81,20 +81,20 @@ const Dashboard = () => {
     }
   };
 
-  // Calculate real metrics
-  const totalFollowers = metrics.reduce((sum, metric) => sum + (metric.followers_count || 0), 0);
-  const totalPosts = posts.length;
-  const avgEngagementRate = metrics.length > 0 
+  // Calculate real metrics - only show for subscribed users
+  const totalFollowers = subscribed ? metrics.reduce((sum, metric) => sum + (metric.followers_count || 0), 0) : 0;
+  const totalPosts = subscribed ? posts.length : 0;
+  const avgEngagementRate = subscribed && metrics.length > 0 
     ? (metrics.reduce((sum, metric) => sum + (metric.engagement_rate || 0), 0) / metrics.length).toFixed(1)
     : null;
   
-  // Calculate scheduled posts (posts with future scheduled date/time)
+  // Calculate scheduled posts (posts with future scheduled date/time) - only for subscribed users
   const now = new Date();
-  const scheduledPosts = posts.filter(post => {
+  const scheduledPosts = subscribed ? posts.filter(post => {
     if (!post.scheduled_date || !post.scheduled_time) return false;
     const scheduledDateTime = new Date(`${post.scheduled_date}T${post.scheduled_time}`);
     return scheduledDateTime > now;
-  });
+  }) : [];
   const totalScheduledPosts = scheduledPosts.length;
 
   if (loading) {
@@ -217,68 +217,70 @@ const Dashboard = () => {
         {/* Overview Tab or Default View */}
         {(!isProUser || activeTab === 'overview') && (
           <>
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Content Generated</CardTitle>
-                  <Sparkles className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalPosts || '--'}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {totalPosts ? 'Total posts created' : 'No posts yet'}
-                  </p>
-                </CardContent>
-              </Card>
+            {/* Quick Stats - Only show for subscribed users */}
+            {subscribed && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Content Generated</CardTitle>
+                    <Sparkles className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{totalPosts || '--'}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {totalPosts ? 'Total posts created' : 'No posts yet'}
+                    </p>
+                  </CardContent>
+                </Card>
 
-              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
-                  <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{avgEngagementRate ? `${avgEngagementRate}%` : '--'}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {avgEngagementRate ? 'Average across platforms' : 'No data available'}
-                  </p>
-                </CardContent>
-              </Card>
+                <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Engagement Rate</CardTitle>
+                    <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{avgEngagementRate ? `${avgEngagementRate}%` : '--'}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {avgEngagementRate ? 'Average across platforms' : 'No data available'}
+                    </p>
+                  </CardContent>
+                </Card>
 
-              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Scheduled Posts</CardTitle>
-                  <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{totalScheduledPosts || '--'}</div>
-                  <p className="text-xs text-muted-foreground">
-                    {totalScheduledPosts ? 'Ready to publish' : 'No scheduled posts'}
-                  </p>
-                </CardContent>
-              </Card>
+                <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Scheduled Posts</CardTitle>
+                    <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{totalScheduledPosts || '--'}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {totalScheduledPosts ? 'Ready to publish' : 'No scheduled posts'}
+                    </p>
+                  </CardContent>
+                </Card>
 
-              <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {isProUser ? 'Team Members' : 'Total Reach'}
-                  </CardTitle>
-                  {isProUser ? (
-                    <Users className="h-4 w-4 text-purple-600" />
-                  ) : (
-                    <Target className={`h-4 w-4 ${isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
-                  )}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {isProUser ? '3' : totalFollowers ? totalFollowers.toLocaleString() : '--'}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {isProUser ? 'Active collaborators' : totalFollowers ? 'Total followers' : 'No followers data'}
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
+                <Card className={isProUser ? "border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50" : isStarterUser ? "border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50" : ""}>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      {isProUser ? 'Team Members' : 'Total Reach'}
+                    </CardTitle>
+                    {isProUser ? (
+                      <Users className="h-4 w-4 text-purple-600" />
+                    ) : (
+                      <Target className={`h-4 w-4 ${isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {isProUser ? '3' : totalFollowers ? totalFollowers.toLocaleString() : '--'}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {isProUser ? 'Active collaborators' : totalFollowers ? 'Total followers' : 'No followers data'}
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
 
             {/* Action Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -337,30 +339,32 @@ const Dashboard = () => {
                 </Card>
               )}
 
-              {/* Social Accounts / Team Card */}
-              <Card className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-blue-600'}`} />
-                    {isProUser ? 'Team Collaboration' : 'Social Accounts'}
-                  </CardTitle>
-                  <CardDescription>
-                    {isProUser 
-                      ? 'Manage team members, roles, and collaborative workflows'
-                      : 'Connect and manage your social media accounts'
-                    }
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={handleConnectAccounts}
-                  >
-                    {isProUser ? 'Manage Team' : 'Connect Accounts'}
-                  </Button>
-                </CardContent>
-              </Card>
+              {/* Social Accounts / Team Card - Only show for subscribed users */}
+              {subscribed && (
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-blue-600'}`} />
+                      {isProUser ? 'Team Collaboration' : 'Social Accounts'}
+                    </CardTitle>
+                    <CardDescription>
+                      {isProUser 
+                        ? 'Manage team members, roles, and collaborative workflows'
+                        : 'Connect and manage your social media accounts'
+                      }
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={handleConnectAccounts}
+                    >
+                      {isProUser ? 'Manage Team' : 'Connect Accounts'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Show Social Accounts tab for Starter users */}
