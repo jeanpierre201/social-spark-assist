@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Sparkles, 
   BarChart3, 
@@ -33,6 +35,23 @@ const Dashboard = () => {
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
+
+  // Fetch posts data to get real scheduled posts count
+  const { data: posts = [] } = useQuery({
+    queryKey: ['user-posts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
 
   console.log('Dashboard: Current subscription info', { subscribed, subscriptionTier, isProUser, isStarterUser });
 
@@ -64,11 +83,19 @@ const Dashboard = () => {
 
   // Calculate real metrics
   const totalFollowers = metrics.reduce((sum, metric) => sum + (metric.followers_count || 0), 0);
-  const totalPosts = metrics.reduce((sum, metric) => sum + (metric.posts_count || 0), 0);
+  const totalPosts = posts.length;
   const avgEngagementRate = metrics.length > 0 
     ? (metrics.reduce((sum, metric) => sum + (metric.engagement_rate || 0), 0) / metrics.length).toFixed(1)
     : null;
-  const totalScheduledPosts = metrics.reduce((sum, metric) => sum + (metric.scheduled_posts_count || 0), 0);
+  
+  // Calculate scheduled posts (posts with future scheduled date/time)
+  const now = new Date();
+  const scheduledPosts = posts.filter(post => {
+    if (!post.scheduled_date || !post.scheduled_time) return false;
+    const scheduledDateTime = new Date(`${post.scheduled_date}T${post.scheduled_time}`);
+    return scheduledDateTime > now;
+  });
+  const totalScheduledPosts = scheduledPosts.length;
 
   if (loading) {
     return (
