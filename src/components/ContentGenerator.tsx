@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,6 +82,10 @@ const ContentGenerator = () => {
     daysRemaining
   } = useStarterSubscriptionStatus();
 
+  // Pro user monthly posts tracking
+  const [proMonthlyPosts, setProMonthlyPosts] = useState(0);
+  const [isLoadingProPosts, setIsLoadingProPosts] = useState(true);
+
   // Check user subscription status
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
@@ -104,6 +107,34 @@ const ContentGenerator = () => {
   const [generateWithImages, setGenerateWithImages] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+
+  // Load Pro user monthly posts count
+  useEffect(() => {
+    const loadProMonthlyPosts = async () => {
+      if (!user || !isProUser) {
+        setIsLoadingProPosts(false);
+        return;
+      }
+      
+      try {
+        setIsLoadingProPosts(true);
+        const { data, error } = await supabase.rpc('get_monthly_post_count', {
+          user_uuid: user.id
+        });
+
+        if (error) throw error;
+        setProMonthlyPosts(data || 0);
+      } catch (error) {
+        console.error('Error loading Pro monthly posts:', error);
+      } finally {
+        setIsLoadingProPosts(false);
+      }
+    };
+
+    if (isProUser) {
+      loadProMonthlyPosts();
+    }
+  }, [user, isProUser]);
 
   // Load existing posts for all users
   useEffect(() => {
@@ -202,6 +233,18 @@ const ContentGenerator = () => {
         variant: "destructive",
       });
       return;
+    }
+
+    // Check limits for Pro users (100 posts/month)
+    if (isProUser) {
+      if (proMonthlyPosts >= 100) {
+        toast({
+          title: "Monthly Limit Reached",
+          description: "You've reached your Pro plan limit of 100 posts per month.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     // Check limits for Starter users
@@ -306,8 +349,10 @@ const ContentGenerator = () => {
 
         setPosts(prev => [...prev, newPost]);
         
-        // Update usage count for Starter users
-        if (isStarterUser) {
+        // Update usage count for Pro and Starter users
+        if (isProUser) {
+          setProMonthlyPosts(prev => prev + 1);
+        } else if (isStarterUser) {
           setMonthlyPosts(prev => prev + 1);
         }
 
@@ -506,7 +551,7 @@ const ContentGenerator = () => {
     element.click();
   };
 
-  if (subscriptionLoading || (isStarterUser && starterLoading)) {
+  if (subscriptionLoading || (isStarterUser && starterLoading) || (isProUser && isLoadingProPosts)) {
     return (
       <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
         <div className="text-center">
@@ -562,6 +607,16 @@ const ContentGenerator = () => {
           <div className="mb-8">
             <UpgradePrompt subscribed={subscribed} canCreatePosts={true} />
           </div>
+        )}
+
+        {/* Usage indicators for Pro users */}
+        {isProUser && (
+          <UsageIndicators 
+            monthlyPosts={proMonthlyPosts} 
+            daysRemaining={30} 
+            isProPlan={true}
+            maxPosts={100}
+          />
         )}
 
         {/* Usage indicators for Starter users */}

@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -19,7 +18,9 @@ import {
   Zap,
   TrendingUp,
   Target,
-  MessageSquare
+  MessageSquare,
+  FileText,
+  CalendarDays
 } from 'lucide-react';
 import ProAnalytics from './ProAnalytics';
 import TeamCollaboration from './TeamCollaboration';
@@ -30,11 +31,12 @@ const Dashboard = () => {
   const { subscribed, subscriptionTier, loading } = useSubscription();
   const { accounts, metrics } = useSocialAccounts();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab('overview');
   const socialAccountsRef = useRef<HTMLDivElement>(null);
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
+  const hasAnyPlan = subscribed && (subscriptionTier === 'Pro' || subscriptionTier === 'Starter');
 
   // Fetch posts data to get real scheduled posts count
   const { data: posts = [] } = useQuery({
@@ -314,6 +316,46 @@ const Dashboard = () => {
                   </Button>
                 </CardContent>
               </Card>
+
+              {/* Posts Management Card - Only show for subscribed users */}
+              {hasAnyPlan && (
+                <Card className="hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <FileText className={`h-5 w-5 mr-2 ${isProUser ? 'text-purple-600' : 'text-blue-600'}`} />
+                      Manage Posts
+                    </CardTitle>
+                    <CardDescription>
+                      View, edit, and organize your generated content
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => navigate('/content-generator')}
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      View All Posts
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        navigate('/content-generator');
+                        // Small delay to ensure page loads before scrolling
+                        setTimeout(() => {
+                          const postsSection = document.querySelector('[data-posts-section]');
+                          postsSection?.scrollIntoView({ behavior: 'smooth' });
+                        }, 100);
+                      }}
+                    >
+                      <CalendarDays className="h-4 w-4 mr-2" />
+                      Calendar View
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Analytics Card - Only show for Pro users */}
               {isProUser && (
