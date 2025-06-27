@@ -97,22 +97,26 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
   const selectedDatePosts = selectedDate ? getPostsForDate(selectedDate) : [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">Calendar View</h3>
       </div>
 
-      <CalendarDisplay 
-        posts={posts}
-        selectedDate={selectedDate}
-        onDateSelect={setSelectedDate}
-      />
+      <div className="w-full max-w-4xl mx-auto">
+        <CalendarDisplay 
+          posts={posts}
+          selectedDate={selectedDate}
+          onDateSelect={setSelectedDate}
+        />
+      </div>
 
-      <PostsList
-        selectedDate={selectedDate}
-        posts={selectedDatePosts}
-        onPostClick={handlePostClick}
-      />
+      <div className="w-full">
+        <PostsList
+          selectedDate={selectedDate}
+          posts={selectedDatePosts}
+          onPostClick={handlePostClick}
+        />
+      </div>
 
       <PostEditDialog
         isOpen={isEditDialogOpen}
