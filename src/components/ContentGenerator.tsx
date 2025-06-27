@@ -97,7 +97,7 @@ const ContentGenerator = () => {
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
 
-  // Starter-specific states
+  // Posts management states (for all users)
   const [posts, setPosts] = useState<PostData[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
@@ -105,10 +105,10 @@ const ContentGenerator = () => {
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
 
-  // Load existing posts for Starter users
+  // Load existing posts for all users
   useEffect(() => {
     const loadPosts = async () => {
-      if (!user || !isStarterUser) return;
+      if (!user) return;
       
       try {
         setIsLoadingPosts(true);
@@ -150,7 +150,7 @@ const ContentGenerator = () => {
     };
 
     loadPosts();
-  }, [user, isStarterUser, toast]);
+  }, [user, toast]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -264,8 +264,8 @@ const ContentGenerator = () => {
 
       setGeneratedPost(generatedContent);
 
-      // For Starter users, save to database and update usage
-      if (isStarterUser) {
+      // For all users, save to database and update posts
+      if (hasAnyPlan) {
         let imageUrl = '';
         if (uploadedImage) {
           const uploadedUrl = await uploadImageToStorage(uploadedImage);
@@ -305,9 +305,13 @@ const ContentGenerator = () => {
         };
 
         setPosts(prev => [...prev, newPost]);
-        setMonthlyPosts(prev => prev + 1);
+        
+        // Update usage count for Starter users
+        if (isStarterUser) {
+          setMonthlyPosts(prev => prev + 1);
+        }
 
-        // Clear form for Starter users
+        // Clear form
         setIndustry('');
         setGoal('');
         setNicheInfo('');
@@ -519,10 +523,12 @@ const ContentGenerator = () => {
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">
-              {isStarterUser ? 'Starter Content Generator' : 'Content Generator'}
+              {isProUser ? 'Pro Content Generator' : isStarterUser ? 'Starter Content Generator' : 'Content Generator'}
             </h1>
             <p className="text-muted-foreground">
-              {isStarterUser 
+              {isProUser 
+                ? 'Unlimited AI-powered content generation with advanced features'
+                : isStarterUser 
                 ? 'Generate up to 10 posts per month with AI assistance'
                 : 'Create engaging social media content with AI'
               }
@@ -563,21 +569,21 @@ const ContentGenerator = () => {
           <UsageIndicators monthlyPosts={monthlyPosts} daysRemaining={daysRemaining} />
         )}
 
-        <div className={isStarterUser ? "grid grid-cols-1 lg:grid-cols-2 gap-8" : ""}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Content Generation Form */}
-          <Card className={isStarterUser ? "" : "mb-8"}>
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                {isStarterUser ? (
-                  <Plus className="h-5 w-5 text-purple-600" />
+                {isProUser ? (
+                  <Sparkles className="h-6 w-6 text-purple-500" />
                 ) : (
-                  <Sparkles className={`h-6 w-6 ${isProUser ? 'text-purple-500' : 'text-blue-500'}`} />
+                  <Plus className="h-5 w-5 text-purple-600" />
                 )}
-                <span>{isStarterUser ? 'Create Content' : 'Generate Content'}</span>
+                <span>{isProUser ? 'Pro Content Generation' : 'Create Content'}</span>
               </CardTitle>
               <CardDescription>
                 {isProUser 
-                  ? "Generate multiple content variations with advanced AI features"
+                  ? "Generate unlimited content with advanced AI features and variations"
                   : isStarterUser
                   ? "Generate single posts or batch create content with scheduling"
                   : hasAnyPlan 
@@ -615,10 +621,10 @@ const ContentGenerator = () => {
                   <Input 
                     type="text" 
                     id="goal" 
-                    placeholder={isStarterUser ? "e.g., Promote new product launch..." : "e.g., Increase brand awareness"} 
+                    placeholder="e.g., Promote new product launch..." 
                     value={goal}
                     onChange={(e) => setGoal(e.target.value)}
-                    maxLength={isStarterUser ? 200 : undefined}
+                    maxLength={200}
                   />
                 </div>
               </div>
@@ -657,7 +663,7 @@ const ContentGenerator = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="scheduledTime" className="text-sm">Time {isStarterUser ? '(UTC)' : ''}</Label>
+                      <Label htmlFor="scheduledTime" className="text-sm">Time (UTC)</Label>
                       <Input
                         id="scheduledTime"
                         type="time"
@@ -667,17 +673,15 @@ const ContentGenerator = () => {
                       />
                     </div>
                   </div>
-                  {isStarterUser && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      <Clock className="h-3 w-3 inline mr-1" />
-                      Times are stored in UTC. Your local time will be converted automatically.
-                    </p>
-                  )}
+                  <p className="text-xs text-gray-500 mt-1">
+                    <Clock className="h-3 w-3 inline mr-1" />
+                    Times are stored in UTC. Your local time will be converted automatically.
+                  </p>
                 </div>
               )}
 
-              {/* Image Upload - Starter users only */}
-              {isStarterUser && (
+              {/* Image Upload - available for all subscribers */}
+              {hasAnyPlan && (
                 <div className="border-t pt-4">
                   <h4 className="text-sm font-medium mb-3">Media (Optional)</h4>
                   <div className="space-y-3">
@@ -743,8 +747,8 @@ const ContentGenerator = () => {
                     </>
                   ) : (
                     <>
-                      {isStarterUser ? <Plus className="h-4 w-4 mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                      {isStarterUser ? 'Generate Single Post' : 'Generate Content'}
+                      {isProUser ? <Sparkles className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
+                      {isProUser ? 'Generate Content' : 'Generate Single Post'}
                     </>
                   )}
                 </Button>
@@ -824,81 +828,80 @@ const ContentGenerator = () => {
             </CardContent>
           </Card>
 
-          {/* Posts Display for Starter users */}
-          {isStarterUser && (
-            <div className="space-y-4">
-              {/* View Toggle */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Your Posts</h2>
-                <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className="flex items-center space-x-1"
-                  >
-                    <List className="h-4 w-4" />
-                    <span>List</span>
-                  </Button>
-                  <Button
-                    variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('calendar')}
-                    className="flex items-center space-x-1"
-                  >
-                    <CalendarIcon className="h-4 w-4" />
-                    <span>Calendar</span>
-                  </Button>
-                </div>
+          {/* Posts Display */}
+          <div className="space-y-4">
+            {/* View Toggle */}
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold">Your Posts</h2>
+              <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                  className="flex items-center space-x-1"
+                >
+                  <List className="h-4 w-4" />
+                  <span>List</span>
+                </Button>
+                <Button
+                  variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('calendar')}
+                  className="flex items-center space-x-1"
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  <span>Calendar</span>
+                </Button>
               </div>
-
-              {/* Posts Display */}
-              {isLoadingPosts ? (
-                <div className="flex items-center justify-center h-64">
-                  <Loader2 className="h-8 w-8 animate-spin" />
-                </div>
-              ) : viewMode === 'list' ? (
-                <GeneratedPostsPreview posts={posts} setPosts={setPosts} />
-              ) : (
-                <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
-              )}
             </div>
-          )}
+
+            {/* Posts Display */}
+            {isLoadingPosts ? (
+              <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : viewMode === 'list' ? (
+              <GeneratedPostsPreview posts={posts} setPosts={setPosts} />
+            ) : (
+              <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
+            )}
+          </div>
         </div>
 
-        {/* Generated Content Display for Pro and Free users */}
-        {!isStarterUser && generatedPost && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Sparkles className={`h-5 w-5 ${isProUser ? 'text-purple-500' : 'text-green-500'}`} />
-                <span>Generated Content</span>
-                {isProUser && <Badge className="bg-purple-100 text-purple-800">Pro</Badge>}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <Textarea 
-                value={generatedPost.caption}
-                readOnly
-                className="resize-none min-h-[120px]"
-              />
-              <div className="flex flex-wrap gap-1">
-                {generatedPost.hashtags.map((tag, index) => (
-                  <span key={index} className="text-blue-500 text-sm">#{tag}</span>
-                ))}
-              </div>
-              <div className="flex space-x-4">
-                <Button variant="outline" className="flex-1" onClick={handleCopyCaption}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy Caption
-                </Button>
-                <Button variant="outline" className="flex-1" onClick={handleDownloadCaption}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Generated Content Display for non-subscribers (free users) */}
+        {!hasAnyPlan && generatedPost && (
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Sparkles className="h-5 w-5 text-green-500" />
+                  <span>Generated Content</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Textarea 
+                  value={generatedPost.caption}
+                  readOnly
+                  className="resize-none min-h-[120px]"
+                />
+                <div className="flex flex-wrap gap-1">
+                  {generatedPost.hashtags.map((tag, index) => (
+                    <span key={index} className="text-blue-500 text-sm">#{tag}</span>
+                  ))}
+                </div>
+                <div className="flex space-x-4">
+                  <Button variant="outline" className="flex-1" onClick={handleCopyCaption}>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy Caption
+                  </Button>
+                  <Button variant="outline" className="flex-1" onClick={handleDownloadCaption}>
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>
