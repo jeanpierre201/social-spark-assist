@@ -4,16 +4,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Settings, Home, ArrowLeft, Sparkles, Zap, BarChart3, Users } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useProUpgrade } from '@/hooks/useProUpgrade';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
 const ProPlanPricing = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, subscriptionEnd, openCustomerPortal, loading } = useSubscription();
+  const { createProCheckout } = useProUpgrade();
   const navigate = useNavigate();
 
   const features = [
-    { icon: Sparkles, text: "100 posts per month" },
+    { icon: Sparkles, text: "Unlimited posts per month" },
     { icon: Zap, text: "Multiple content variations (3-5 versions per post)" },
     { icon: BarChart3, text: "Advanced analytics & insights" },
     { icon: Users, text: "Team collaboration tools" },
@@ -31,10 +33,12 @@ const ProPlanPricing = () => {
     });
   };
 
-  const handleUpgrade = () => {
-    // For now, show coming soon message
-    // Later this will integrate with Stripe for Pro plan
-    console.log('Pro plan upgrade - Coming soon!');
+  const handleUpgrade = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    await createProCheckout();
   };
 
   const handleGoHome = () => {
@@ -46,6 +50,7 @@ const ProPlanPricing = () => {
   };
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
+  const isStarterUser = subscribed && subscriptionTier === 'Starter';
 
   if (loading) {
     return (
@@ -127,10 +132,13 @@ const ProPlanPricing = () => {
                     size="lg"
                   >
                     <Crown className="h-5 w-5 mr-2" />
-                    Upgrade to Pro - Coming Soon!
+                    {isStarterUser ? 'Upgrade to Pro' : 'Get Pro Plan'}
                   </Button>
                   <p className="text-xs text-center text-muted-foreground">
-                    Pro plan features are being finalized. Contact support for early access.
+                    {isStarterUser ? 
+                      'Upgrade from your current Starter plan to unlock all Pro features.' :
+                      '14-day free trial • Cancel anytime'
+                    }
                   </p>
                 </div>
               )}
