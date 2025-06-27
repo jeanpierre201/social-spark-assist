@@ -108,8 +108,8 @@ const Pricing = () => {
         : subscriptionTier === 'Starter'
           ? "Upgrade to Pro"
           : "Go Pro",
-      popular: subscriptionTier === 'Starter',
-      buttonVariant: subscriptionTier === 'Starter' ? "default" as const : "outline" as const,
+      popular: false,
+      buttonVariant: "outline" as const,
       onClick: handleProPlan
     }
   ];
@@ -131,7 +131,6 @@ const Pricing = () => {
             <div className="mt-4">
               <p className="text-lg font-medium text-green-600">
                 Current Plan: {subscriptionTier}
-                {subscriptionTier === 'Starter' && " - Ready to upgrade to Pro?"}
               </p>
             </div>
           )}
@@ -153,7 +152,7 @@ const Pricing = () => {
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                   <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-1 rounded-full text-sm font-medium flex items-center">
                     <Star className="w-4 h-4 mr-1 fill-current" />
-                    {subscriptionTier === 'Starter' && plan.name === 'Pro Plan' ? 'Recommended Upgrade' : 'Most Popular'}
+                    Most Popular
                   </div>
                 </div>
               )}
