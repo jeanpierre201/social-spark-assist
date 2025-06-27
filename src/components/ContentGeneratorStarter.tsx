@@ -142,14 +142,8 @@ const ContentGeneratorStarter = () => {
 
         <UsageIndicators monthlyPosts={monthlyPosts} daysRemaining={daysRemaining} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <ContentCreationForm 
-            monthlyPosts={monthlyPosts}
-            setMonthlyPosts={setMonthlyPosts}
-            canCreatePosts={canCreatePosts}
-            setPosts={setPosts}
-          />
-          
+        {viewMode === 'calendar' ? (
+          // Full width layout for calendar view
           <div className="space-y-4">
             {/* View Toggle */}
             <div className="flex items-center justify-between">
@@ -176,18 +170,62 @@ const ContentGeneratorStarter = () => {
               </div>
             </div>
 
-            {/* Posts Display */}
+            {/* Calendar Display - Full Width */}
             {isLoadingPosts ? (
               <div className="flex items-center justify-center h-64">
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
-            ) : viewMode === 'list' ? (
-              <GeneratedPostsPreview posts={posts} setPosts={setPosts} />
             ) : (
               <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
             )}
           </div>
-        </div>
+        ) : (
+          // Two column layout for list view
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <ContentCreationForm 
+              monthlyPosts={monthlyPosts}
+              setMonthlyPosts={setMonthlyPosts}
+              canCreatePosts={canCreatePosts}
+              setPosts={setPosts}
+            />
+            
+            <div className="space-y-4">
+              {/* View Toggle */}
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">Your Posts</h2>
+                <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                  <Button
+                    variant={viewMode === 'list' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('list')}
+                    className="flex items-center space-x-1"
+                  >
+                    <List className="h-4 w-4" />
+                    <span>List</span>
+                  </Button>
+                  <Button
+                    variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('calendar')}
+                    className="flex items-center space-x-1"
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    <span>Calendar</span>
+                  </Button>
+                </div>
+              </div>
+
+              {/* Posts Display */}
+              {isLoadingPosts ? (
+                <div className="flex items-center justify-center h-64">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : (
+                <GeneratedPostsPreview posts={posts} setPosts={setPosts} />
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
