@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -33,13 +34,15 @@ interface PostData {
   created_at?: string;
 }
 
+type ViewMode = 'list' | 'calendar';
+
 const ContentGeneratorStarter = () => {
   const { user } = useAuth();
   const { subscribed } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [posts, setPosts] = useState<PostData[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   
   const {
