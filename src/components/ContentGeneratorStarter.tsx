@@ -76,7 +76,8 @@ const ContentGeneratorStarter = () => {
           generatedContent: {
             caption: post.generated_caption,
             hashtags: post.generated_hashtags || [],
-            image: post.media_url
+            image: post.media_url,
+            isGenerated: false // Default to false for existing posts
           },
           created_at: post.created_at
         })) || [];
@@ -181,9 +182,9 @@ const ContentGeneratorStarter = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : viewMode === 'list' ? (
-              <GeneratedPostsPreview posts={posts} />
+              <GeneratedPostsPreview posts={posts} setPosts={setPosts} />
             ) : (
-              <CalendarView posts={posts} setViewMode={setViewMode} />
+              <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
             )}
           </div>
         </div>

@@ -7,13 +7,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Loader2, Wand2 } from 'lucide-react';
+import { Plus, Loader2, Wand2, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface GeneratedContent {
   caption: string;
   hashtags: string[];
   image?: string;
+  isGenerated?: boolean;
 }
 
 interface PostData {
@@ -38,8 +39,46 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
   const [nicheInfo, setNicheInfo] = useState('');
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generateWithImages, setGenerateWithImages] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState<File | null>(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setUploadedImage(file);
+    
+    // Create a preview URL
+    const previewUrl = URL.createObjectURL(file);
+    setUploadedImageUrl(previewUrl);
+  };
+
+  const uploadImageToStorage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${user?.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
 
   const handleGenerateSingle = async () => {
     if (!user) {
@@ -91,18 +130,39 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
 
       if (error) throw error;
 
-      const generatedContent: GeneratedContent = {
-        caption: data.caption,
-        hashtags: data.hashtags
-      };
+      let imageUrl = '';
+      let isImageGenerated = false;
 
-      // Generate image if requested
-      if (generateWithImages) {
-        // TODO: Add image generation call here
+      // Handle image upload if provided
+      if (uploadedImage) {
+        const uploadedUrl = await uploadImageToStorage(uploadedImage);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+          isImageGenerated = false;
+        }
+      }
+
+      // Generate image if requested and no uploaded image
+      if (generateWithImages && !uploadedImage) {
         toast({
           title: "Image Generation",
           description: "Image generation will be implemented in the next update",
         });
+        isImageGenerated = true;
+      }
+
+      const generatedContent: GeneratedContent = {
+        caption: data.caption,
+        hashtags: data.hashtags,
+        image: imageUrl,
+        isGenerated: isImageGenerated
+      };
+
+      // Convert local time to UTC for storage
+      let utcDateTime = null;
+      if (scheduledDate && scheduledTime) {
+        const localDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+        utcDateTime = localDateTime.toISOString();
       }
 
       // Save to database
@@ -113,8 +173,11 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           industry: industry.trim(),
           goal: goal.trim(),
           niche_info: nicheInfo.trim() || null,
+          scheduled_date: scheduledDate || null,
+          scheduled_time: scheduledTime || null,
           generated_caption: generatedContent.caption,
-          generated_hashtags: generatedContent.hashtags
+          generated_hashtags: generatedContent.hashtags,
+          media_url: imageUrl || null
         });
 
       if (dbError) throw dbError;
@@ -123,6 +186,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         industry: industry.trim(),
         goal: goal.trim(),
         nicheInfo: nicheInfo.trim(),
+        scheduledDate: scheduledDate,
+        scheduledTime: scheduledTime,
         generatedContent
       };
 
@@ -133,6 +198,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setIndustry('');
       setGoal('');
       setNicheInfo('');
+      setScheduledDate('');
+      setScheduledTime('');
+      setUploadedImage(null);
+      setUploadedImageUrl('');
 
       toast({
         title: "Content Generated!",
@@ -205,6 +274,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         "Gather feedback"
       ];
 
+      let imageUrl = '';
+      if (uploadedImage) {
+        const uploadedUrl = await uploadImageToStorage(uploadedImage);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
       for (let i = 0; i < Math.min(remainingPosts, 10); i++) {
         const currentGoal = i === 0 ? goal.trim() : `${goal.trim()} - ${variations[i % variations.length]}`;
         
@@ -220,7 +297,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
 
         const generatedContent: GeneratedContent = {
           caption: data.caption,
-          hashtags: data.hashtags
+          hashtags: data.hashtags,
+          image: imageUrl,
+          isGenerated: false
         };
 
         // Save to database
@@ -231,8 +310,11 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             industry: industry.trim(),
             goal: currentGoal,
             niche_info: nicheInfo.trim() || null,
+            scheduled_date: scheduledDate || null,
+            scheduled_time: scheduledTime || null,
             generated_caption: generatedContent.caption,
-            generated_hashtags: generatedContent.hashtags
+            generated_hashtags: generatedContent.hashtags,
+            media_url: imageUrl || null
           });
 
         if (dbError) throw dbError;
@@ -241,6 +323,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           industry: industry.trim(),
           goal: currentGoal,
           nicheInfo: nicheInfo.trim(),
+          scheduledDate: scheduledDate,
+          scheduledTime: scheduledTime,
           generatedContent
         };
 
@@ -252,6 +336,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setIndustry('');
       setGoal('');
       setNicheInfo('');
+      setScheduledDate('');
+      setScheduledTime('');
+      setUploadedImage(null);
+      setUploadedImageUrl('');
 
       toast({
         title: "Batch Generation Complete!",
@@ -278,7 +366,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           Create Content
         </CardTitle>
         <CardDescription>
-          Generate single posts or batch create content
+          Generate single posts or batch create content with scheduling
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -317,17 +405,90 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="generate-images"
-            checked={generateWithImages}
-            onChange={(e) => setGenerateWithImages(e.target.checked)}
-            className="rounded border-gray-300"
-          />
-          <Label htmlFor="generate-images" className="text-sm">
-            Generate AI images (Coming soon)
-          </Label>
+        {/* Scheduling Section */}
+        <div className="border-t pt-4">
+          <h4 className="text-sm font-medium mb-3 flex items-center">
+            <Calendar className="h-4 w-4 mr-2" />
+            Schedule Post (Optional)
+          </h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="scheduledDate" className="text-sm">Date</Label>
+              <Input
+                id="scheduledDate"
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+            <div>
+              <Label htmlFor="scheduledTime" className="text-sm">Time (UTC)</Label>
+              <Input
+                id="scheduledTime"
+                type="time"
+                value={scheduledTime}
+                onChange={(e) => setScheduledTime(e.target.value)}
+                className="text-sm"
+              />
+            </div>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            <Clock className="h-3 w-3 inline mr-1" />
+            Times are stored in UTC. Your local time will be converted automatically.
+          </p>
+        </div>
+
+        {/* Image Upload Section */}
+        <div className="border-t pt-4">
+          <h4 className="text-sm font-medium mb-3">Media (Optional)</h4>
+          <div className="space-y-3">
+            <div>
+              <Label htmlFor="image-upload" className="text-sm">Upload Image</Label>
+              <Input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="text-sm"
+              />
+            </div>
+            
+            {uploadedImageUrl && (
+              <div className="relative">
+                <img 
+                  src={uploadedImageUrl} 
+                  alt="Uploaded preview" 
+                  className="w-full h-32 object-cover rounded border"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setUploadedImage(null);
+                    setUploadedImageUrl('');
+                  }}
+                  className="absolute top-1 right-1 bg-white/80 hover:bg-white"
+                >
+                  ×
+                </Button>
+              </div>
+            )}
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="generate-images"
+                checked={generateWithImages}
+                onChange={(e) => setGenerateWithImages(e.target.checked)}
+                className="rounded border-gray-300"
+                disabled={!!uploadedImage}
+              />
+              <Label htmlFor="generate-images" className="text-sm">
+                Generate AI images (Coming soon) {uploadedImage && '- Disabled when image uploaded'}
+              </Label>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">

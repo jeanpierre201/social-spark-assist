@@ -33,9 +33,10 @@ interface PostData {
 interface CalendarViewProps {
   posts: PostData[];
   setViewMode: (mode: 'list' | 'calendar') => void;
+  setPosts?: (posts: PostData[]) => void;
 }
 
-const CalendarView = ({ posts, setViewMode }: CalendarViewProps) => {
+const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [selectedPost, setSelectedPost] = useState<PostData | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -83,6 +84,13 @@ const CalendarView = ({ posts, setViewMode }: CalendarViewProps) => {
 
       if (error) throw error;
 
+      // Update the posts list if setPosts is provided
+      if (setPosts) {
+        setPosts(posts.map(post => 
+          post.id === editingPost.id ? editingPost : post
+        ));
+      }
+
       toast({
         title: "Success",
         description: "Post updated successfully",
@@ -90,7 +98,6 @@ const CalendarView = ({ posts, setViewMode }: CalendarViewProps) => {
 
       setIsEditDialogOpen(false);
       setEditingPost(null);
-      // Refresh posts would need to be implemented by parent component
     } catch (error) {
       console.error('Error updating post:', error);
       toast({
@@ -136,14 +143,14 @@ const CalendarView = ({ posts, setViewMode }: CalendarViewProps) => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">Calendar View</h3>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Calendar */}
-        <Card>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Calendar - Made bigger */}
+        <Card className="xl:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center">
               <CalendarIcon className="h-5 w-5 mr-2 text-blue-600" />
@@ -151,24 +158,36 @@ const CalendarView = ({ posts, setViewMode }: CalendarViewProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <CalendarComponent
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              className="rounded-md border"
-              modifiers={{
-                hasPost: getDatesWithPosts()
-              }}
-              modifiersStyles={{
-                hasPost: { 
-                  backgroundColor: '#e0f2fe', 
-                  fontWeight: 'bold'
-                }
-              }}
-              components={{
-                DayContent: ({ date }) => renderDayContent(date)
-              }}
-            />
+            <div className="flex justify-center">
+              <CalendarComponent
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md border w-full max-w-none"
+                classNames={{
+                  months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+                  month: "space-y-4 w-full",
+                  table: "w-full border-collapse space-y-1",
+                  head_row: "flex",
+                  head_cell: "text-muted-foreground rounded-md w-12 h-12 font-normal text-[0.8rem] flex items-center justify-center",
+                  row: "flex w-full mt-2",
+                  cell: "h-12 w-12 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                  day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                }}
+                modifiers={{
+                  hasPost: getDatesWithPosts()
+                }}
+                modifiersStyles={{
+                  hasPost: { 
+                    backgroundColor: '#e0f2fe', 
+                    fontWeight: 'bold'
+                  }
+                }}
+                components={{
+                  DayContent: ({ date }) => renderDayContent(date)
+                }}
+              />
+            </div>
             <div className="mt-4 text-sm text-gray-600">
               <div className="flex items-center space-x-2">
                 <div className="w-3 h-3 bg-blue-100 rounded border"></div>
@@ -207,7 +226,7 @@ const CalendarView = ({ posts, setViewMode }: CalendarViewProps) => {
                       <div className="flex items-center space-x-2">
                         {post.scheduledTime && (
                           <span className="text-sm text-gray-500">
-                            {post.scheduledTime}
+                            {post.scheduledTime} UTC
                           </span>
                         )}
                         <Edit className="h-4 w-4 text-blue-600" />
@@ -311,7 +330,7 @@ const CalendarView = ({ posts, setViewMode }: CalendarViewProps) => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="time">Scheduled Time</Label>
+                  <Label htmlFor="time">Scheduled Time (UTC)</Label>
                   <Input
                     id="time"
                     type="time"

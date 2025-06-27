@@ -3,13 +3,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, Clock, Hash, MessageSquare, Image as ImageIcon, Edit, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Calendar, Clock, Hash, MessageSquare, Image as ImageIcon, Edit, Trash2, Save, X } from 'lucide-react';
 import { format } from 'date-fns';
+import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface GeneratedContent {
   caption: string;
   hashtags: string[];
   image?: string;
+  isGenerated?: boolean;
 }
 
 interface PostData {
@@ -25,17 +33,91 @@ interface PostData {
 
 interface GeneratedPostsPreviewProps {
   posts: PostData[];
+  setPosts?: (posts: PostData[]) => void;
 }
 
-const GeneratedPostsPreview = ({ posts }: GeneratedPostsPreviewProps) => {
-  const handleEdit = (postId?: string) => {
-    // TODO: Implement edit functionality
-    console.log('Edit post:', postId);
+const GeneratedPostsPreview = ({ posts, setPosts }: GeneratedPostsPreviewProps) => {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPost, setEditingPost] = useState<PostData | null>(null);
+  const { toast } = useToast();
+
+  const handleEdit = (post: PostData) => {
+    setEditingPost({ ...post });
+    setIsEditDialogOpen(true);
   };
 
-  const handleDelete = (postId?: string) => {
-    // TODO: Implement delete functionality
-    console.log('Delete post:', postId);
+  const handleSavePost = async () => {
+    if (!editingPost || !editingPost.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({
+          industry: editingPost.industry,
+          goal: editingPost.goal,
+          niche_info: editingPost.nicheInfo,
+          scheduled_date: editingPost.scheduledDate,
+          scheduled_time: editingPost.scheduledTime,
+          generated_caption: editingPost.generatedContent?.caption,
+          generated_hashtags: editingPost.generatedContent?.hashtags,
+          media_url: editingPost.generatedContent?.image
+        })
+        .eq('id', editingPost.id);
+
+      if (error) throw error;
+
+      // Update the posts list if setPosts is provided
+      if (setPosts) {
+        setPosts(posts.map(post => 
+          post.id === editingPost.id ? editingPost : post
+        ));
+      }
+
+      toast({
+        title: "Success",
+        description: "Post updated successfully",
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingPost(null);
+    } catch (error) {
+      console.error('Error updating post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update post",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = async (postId?: string) => {
+    if (!postId) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      // Update the posts list if setPosts is provided
+      if (setPosts) {
+        setPosts(posts.filter(post => post.id !== postId));
+      }
+
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post",
+        variant: "destructive",
+      });
+    }
   };
 
   if (posts.length === 0) {
@@ -82,7 +164,7 @@ const GeneratedPostsPreview = ({ posts }: GeneratedPostsPreviewProps) => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleEdit(post.id)}
+                      onClick={() => handleEdit(post)}
                       className="h-8 w-8 p-0"
                     >
                       <Edit className="h-4 w-4" />
@@ -156,12 +238,14 @@ const GeneratedPostsPreview = ({ posts }: GeneratedPostsPreviewProps) => {
                     <div>
                       <div className="flex items-center mb-2">
                         <ImageIcon className="h-4 w-4 mr-1 text-purple-600" />
-                        <span className="text-sm font-medium">Generated Image</span>
+                        <span className="text-sm font-medium">
+                          {post.generatedContent.isGenerated ? 'Generated Image' : 'Uploaded Image'}
+                        </span>
                       </div>
                       <div className="relative">
                         <img 
                           src={post.generatedContent.image} 
-                          alt="Generated content" 
+                          alt="Content media" 
                           className="w-full h-40 object-cover rounded border"
                         />
                       </div>
@@ -183,7 +267,7 @@ const GeneratedPostsPreview = ({ posts }: GeneratedPostsPreviewProps) => {
                     {post.scheduledTime && (
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-1 text-blue-600" />
-                        <span>{post.scheduledTime}</span>
+                        <span>{post.scheduledTime} UTC</span>
                       </div>
                     )}
                   </div>
@@ -193,6 +277,125 @@ const GeneratedPostsPreview = ({ posts }: GeneratedPostsPreviewProps) => {
           </Card>
         ))}
       </div>
+
+      {/* Edit Post Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+          </DialogHeader>
+          
+          {editingPost && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="industry">Industry</Label>
+                  <Input
+                    id="industry"
+                    value={editingPost.industry}
+                    onChange={(e) => setEditingPost({
+                      ...editingPost,
+                      industry: e.target.value
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="goal">Goal</Label>
+                  <Input
+                    id="goal"
+                    value={editingPost.goal}
+                    onChange={(e) => setEditingPost({
+                      ...editingPost,
+                      goal: e.target.value
+                    })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="niche">Niche Info</Label>
+                <Input
+                  id="niche"
+                  value={editingPost.nicheInfo}
+                  onChange={(e) => setEditingPost({
+                    ...editingPost,
+                    nicheInfo: e.target.value
+                  })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="date">Scheduled Date</Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    value={editingPost.scheduledDate}
+                    onChange={(e) => setEditingPost({
+                      ...editingPost,
+                      scheduledDate: e.target.value
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="time">Scheduled Time (UTC)</Label>
+                  <Input
+                    id="time"
+                    type="time"
+                    value={editingPost.scheduledTime}
+                    onChange={(e) => setEditingPost({
+                      ...editingPost,
+                      scheduledTime: e.target.value
+                    })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="caption">Caption</Label>
+                <Textarea
+                  id="caption"
+                  rows={4}
+                  value={editingPost.generatedContent?.caption || ''}
+                  onChange={(e) => setEditingPost({
+                    ...editingPost,
+                    generatedContent: {
+                      ...editingPost.generatedContent!,
+                      caption: e.target.value
+                    }
+                  })}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="hashtags">Hashtags (comma separated)</Label>
+                <Input
+                  id="hashtags"
+                  value={editingPost.generatedContent?.hashtags?.join(', ') || ''}
+                  onChange={(e) => setEditingPost({
+                    ...editingPost,
+                    generatedContent: {
+                      ...editingPost.generatedContent!,
+                      hashtags: e.target.value.split(',').map(tag => tag.trim())
+                    }
+                  })}
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+                <Button onClick={handleSavePost}>
+                  <Save className="h-4 w-4 mr-2" />
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
