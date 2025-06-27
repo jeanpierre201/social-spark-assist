@@ -1,7 +1,8 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,8 +26,10 @@ import SocialMediaSettings from './SocialMediaSettings';
 const Dashboard = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, loading } = useSubscription();
+  const { accounts, metrics } = useSocialAccounts();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const socialAccountsRef = useRef<HTMLDivElement>(null);
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
@@ -43,6 +46,29 @@ const Dashboard = () => {
       navigate('/content-generator');
     }
   };
+
+  const handleConnectAccounts = () => {
+    if (isProUser) {
+      setActiveTab('social');
+    } else {
+      setActiveTab('social');
+      // Scroll to social accounts section after a brief delay to ensure it's rendered
+      setTimeout(() => {
+        socialAccountsRef.current?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start' 
+        });
+      }, 100);
+    }
+  };
+
+  // Calculate real metrics
+  const totalFollowers = metrics.reduce((sum, metric) => sum + (metric.followers_count || 0), 0);
+  const totalPosts = metrics.reduce((sum, metric) => sum + (metric.posts_count || 0), 0);
+  const avgEngagementRate = metrics.length > 0 
+    ? (metrics.reduce((sum, metric) => sum + (metric.engagement_rate || 0), 0) / metrics.length).toFixed(1)
+    : null;
+  const totalScheduledPosts = metrics.reduce((sum, metric) => sum + (metric.scheduled_posts_count || 0), 0);
 
   if (loading) {
     return (
@@ -172,9 +198,9 @@ const Dashboard = () => {
                   <Sparkles className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{isStarterUser ? '8' : isProUser ? '24' : '0'}</div>
+                  <div className="text-2xl font-bold">{totalPosts || '--'}</div>
                   <p className="text-xs text-muted-foreground">
-                    {isStarterUser ? '+4 this month' : isProUser ? '+12% from last month' : 'Start creating'}
+                    {totalPosts ? 'Total posts created' : 'No posts yet'}
                   </p>
                 </CardContent>
               </Card>
@@ -185,9 +211,9 @@ const Dashboard = () => {
                   <TrendingUp className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{isStarterUser ? '3.1%' : isProUser ? '4.2%' : '--'}</div>
+                  <div className="text-2xl font-bold">{avgEngagementRate ? `${avgEngagementRate}%` : '--'}</div>
                   <p className="text-xs text-muted-foreground">
-                    {(isStarterUser || isProUser) ? '+0.8% from last week' : 'No data yet'}
+                    {avgEngagementRate ? 'Average across platforms' : 'No data available'}
                   </p>
                 </CardContent>
               </Card>
@@ -198,8 +224,10 @@ const Dashboard = () => {
                   <Calendar className={`h-4 w-4 ${isProUser ? 'text-purple-600' : isStarterUser ? 'text-blue-600' : 'text-muted-foreground'}`} />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{isStarterUser ? '3' : isProUser ? '8' : '0'}</div>
-                  <p className="text-xs text-muted-foreground">Next 7 days</p>
+                  <div className="text-2xl font-bold">{totalScheduledPosts || '--'}</div>
+                  <p className="text-xs text-muted-foreground">
+                    {totalScheduledPosts ? 'Ready to publish' : 'No scheduled posts'}
+                  </p>
                 </CardContent>
               </Card>
 
@@ -216,10 +244,10 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {isProUser ? '3' : isStarterUser ? '8.2K' : '0'}
+                    {isProUser ? '3' : totalFollowers ? totalFollowers.toLocaleString() : '--'}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {isProUser ? 'Active collaborators' : isStarterUser ? '+2.1K this month' : 'Start posting'}
+                    {isProUser ? 'Active collaborators' : totalFollowers ? 'Total followers' : 'No followers data'}
                   </p>
                 </CardContent>
               </Card>
@@ -300,7 +328,7 @@ const Dashboard = () => {
                   <Button 
                     variant="outline" 
                     className="w-full"
-                    onClick={() => isProUser ? setActiveTab('team') : setActiveTab('social')}
+                    onClick={handleConnectAccounts}
                   >
                     {isProUser ? 'Manage Team' : 'Connect Accounts'}
                   </Button>
@@ -310,7 +338,7 @@ const Dashboard = () => {
 
             {/* Show Social Accounts tab for Starter users */}
             {isStarterUser && activeTab === 'social' && (
-              <div className="mt-8">
+              <div className="mt-8" ref={socialAccountsRef}>
                 <SocialMediaSettings />
               </div>
             )}
