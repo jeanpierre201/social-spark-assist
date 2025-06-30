@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -31,7 +32,7 @@ const Dashboard = () => {
   const { subscribed, subscriptionTier, loading } = useSubscription();
   const { accounts, metrics } = useSocialAccounts();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab('overview');
+  const [activeTab, setActiveTab] = useState('overview');
   const socialAccountsRef = useRef<HTMLDivElement>(null);
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
