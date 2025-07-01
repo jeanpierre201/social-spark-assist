@@ -115,8 +115,8 @@ const ContentGenerator = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['user-posts', user?.id]);
-      queryClient.invalidateQueries(['current-month-posts', user?.id]);
+      queryClient.invalidateQueries({ queryKey: ['user-posts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['current-month-posts', user?.id] });
       refetch();
     },
     onError: (error: any) => {
@@ -145,7 +145,7 @@ const ContentGenerator = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['user-posts', user?.id]);
+      queryClient.invalidateQueries({ queryKey: ['user-posts', user?.id] });
       refetch();
     },
     onError: (error: any) => {
@@ -172,8 +172,8 @@ const ContentGenerator = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['user-posts', user?.id]);
-      queryClient.invalidateQueries(['current-month-posts', user?.id]);
+      queryClient.invalidateQueries({ queryKey: ['user-posts', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['current-month-posts', user?.id] });
       refetch();
     },
     onError: (error: any) => {
@@ -446,10 +446,10 @@ const ContentGenerator = () => {
           <>
             {/* Usage Indicators */}
             <UsageIndicators 
-              currentPosts={currentMonthPosts} 
+              monthlyPosts={currentMonthPosts} 
+              daysRemaining={30}
               maxPosts={isProUser ? 100 : isStarterUser ? 10 : 0}
-              subscriptionTier={subscriptionTier}
-              subscribed={subscribed}
+              isProPlan={isProUser}
             />
 
             {/* Content Generation Form */}
