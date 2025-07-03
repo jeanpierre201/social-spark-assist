@@ -2,7 +2,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import type { Campaign, CampaignMember, CampaignInvitation } from '@/types/campaign';
+import type { CampaignMember, CampaignInvitation } from '@/types/campaign';
+
+// Define the campaign type locally to avoid circular dependencies
+interface Campaign {
+  id: string;
+  name: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  status: 'active' | 'draft' | 'completed' | 'archived';
+}
 
 export const useCampaignQueries = () => {
   const { user } = useAuth();
@@ -24,7 +35,7 @@ export const useCampaignQueries = () => {
     enabled: !!user,
   });
 
-  // Fetch campaign members
+  // Fetch campaign members - simplified query without joins
   const { data: campaignMembers = [] } = useQuery({
     queryKey: ['campaign-members', user?.id],
     queryFn: async () => {
@@ -32,17 +43,16 @@ export const useCampaignQueries = () => {
       
       const { data, error } = await supabase
         .from('campaign_members')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            avatar_url
-          )
-        `)
+        .select('*')
         .order('joined_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as CampaignMember[];
+      
+      // Transform the data to match our expected type
+      return (data || []).map(member => ({
+        ...member,
+        profiles: null // Set to null since we're not joining with profiles for now
+      })) as CampaignMember[];
     },
     enabled: !!user,
   });

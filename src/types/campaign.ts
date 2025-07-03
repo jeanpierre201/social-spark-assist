@@ -19,7 +19,7 @@ export interface CampaignMember {
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
-  };
+  } | null;
 }
 
 export interface CampaignInvitation {
