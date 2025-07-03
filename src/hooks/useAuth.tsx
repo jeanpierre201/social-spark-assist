@@ -106,8 +106,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('Logout successful');
       }
       
-      // Clear any cached data from localStorage
+      // Clear any cached data from localStorage and sessionStorage
       localStorage.removeItem('supabase.auth.token');
+      sessionStorage.clear();
+      
+      // Clear all Supabase auth related items
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('supabase.auth')) {
+          localStorage.removeItem(key);
+        }
+      });
       
       // Force page reload to clear all cached state
       window.location.reload();

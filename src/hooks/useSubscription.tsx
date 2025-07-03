@@ -50,7 +50,9 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
         console.error('Subscription check error:', error);
         
         // If it's an authentication error, logout the user
-        if (error.message?.includes('Authentication') || error.message?.includes('401')) {
+        if (error.message?.includes('Authentication') || 
+            error.message?.includes('401') || 
+            error.message?.includes('authorization')) {
           console.log('Authentication error detected, logging out user');
           toast({
             title: "Session Expired",
@@ -61,7 +63,14 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
           return;
         }
         
-        throw error;
+        // For other errors, just clear the cache and continue
+        clearSubscriptionCache();
+        toast({
+          title: "Error",
+          description: "Failed to check subscription status. Please try logging in again.",
+          variant: "destructive",
+        });
+        return;
       }
       
       setSubscribed(data?.subscribed || false);
