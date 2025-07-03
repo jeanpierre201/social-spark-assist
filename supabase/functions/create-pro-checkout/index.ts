@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import Stripe from "https://esm.sh/stripe@14.21.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -39,106 +40,50 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Check if customer exists using native fetch
-    const customersResponse = await fetch(`https://api.stripe.com/v1/customers?email=${encodeURIComponent(user.email)}&limit=1`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${stripeKey}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-
-    if (!customersResponse.ok) {
-      const errorText = await customersResponse.text();
-      logStep("ERROR: Stripe customers API failed", { status: customersResponse.status, error: errorText });
-      throw new Error(`Stripe API error: ${customersResponse.status} - ${errorText}`);
-    }
-
-    const customersData = await customersResponse.json();
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    
+    // Find or create customer
     let customerId;
-    if (customersData.data.length > 0) {
-      customerId = customersData.data[0].id;
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    if (customers.data.length > 0) {
+      customerId = customers.data[0].id;
       logStep("Found existing customer", { customerId });
     } else {
-      // Create new customer using native fetch
-      const createCustomerResponse = await fetch('https://api.stripe.com/v1/customers', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${stripeKey}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          email: user.email,
-        }),
-      });
-
-      if (!createCustomerResponse.ok) {
-        const errorText = await createCustomerResponse.text();
-        logStep("ERROR: Stripe create customer API failed", { status: createCustomerResponse.status, error: errorText });
-        throw new Error(`Stripe API error: ${createCustomerResponse.status} - ${errorText}`);
-      }
-
-      const customerData = await createCustomerResponse.json();
-      customerId = customerData.id;
+      const customer = await stripe.customers.create({ email: user.email });
+      customerId = customer.id;
       logStep("Created new customer", { customerId });
     }
 
     const origin = req.headers.get("origin") ?? "http://localhost:3000";
     
-    // Create checkout session for Pro plan (€25/month = 2500 cents) using native fetch
-    const sessionData = {
+    // Create checkout session for Pro plan (€25/month = 2500 cents)
+    const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      mode: 'subscription',
+      line_items: [
+        {
+          price_data: {
+            currency: "eur",
+            product_data: {
+              name: "Pro Plan",
+              description: "Advanced AI features and unlimited possibilities"
+            },
+            unit_amount: 2500, // €25.00
+            recurring: {
+              interval: "month",
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "subscription",
       success_url: `${origin}/dashboard?upgrade=success`,
       cancel_url: `${origin}/upgrade-pro?upgrade=cancelled`,
-      allow_promotion_codes: 'true',
-      line_items: [{
-        price_data: {
-          currency: "eur",
-          product_data: {
-            name: "Pro Plan",
-            description: "Advanced AI features and unlimited possibilities"
-          },
-          unit_amount: 2500, // €25.00
-          recurring: {
-            interval: "month",
-          },
-        },
-        quantity: 1,
-      }],
-    };
-
-    const sessionResponse = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${stripeKey}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(Object.entries(sessionData).reduce((acc, [key, value]) => {
-        if (key === 'line_items') {
-          acc['line_items[0][price_data][currency]'] = value[0].price_data.currency;
-          acc['line_items[0][price_data][product_data][name]'] = value[0].price_data.product_data.name;
-          acc['line_items[0][price_data][product_data][description]'] = value[0].price_data.product_data.description;
-          acc['line_items[0][price_data][unit_amount]'] = value[0].price_data.unit_amount.toString();
-          acc['line_items[0][price_data][recurring][interval]'] = value[0].price_data.recurring.interval;
-          acc['line_items[0][quantity]'] = value[0].quantity.toString();
-        } else {
-          acc[key] = typeof value === 'string' ? value : JSON.stringify(value);
-        }
-        return acc;
-      }, {})),
+      allow_promotion_codes: true,
     });
 
-    if (!sessionResponse.ok) {
-      const errorText = await sessionResponse.text();
-      logStep("ERROR: Stripe checkout API failed", { status: sessionResponse.status, error: errorText });
-      throw new Error(`Stripe API error: ${sessionResponse.status} - ${errorText}`);
-    }
+    logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
-    const sessionDataResponse = await sessionResponse.json();
-    logStep("Checkout session created", { sessionId: sessionDataResponse.id, url: sessionDataResponse.url });
-
-    return new Response(JSON.stringify({ url: sessionDataResponse.url }), {
+    return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

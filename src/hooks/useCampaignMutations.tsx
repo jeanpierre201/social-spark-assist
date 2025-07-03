@@ -96,7 +96,7 @@ export const useCampaignMutations = () => {
       
       if (error) throw error;
 
-      // Send invitation email using Supabase function
+      // Send invitation email
       const { error: emailError } = await supabase.functions.invoke('send-campaign-invitation', {
         body: {
           email,
