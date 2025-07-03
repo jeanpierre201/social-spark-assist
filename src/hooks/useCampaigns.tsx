@@ -51,7 +51,7 @@ export const useCampaigns = () => {
       if (!user) return [];
       
       const { data, error } = await supabase
-        .from('campaigns')
+        .from('campaigns' as any)
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -68,7 +68,7 @@ export const useCampaigns = () => {
       if (!user) return [];
       
       const { data, error } = await supabase
-        .from('campaign_members')
+        .from('campaign_members' as any)
         .select(`
           *,
           profiles:user_id (
@@ -91,7 +91,7 @@ export const useCampaigns = () => {
       if (!user) return [];
       
       const { data, error } = await supabase
-        .from('campaign_invitations')
+        .from('campaign_invitations' as any)
         .select('*')
         .order('invited_at', { ascending: false });
       
@@ -107,7 +107,7 @@ export const useCampaigns = () => {
       if (!user) throw new Error('User not authenticated');
       
       const { data, error } = await supabase
-        .from('campaigns')
+        .from('campaigns' as any)
         .insert({
           name: newCampaign.name,
           description: newCampaign.description || null,
@@ -159,7 +159,7 @@ export const useCampaigns = () => {
       }
       
       const { data, error } = await supabase
-        .from('campaign_invitations')
+        .from('campaign_invitations' as any)
         .insert({
           campaign_id: campaignId,
           email,
@@ -193,7 +193,7 @@ export const useCampaigns = () => {
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {
       const { error } = await supabase
-        .from('campaign_members')
+        .from('campaign_members' as any)
         .delete()
         .eq('id', memberId);
       
@@ -226,7 +226,7 @@ export const useCampaigns = () => {
       role: 'admin' | 'editor' | 'viewer' 
     }) => {
       const { error } = await supabase
-        .from('campaign_members')
+        .from('campaign_members' as any)
         .update({ role })
         .eq('id', memberId);
       
