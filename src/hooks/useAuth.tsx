@@ -23,6 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -31,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -40,39 +42,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) {
-      return { error: error.message };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error('Login error:', error);
+        return { error: error.message };
+      }
+      
+      console.log('Login successful');
+      return {};
+    } catch (error) {
+      console.error('Login exception:', error);
+      return { error: 'An unexpected error occurred' };
     }
-    return {};
   };
 
   const signup = async (email: string, password: string, fullName?: string) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName,
+          },
         },
-      },
-    });
-    
-    if (error) {
-      return { error: error.message };
+      });
+      
+      if (error) {
+        console.error('Signup error:', error);
+        return { error: error.message };
+      }
+      
+      console.log('Signup successful');
+      return {};
+    } catch (error) {
+      console.error('Signup exception:', error);
+      return { error: 'An unexpected error occurred' };
     }
-    return {};
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    try {
+      console.log('Logging out user...');
+      
+      // Clear local state immediately
+      setUser(null);
+      setSession(null);
+      
+      // Clear Supabase session
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Logout error:', error);
+      } else {
+        console.log('Logout successful');
+      }
+      
+      // Clear any cached data from localStorage
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Force page reload to clear all cached state
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Logout exception:', error);
+      // Even if logout fails, clear local state
+      setUser(null);
+      setSession(null);
+      window.location.reload();
+    }
   };
 
   return (

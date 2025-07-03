@@ -12,41 +12,77 @@ interface SubscriptionContextType {
   checkSubscription: () => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
+  clearSubscriptionCache: () => void;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
 
 export const SubscriptionProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
   const [subscribed, setSubscribed] = useState(false);
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const clearSubscriptionCache = () => {
+    setSubscribed(false);
+    setSubscriptionTier(null);
+    setSubscriptionEnd(null);
+    setLoading(false);
+  };
+
   const checkSubscription = async () => {
     if (!user) {
-      setSubscribed(false);
-      setSubscriptionTier(null);
-      setSubscriptionEnd(null);
-      setLoading(false);
+      clearSubscriptionCache();
       return;
     }
 
     try {
       setLoading(true);
+      console.log('Checking subscription for user:', user.email);
+      
       const { data, error } = await supabase.functions.invoke('check-subscription');
       
-      if (error) throw error;
+      console.log('Subscription check response:', { data, error });
       
-      setSubscribed(data.subscribed || false);
-      setSubscriptionTier(data.subscription_tier || null);
-      setSubscriptionEnd(data.subscription_end || null);
+      if (error) {
+        console.error('Subscription check error:', error);
+        
+        // If it's an authentication error, logout the user
+        if (error.message?.includes('Authentication') || error.message?.includes('401')) {
+          console.log('Authentication error detected, logging out user');
+          toast({
+            title: "Session Expired",
+            description: "Please log in again to continue",
+            variant: "destructive",
+          });
+          await logout();
+          return;
+        }
+        
+        throw error;
+      }
+      
+      setSubscribed(data?.subscribed || false);
+      setSubscriptionTier(data?.subscription_tier || null);
+      setSubscriptionEnd(data?.subscription_end || null);
+      
+      console.log('Subscription status updated:', {
+        subscribed: data?.subscribed || false,
+        tier: data?.subscription_tier || null,
+        end: data?.subscription_end || null
+      });
+      
     } catch (error) {
       console.error('Error checking subscription:', error);
+      
+      // Clear subscription data on error
+      clearSubscriptionCache();
+      
       toast({
         title: "Error",
-        description: "Failed to check subscription status",
+        description: "Failed to check subscription status. Please try logging in again.",
         variant: "destructive",
       });
     } finally {
@@ -114,10 +150,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     if (user) {
       checkSubscription();
     } else {
-      setSubscribed(false);
-      setSubscriptionTier(null);
-      setSubscriptionEnd(null);
-      setLoading(false);
+      clearSubscriptionCache();
     }
   }, [user]);
 
@@ -129,7 +162,8 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       loading,
       checkSubscription,
       createCheckout,
-      openCustomerPortal
+      openCustomerPortal,
+      clearSubscriptionCache
     }}>
       {children}
     </SubscriptionContext.Provider>
