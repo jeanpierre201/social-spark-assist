@@ -27,19 +27,31 @@ serve(async (req) => {
     logStep("Function started");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) {
+      logStep("ERROR: STRIPE_SECRET_KEY is not set");
+      throw new Error("STRIPE_SECRET_KEY is not set");
+    }
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) {
+      logStep("ERROR: No authorization header provided");
+      throw new Error("No authorization header provided");
+    }
     
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    if (userError) {
+      logStep("ERROR: Authentication failed", userError);
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) {
+      logStep("ERROR: User not authenticated or email not available");
+      throw new Error("User not authenticated or email not available");
+    }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Use native fetch to call Stripe API directly instead of importing the library
+    // Use native fetch to call Stripe API directly
     const customersResponse = await fetch(`https://api.stripe.com/v1/customers?email=${encodeURIComponent(user.email)}&limit=1`, {
       method: 'GET',
       headers: {
@@ -49,10 +61,13 @@ serve(async (req) => {
     });
 
     if (!customersResponse.ok) {
-      throw new Error(`Stripe API error: ${customersResponse.status}`);
+      const errorText = await customersResponse.text();
+      logStep("ERROR: Stripe customers API failed", { status: customersResponse.status, error: errorText });
+      throw new Error(`Stripe API error: ${customersResponse.status} - ${errorText}`);
     }
 
     const customersData = await customersResponse.json();
+    logStep("Stripe customers response", customersData);
     
     if (customersData.data.length === 0) {
       logStep("No customer found, updating unsubscribed state");
@@ -83,10 +98,14 @@ serve(async (req) => {
     });
 
     if (!subscriptionsResponse.ok) {
-      throw new Error(`Stripe API error: ${subscriptionsResponse.status}`);
+      const errorText = await subscriptionsResponse.text();
+      logStep("ERROR: Stripe subscriptions API failed", { status: subscriptionsResponse.status, error: errorText });
+      throw new Error(`Stripe API error: ${subscriptionsResponse.status} - ${errorText}`);
     }
 
     const subscriptionsData = await subscriptionsResponse.json();
+    logStep("Stripe subscriptions response", subscriptionsData);
+    
     const hasActiveSub = subscriptionsData.data.length > 0;
     let subscriptionTier = null;
     let subscriptionEnd = null;
@@ -117,6 +136,10 @@ serve(async (req) => {
         } else {
           subscriptionTier = "Basic";
         }
+        logStep("Determined subscription tier", { priceId, amount, subscriptionTier });
+      } else {
+        logStep("Failed to fetch price details, defaulting to Basic tier");
+        subscriptionTier = "Basic";
       }
       
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, tier: subscriptionTier });
@@ -124,7 +147,7 @@ serve(async (req) => {
       logStep("No active subscription found");
     }
 
-    await supabaseClient.from("subscribers").upsert({
+    const upsertResult = await supabaseClient.from("subscribers").upsert({
       email: user.email,
       user_id: user.id,
       stripe_customer_id: customerId,
@@ -133,6 +156,11 @@ serve(async (req) => {
       subscription_end: subscriptionEnd,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'email' });
+
+    if (upsertResult.error) {
+      logStep("ERROR: Failed to update subscribers table", upsertResult.error);
+      throw new Error(`Database error: ${upsertResult.error.message}`);
+    }
 
     logStep("Updated database with subscription info", { subscribed: hasActiveSub, subscriptionTier });
     return new Response(JSON.stringify({
@@ -145,7 +173,7 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in check-subscription", { message: errorMessage });
+    logStep("ERROR in check-subscription", { message: errorMessage, stack: error instanceof Error ? error.stack : undefined });
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
