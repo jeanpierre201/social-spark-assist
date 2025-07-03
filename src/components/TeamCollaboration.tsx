@@ -15,9 +15,7 @@ import {
   Edit,
   Eye,
   Trash2,
-  MessageSquare,
-  Calendar,
-  CheckCircle
+  AlertCircle
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -55,6 +53,13 @@ const TeamCollaboration = () => {
     removeMemberMutation,
     updateMemberRoleMutation,
   } = useCampaigns();
+
+  console.log('TeamCollaboration render:', {
+    campaignsLoading,
+    campaignsCount: campaigns.length,
+    membersCount: campaignMembers.length,
+    invitationsCount: campaignInvitations.length
+  });
 
   const handleInviteMember = () => {
     if (!newMemberEmail || !selectedCampaignId) {
@@ -113,8 +118,22 @@ const TeamCollaboration = () => {
   if (campaignsLoading) {
     return (
       <div className="space-y-6">
+        <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center text-purple-900">
+              <Users className="h-5 w-5 mr-2 text-purple-600" />
+              Team Collaboration
+              <Badge className="ml-2 bg-purple-100 text-purple-800">Pro</Badge>
+            </CardTitle>
+            <CardDescription className="text-purple-700">
+              Collaborate with your team on content creation and social media management
+            </CardDescription>
+          </CardHeader>
+        </Card>
+        
         <div className="flex items-center justify-center p-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <span className="ml-3 text-gray-600">Loading team collaboration data...</span>
         </div>
       </div>
     );
@@ -218,7 +237,8 @@ const TeamCollaboration = () => {
           <CardContent>
             <div className="space-y-3">
               {campaignMembers.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
+                <div className="text-center py-4 text-gray-500 flex items-center justify-center">
+                  <AlertCircle className="h-4 w-4 mr-2" />
                   No team members yet. Create a campaign and invite collaborators.
                 </div>
               ) : (
@@ -296,7 +316,8 @@ const TeamCollaboration = () => {
           <CardContent>
             <div className="space-y-3">
               {campaigns.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">
+                <div className="text-center py-4 text-gray-500 flex items-center justify-center">
+                  <AlertCircle className="h-4 w-4 mr-2" />
                   No campaigns yet. Create your first campaign to get started.
                 </div>
               ) : (
