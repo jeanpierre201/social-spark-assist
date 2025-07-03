@@ -19,14 +19,9 @@ const TeamCollaboration = () => {
   } = useCampaignQueries();
   
   const {
-    createCampaign,
-    inviteUser,
-    removeMember,
-    deleteInvitation,
-    isCreating,
-    isInviting,
-    isRemoving,
-    isDeleting
+    createCampaignMutation,
+    inviteMemberMutation,
+    removeMemberMutation,
   } = useCampaignMutations();
 
   const [newCampaignName, setNewCampaignName] = useState('');
@@ -45,25 +40,15 @@ const TeamCollaboration = () => {
     }
 
     try {
-      await createCampaign({
+      await createCampaignMutation.mutateAsync({
         name: newCampaignName,
-        description: newCampaignDescription || null,
+        description: newCampaignDescription || undefined,
       });
       
       setNewCampaignName('');
       setNewCampaignDescription('');
-      
-      toast({
-        title: "Success",
-        description: "Campaign created successfully",
-      });
     } catch (error) {
       console.error('Error creating campaign:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create campaign",
-        variant: "destructive",
-      });
     }
   };
 
@@ -78,58 +63,23 @@ const TeamCollaboration = () => {
     }
 
     try {
-      await inviteUser({
-        campaign_id: selectedCampaign,
+      await inviteMemberMutation.mutateAsync({
+        campaignId: selectedCampaign,
         email: inviteEmail,
+        role: 'editor',
       });
       
       setInviteEmail('');
-      
-      toast({
-        title: "Success",
-        description: "Invitation sent successfully",
-      });
     } catch (error) {
       console.error('Error inviting user:', error);
-      toast({
-        title: "Error",
-        description: "Failed to send invitation",
-        variant: "destructive",
-      });
     }
   };
 
   const handleRemoveMember = async (memberId: string, memberEmail: string) => {
     try {
-      await removeMember(memberId);
-      toast({
-        title: "Success",
-        description: `Removed ${memberEmail} from campaign`,
-      });
+      await removeMemberMutation.mutateAsync(memberId);
     } catch (error) {
       console.error('Error removing member:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove member",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleDeleteInvitation = async (invitationId: string) => {
-    try {
-      await deleteInvitation(invitationId);
-      toast({
-        title: "Success",
-        description: "Invitation cancelled",
-      });
-    } catch (error) {
-      console.error('Error deleting invitation:', error);
-      toast({
-        title: "Error",
-        description: "Failed to cancel invitation",
-        variant: "destructive",
-      });
     }
   };
 
@@ -170,10 +120,10 @@ const TeamCollaboration = () => {
           />
           <Button 
             onClick={handleCreateCampaign}
-            disabled={isCreating}
+            disabled={createCampaignMutation.isPending}
             className="w-full"
           >
-            {isCreating ? 'Creating...' : 'Create Campaign'}
+            {createCampaignMutation.isPending ? 'Creating...' : 'Create Campaign'}
           </Button>
         </CardContent>
       </Card>
@@ -208,10 +158,10 @@ const TeamCollaboration = () => {
             />
             <Button 
               onClick={handleInviteUser}
-              disabled={isInviting}
+              disabled={inviteMemberMutation.isPending}
               className="w-full"
             >
-              {isInviting ? 'Sending...' : 'Send Invitation'}
+              {inviteMemberMutation.isPending ? 'Sending...' : 'Send Invitation'}
             </Button>
           </CardContent>
         </Card>
@@ -261,7 +211,7 @@ const TeamCollaboration = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveMember(member.id, `User ${member.user_id?.slice(0, 8)}`)}
-                            disabled={isRemoving}
+                            disabled={removeMemberMutation.isPending}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -283,14 +233,6 @@ const TeamCollaboration = () => {
                               Pending
                             </Badge>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteInvitation(invitation.id)}
-                            disabled={isDeleting}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       ))}
                   </div>
