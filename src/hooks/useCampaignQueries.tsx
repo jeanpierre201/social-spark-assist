@@ -14,12 +14,12 @@ export const useCampaignQueries = () => {
       if (!user) return [];
       
       const { data, error } = await supabase
-        .from('campaigns' as any)
+        .from('campaigns')
         .select('*')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as unknown as Campaign[];
+      return (data || []) as Campaign[];
     },
     enabled: !!user,
   });
@@ -31,7 +31,7 @@ export const useCampaignQueries = () => {
       if (!user) return [];
       
       const { data, error } = await supabase
-        .from('campaign_members' as any)
+        .from('campaign_members')
         .select(`
           *,
           profiles:user_id (
@@ -42,7 +42,7 @@ export const useCampaignQueries = () => {
         .order('joined_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as unknown as CampaignMember[];
+      return (data || []) as CampaignMember[];
     },
     enabled: !!user,
   });
@@ -54,12 +54,12 @@ export const useCampaignQueries = () => {
       if (!user) return [];
       
       const { data, error } = await supabase
-        .from('campaign_invitations' as any)
+        .from('campaign_invitations')
         .select('*')
         .order('invited_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as unknown as CampaignInvitation[];
+      return (data || []) as CampaignInvitation[];
     },
     enabled: !!user,
   });

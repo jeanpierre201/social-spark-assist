@@ -15,7 +15,7 @@ export const useCampaignMutations = () => {
       if (!user) throw new Error('User not authenticated');
       
       const { data, error } = await supabase
-        .from('campaigns' as any)
+        .from('campaigns')
         .insert({
           name: newCampaign.name,
           description: newCampaign.description || null,
@@ -60,7 +60,7 @@ export const useCampaignMutations = () => {
       
       // Check if user can add more members using direct SQL query
       const { data: memberCount } = await supabase
-        .from('campaign_members' as any)
+        .from('campaign_members')
         .select('id', { count: 'exact' })
         .eq('campaign_id', campaignId);
       
@@ -69,7 +69,7 @@ export const useCampaignMutations = () => {
       }
       
       const { data, error } = await supabase
-        .from('campaign_invitations' as any)
+        .from('campaign_invitations')
         .insert({
           campaign_id: campaignId,
           email,
@@ -103,7 +103,7 @@ export const useCampaignMutations = () => {
   const removeMemberMutation = useMutation({
     mutationFn: async (memberId: string) => {
       const { error } = await supabase
-        .from('campaign_members' as any)
+        .from('campaign_members')
         .delete()
         .eq('id', memberId);
       
@@ -136,7 +136,7 @@ export const useCampaignMutations = () => {
       role: 'admin' | 'editor' | 'viewer' 
     }) => {
       const { error } = await supabase
-        .from('campaign_members' as any)
+        .from('campaign_members')
         .update({ role })
         .eq('id', memberId);
       
