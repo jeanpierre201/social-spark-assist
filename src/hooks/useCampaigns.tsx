@@ -56,7 +56,7 @@ export const useCampaigns = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Campaign[];
+      return (data || []) as Campaign[];
     },
     enabled: !!user,
   });
@@ -79,7 +79,7 @@ export const useCampaigns = () => {
         .order('joined_at', { ascending: false });
       
       if (error) throw error;
-      return data as CampaignMember[];
+      return (data || []) as CampaignMember[];
     },
     enabled: !!user,
   });
@@ -96,7 +96,7 @@ export const useCampaigns = () => {
         .order('invited_at', { ascending: false });
       
       if (error) throw error;
-      return data as CampaignInvitation[];
+      return (data || []) as CampaignInvitation[];
     },
     enabled: !!user,
   });
@@ -150,11 +150,13 @@ export const useCampaigns = () => {
     }) => {
       if (!user) throw new Error('User not authenticated');
       
-      // Check if user can add more members
-      const { data: canAdd } = await supabase
-        .rpc('can_add_campaign_member', { campaign_uuid: campaignId });
+      // Check if user can add more members using direct SQL query
+      const { data: memberCount } = await supabase
+        .from('campaign_members' as any)
+        .select('id', { count: 'exact' })
+        .eq('campaign_id', campaignId);
       
-      if (!canAdd) {
+      if (memberCount && memberCount.length >= 5) {
         throw new Error('Maximum 5 collaborators allowed per campaign');
       }
       
