@@ -68,6 +68,21 @@ export const useCampaignMutations = () => {
         throw new Error('Maximum 5 collaborators allowed per campaign');
       }
       
+      // Get campaign details for the email
+      const { data: campaign } = await supabase
+        .from('campaigns')
+        .select('name')
+        .eq('id', campaignId)
+        .single();
+
+      // Get user profile for inviter name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      
+      // Create the invitation record
       const { data, error } = await supabase
         .from('campaign_invitations')
         .insert({
@@ -80,6 +95,24 @@ export const useCampaignMutations = () => {
         .single();
       
       if (error) throw error;
+
+      // Send invitation email
+      const { error: emailError } = await supabase.functions.invoke('send-campaign-invitation', {
+        body: {
+          email,
+          campaignName: campaign?.name || 'Campaign',
+          inviterName: profile?.full_name || 'Team member',
+          role,
+          invitationId: data.id,
+        },
+      });
+
+      if (emailError) {
+        console.error('Failed to send invitation email:', emailError);
+        // Don't throw error here - invitation was created successfully
+        // We just log the email failure
+      }
+      
       return data;
     },
     onSuccess: () => {
