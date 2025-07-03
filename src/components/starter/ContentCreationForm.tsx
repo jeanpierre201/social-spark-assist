@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Loader2, Wand2, Calendar, Clock } from 'lucide-react';
@@ -476,12 +477,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             )}
 
             <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="generate-images"
                 checked={generateWithImages}
-                onChange={(e) => setGenerateWithImages(e.target.checked)}
-                className="rounded border-gray-300"
+                onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
                 disabled={!!uploadedImage}
               />
               <Label htmlFor="generate-images" className="text-sm">
