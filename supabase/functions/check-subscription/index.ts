@@ -1,5 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import Stripe from "https://esm.sh/stripe@14.21.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -39,22 +40,10 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Use native fetch to call Stripe API directly instead of importing the library
-    const customersResponse = await fetch(`https://api.stripe.com/v1/customers?email=${encodeURIComponent(user.email)}&limit=1`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${stripeKey}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    });
-
-    if (!customersResponse.ok) {
-      throw new Error(`Stripe API error: ${customersResponse.status}`);
-    }
-
-    const customersData = await customersResponse.json();
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
-    if (customersData.data.length === 0) {
+    if (customers.data.length === 0) {
       logStep("No customer found, updating unsubscribed state");
       await supabaseClient.from("subscribers").upsert({
         email: user.email,
@@ -71,55 +60,37 @@ serve(async (req) => {
       });
     }
 
-    const customerId = customersData.data[0].id;
+    const customerId = customers.data[0].id;
     logStep("Found Stripe customer", { customerId });
 
-    const subscriptionsResponse = await fetch(`https://api.stripe.com/v1/subscriptions?customer=${customerId}&status=active&limit=1`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${stripeKey}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: "active",
+      limit: 1,
     });
-
-    if (!subscriptionsResponse.ok) {
-      throw new Error(`Stripe API error: ${subscriptionsResponse.status}`);
-    }
-
-    const subscriptionsData = await subscriptionsResponse.json();
-    const hasActiveSub = subscriptionsData.data.length > 0;
+    const hasActiveSub = subscriptions.data.length > 0;
     let subscriptionTier = null;
     let subscriptionEnd = null;
 
     if (hasActiveSub) {
-      const subscription = subscriptionsData.data[0];
+      const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       
       // Determine subscription tier from price
       const priceId = subscription.items.data[0].price.id;
-      const priceResponse = await fetch(`https://api.stripe.com/v1/prices/${priceId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${stripeKey}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      });
-
-      if (priceResponse.ok) {
-        const price = await priceResponse.json();
-        const amount = price.unit_amount || 0;
-        
-        // €12 = 1200 cents for Starter, €25 = 2500 cents for Pro
-        if (amount >= 2500) {
-          subscriptionTier = "Pro";
-        } else if (amount >= 1200) {
-          subscriptionTier = "Starter";
-        } else {
-          subscriptionTier = "Basic";
-        }
+      const price = await stripe.prices.retrieve(priceId);
+      const amount = price.unit_amount || 0;
+      
+      // €12 = 1200 cents for Starter, €25 = 2500 cents for Pro
+      if (amount >= 2500) {
+        subscriptionTier = "Pro";
+      } else if (amount >= 1200) {
+        subscriptionTier = "Starter";
+      } else {
+        subscriptionTier = "Basic";
       }
       
-      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, tier: subscriptionTier });
+      logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd, tier: subscriptionTier, amount });
     } else {
       logStep("No active subscription found");
     }
