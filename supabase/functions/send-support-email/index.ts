@@ -1,8 +1,6 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +48,11 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('Unauthorized');
     }
 
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error("RESEND_API_KEY is not set");
+    }
+
     const { 
       name, 
       email, 
@@ -71,55 +74,77 @@ const handler = async (req: Request): Promise<Response> => {
       high: '🔴'
     };
 
-    // Send email to support team
-    const supportEmailResponse = await resend.emails.send({
-      from: "Support <support@yourdomain.com>",
-      to: ["support@yourdomain.com"], // Replace with your support email
-      subject: `${priorityEmoji[priority]} Support Request: ${subject}`,
-      html: `
-        <h2>New Support Request</h2>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-          <p><strong>From:</strong> ${name} (${email})</p>
-          <p><strong>User ID:</strong> ${userId}</p>
-          <p><strong>Plan:</strong> ${userTier}</p>
-          <p><strong>Priority:</strong> ${priority.toUpperCase()}</p>
-          <p><strong>Subject:</strong> ${subject}</p>
-        </div>
-        <h3>Message:</h3>
-        <div style="background: #fff; padding: 15px; border-left: 4px solid #2563eb; margin: 15px 0;">
-          ${message.replace(/\n/g, '<br>')}
-        </div>
-        <hr>
-        <p><small>This message was sent from the support form on your website.</small></p>
-      `,
+    // Send email to support team using native fetch
+    const supportEmailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: "Support <support@yourdomain.com>",
+        to: ["support@yourdomain.com"], // Replace with your support email
+        subject: `${priorityEmoji[priority]} Support Request: ${subject}`,
+        html: `
+          <h2>New Support Request</h2>
+          <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
+            <p><strong>From:</strong> ${name} (${email})</p>
+            <p><strong>User ID:</strong> ${userId}</p>
+            <p><strong>Plan:</strong> ${userTier}</p>
+            <p><strong>Priority:</strong> ${priority.toUpperCase()}</p>
+            <p><strong>Subject:</strong> ${subject}</p>
+          </div>
+          <h3>Message:</h3>
+          <div style="background: #fff; padding: 15px; border-left: 4px solid #2563eb; margin: 15px 0;">
+            ${message.replace(/\n/g, '<br>')}
+          </div>
+          <hr>
+          <p><small>This message was sent from the support form on your website.</small></p>
+        `,
+      }),
     });
+
+    if (!supportEmailResponse.ok) {
+      const errorText = await supportEmailResponse.text();
+      console.error("Support email failed:", { status: supportEmailResponse.status, error: errorText });
+      throw new Error(`Failed to send support email: ${supportEmailResponse.status}`);
+    }
 
     // Send confirmation email to user
-    const confirmationEmailResponse = await resend.emails.send({
-      from: "Support <support@yourdomain.com>",
-      to: [email],
-      subject: "We received your support request",
-      html: `
-        <h1>Thank you for contacting support, ${name}!</h1>
-        <p>We have received your support request and will get back to you within 24 hours.</p>
-        
-        <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-          <h3>Your Request Details:</h3>
-          <p><strong>Subject:</strong> ${subject}</p>
-          <p><strong>Priority:</strong> ${priority.charAt(0).toUpperCase() + priority.slice(1)}</p>
-          <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
-        </div>
-        
-        <p>In the meantime, you can check our <a href="https://yourdomain.com/docs">documentation</a> or visit your <a href="https://yourdomain.com/dashboard">dashboard</a>.</p>
-        
-        <p>Best regards,<br>The Support Team</p>
-      `,
+    const confirmationEmailResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: "Support <support@yourdomain.com>",
+        to: [email],
+        subject: "We received your support request",
+        html: `
+          <h1>Thank you for contacting support, ${name}!</h1>
+          <p>We have received your support request and will get back to you within 24 hours.</p>
+          
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3>Your Request Details:</h3>
+            <p><strong>Subject:</strong> ${subject}</p>
+            <p><strong>Priority:</strong> ${priority.charAt(0).toUpperCase() + priority.slice(1)}</p>
+            <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
+          </div>
+          
+          <p>In the meantime, you can check our <a href="https://yourdomain.com/docs">documentation</a> or visit your <a href="https://yourdomain.com/dashboard">dashboard</a>.</p>
+          
+          <p>Best regards,<br>The Support Team</p>
+        `,
+      }),
     });
 
-    console.log("Support emails sent successfully:", {
-      supportEmail: supportEmailResponse,
-      confirmationEmail: confirmationEmailResponse
-    });
+    if (!confirmationEmailResponse.ok) {
+      console.error("Confirmation email failed but support email succeeded");
+    }
+
+    const supportData = await supportEmailResponse.json();
+    console.log("Support emails sent successfully:", { supportEmailId: supportData.id });
 
     return new Response(JSON.stringify({ 
       success: true,
