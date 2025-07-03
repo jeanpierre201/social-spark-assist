@@ -6,8 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Users, UserPlus, Mail, Crown, Eye, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useCampaignQueries } from '@/hooks/useCampaignQueries';
-import { useCampaignMutations } from '@/hooks/useCampaignMutations';
+import { useCampaigns } from '@/hooks/useCampaigns';
 
 const TeamCollaboration = () => {
   const { toast } = useToast();
@@ -15,14 +14,11 @@ const TeamCollaboration = () => {
     campaigns, 
     campaignMembers, 
     campaignInvitations, 
-    isLoading 
-  } = useCampaignQueries();
-  
-  const {
+    campaignsLoading,
     createCampaignMutation,
     inviteMemberMutation,
     removeMemberMutation,
-  } = useCampaignMutations();
+  } = useCampaigns();
 
   const [newCampaignName, setNewCampaignName] = useState('');
   const [newCampaignDescription, setNewCampaignDescription] = useState('');
@@ -83,7 +79,7 @@ const TeamCollaboration = () => {
     }
   };
 
-  if (isLoading) {
+  if (campaignsLoading) {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center">Loading team collaboration...</div>
