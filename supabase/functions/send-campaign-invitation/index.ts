@@ -1,6 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,23 +28,6 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error('No authorization header');
     }
 
-    // Create Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
-
-    // Verify user authentication
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      throw new Error('Unauthorized');
-    }
-
     const { 
       email, 
       campaignName, 
@@ -64,8 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
       invitationId
     });
 
-    // Send a simple email using fetch to a webhook or email service
-    // This is a placeholder - you'll need to integrate with your preferred email service
+    // Create the email content
     const emailData = {
       to: email,
       subject: `You're invited to join "${campaignName}" campaign`,

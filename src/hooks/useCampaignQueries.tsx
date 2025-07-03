@@ -40,7 +40,7 @@ export const useCampaignQueries = () => {
         .from('campaign_members')
         .select(`
           *,
-          profiles:user_id (
+          profiles!campaign_members_user_id_fkey (
             id,
             full_name
           )
