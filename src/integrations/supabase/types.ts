@@ -9,115 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      campaign_invitations: {
-        Row: {
-          accepted_at: string | null
-          campaign_id: string
-          email: string
-          expires_at: string
-          id: string
-          invited_at: string
-          invited_by: string
-          role: string
-          status: string
-        }
-        Insert: {
-          accepted_at?: string | null
-          campaign_id: string
-          email: string
-          expires_at?: string
-          id?: string
-          invited_at?: string
-          invited_by: string
-          role?: string
-          status?: string
-        }
-        Update: {
-          accepted_at?: string | null
-          campaign_id?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          invited_at?: string
-          invited_by?: string
-          role?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campaign_invitations_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaigns"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      campaign_members: {
-        Row: {
-          campaign_id: string
-          id: string
-          invited_by: string
-          joined_at: string
-          role: string
-          user_id: string
-        }
-        Insert: {
-          campaign_id: string
-          id?: string
-          invited_by: string
-          joined_at?: string
-          role?: string
-          user_id: string
-        }
-        Update: {
-          campaign_id?: string
-          id?: string
-          invited_by?: string
-          joined_at?: string
-          role?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campaign_members_campaign_id_fkey"
-            columns: ["campaign_id"]
-            isOneToOne: false
-            referencedRelation: "campaigns"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      campaigns: {
-        Row: {
-          created_at: string
-          created_by: string
-          description: string | null
-          id: string
-          name: string
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          description?: string | null
-          id?: string
-          name: string
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          id?: string
-          name?: string
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       posts: {
         Row: {
           created_at: string | null
@@ -345,10 +236,6 @@ export type Database = {
           posts_count: number
           scheduled_posts_count: number
         }[]
-      }
-      user_can_access_campaign: {
-        Args: { campaign_uuid: string }
-        Returns: boolean
       }
     }
     Enums: {
