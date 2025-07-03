@@ -346,6 +346,10 @@ export type Database = {
           scheduled_posts_count: number
         }[]
       }
+      user_can_access_campaign: {
+        Args: { campaign_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
