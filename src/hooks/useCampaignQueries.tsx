@@ -36,24 +36,39 @@ export const useCampaignQueries = () => {
       
       const campaignIds = campaignQuery.data.map(c => c.id);
       
-      const { data, error } = await supabase
+      // First get campaign members
+      const { data: members, error: membersError } = await supabase
         .from('campaign_members')
-        .select(`
-          *,
-          profiles (
-            id,
-            full_name
-          )
-        `)
+        .select('*')
         .in('campaign_id', campaignIds)
         .order('joined_at', { ascending: false });
       
-      if (error) {
-        console.error('Error fetching campaign members:', error);
-        throw error;
+      if (membersError) {
+        console.error('Error fetching campaign members:', membersError);
+        throw membersError;
       }
+
+      // Then get profiles for these users
+      if (!members || members.length === 0) return [];
       
-      return data || [];
+      const userIds = members.map(m => m.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+
+      // Combine the data
+      const membersWithProfiles = members.map(member => ({
+        ...member,
+        profiles: profiles?.find(p => p.id === member.user_id) || null
+      }));
+      
+      return membersWithProfiles;
     },
     enabled: !!user && !!campaignQuery.data?.length,
   });
