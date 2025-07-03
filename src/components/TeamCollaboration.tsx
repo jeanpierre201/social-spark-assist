@@ -255,7 +255,7 @@ const TeamCollaboration = () => {
                       </Avatar>
                       <div>
                         <div className="font-medium">
-                          {member.profiles?.full_name || 'Unknown User'}
+                          {member.profiles?.full_name || 'Team Member'}
                         </div>
                         <div className="text-sm text-gray-500">
                           Campaign: {campaigns.find(c => c.id === member.campaign_id)?.name || 'Unknown'}

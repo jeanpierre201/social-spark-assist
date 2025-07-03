@@ -43,9 +43,9 @@ export const useCampaignQueries = () => {
     enabled: !!user,
   });
 
-  // Fetch campaign members - only for campaigns the user created
-  const { data: campaignMembers = [], error: membersError } = useQuery({
-    queryKey: ['campaign-members', user?.id],
+  // Fetch campaign members - simplified query without joins
+  const { data: campaignMembers = [], error: membersError, isLoading: membersLoading } = useQuery({
+    queryKey: ['campaign-members', user?.id, campaigns.length],
     queryFn: async () => {
       if (!user || campaigns.length === 0) return [];
       
@@ -69,15 +69,15 @@ export const useCampaignQueries = () => {
       // Transform the data to match our expected type
       return (data || []).map(member => ({
         ...member,
-        profiles: null // Set to null since we're not joining with profiles for now
+        profiles: null // Set to null since we're not joining with profiles
       })) as CampaignMember[];
     },
     enabled: !!user && campaigns.length > 0,
   });
 
-  // Fetch campaign invitations - only for campaigns the user created
-  const { data: campaignInvitations = [], error: invitationsError } = useQuery({
-    queryKey: ['campaign-invitations', user?.id],
+  // Fetch campaign invitations
+  const { data: campaignInvitations = [], error: invitationsError, isLoading: invitationsLoading } = useQuery({
+    queryKey: ['campaign-invitations', user?.id, campaigns.length],
     queryFn: async () => {
       if (!user || campaigns.length === 0) return [];
       
@@ -107,10 +107,12 @@ export const useCampaignQueries = () => {
   if (membersError) console.error('Members query error:', membersError);
   if (invitationsError) console.error('Invitations query error:', invitationsError);
 
+  const isLoading = campaignsLoading || membersLoading || invitationsLoading;
+
   return {
     campaigns,
     campaignMembers,
     campaignInvitations,
-    campaignsLoading,
+    campaignsLoading: isLoading,
   };
 };
