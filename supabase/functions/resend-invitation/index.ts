@@ -10,10 +10,9 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-interface CampaignInvitationRequest {
+interface ResendInvitationRequest {
   email: string;
   campaignName: string;
-  inviterName: string;
   role: string;
   invitationId: string;
 }
@@ -25,24 +24,16 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Get the authorization header
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('No authorization header');
-    }
-
     const { 
       email, 
       campaignName, 
-      inviterName, 
       role,
       invitationId 
-    }: CampaignInvitationRequest = await req.json();
+    }: ResendInvitationRequest = await req.json();
 
-    console.log('Campaign invitation request:', {
+    console.log('Resending campaign invitation:', {
       email,
       campaignName,
-      inviterName,
       role,
       invitationId
     });
@@ -51,12 +42,12 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Team Collaboration <onboarding@resend.dev>",
       to: [email],
-      subject: `You're invited to join "${campaignName}" campaign`,
+      subject: `Reminder: You're invited to join "${campaignName}" campaign`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h1 style="color: #8B5CF6;">Campaign Invitation</h1>
+          <h1 style="color: #8B5CF6;">Campaign Invitation Reminder</h1>
           <p>Hi there!</p>
-          <p><strong>${inviterName}</strong> has invited you to collaborate on the campaign "<strong>${campaignName}</strong>" as a <strong>${role}</strong>.</p>
+          <p>This is a friendly reminder that you've been invited to collaborate on the campaign "<strong>${campaignName}</strong>" as a <strong>${role}</strong>.</p>
           
           <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #8B5CF6;">
             <h3 style="margin-top: 0; color: #333;">What you can do as a ${role}:</h3>
@@ -71,7 +62,7 @@ const handler = async (req: Request): Promise<Response> => {
               <ul style="color: #666;">
                 <li>View campaign content</li>
                 <li>Add comments and feedback</li>
-                <li>access campaign analytics</li>
+                <li>Access campaign analytics</li>
               </ul>
             `}
           </div>
@@ -85,7 +76,7 @@ const handler = async (req: Request): Promise<Response> => {
           
           <p style="color: #666;">If you don't have an account yet, you'll be able to sign up using the same email address.</p>
           
-          <p style="color: #666; font-size: 14px;">This invitation will expire in 7 days.</p>
+          <p style="color: #666; font-size: 14px;">This invitation will expire in 7 days from the original send date.</p>
           
           <p style="color: #333;">Best regards,<br>The Team</p>
           
@@ -95,11 +86,11 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Campaign invitation email sent successfully:", emailResponse);
+    console.log("Campaign invitation resent successfully:", emailResponse);
 
     return new Response(JSON.stringify({ 
       success: true,
-      message: "Campaign invitation sent successfully",
+      message: "Campaign invitation resent successfully",
       emailId: emailResponse.data?.id
     }), {
       status: 200,
@@ -109,11 +100,11 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
   } catch (error: any) {
-    console.error("Error in send-campaign-invitation function:", error);
+    console.error("Error in resend-invitation function:", error);
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: "Failed to send campaign invitation"
+        details: "Failed to resend campaign invitation"
       }),
       {
         status: 500,

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,7 +14,8 @@ import {
   Edit,
   Eye,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -44,6 +44,7 @@ const TeamCollaboration = () => {
   const [newMemberRole, setNewMemberRole] = useState<'editor' | 'viewer'>('editor');
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const [resendingInvitation, setResendingInvitation] = useState<string | null>(null);
 
   // Use the simplified queries hook
   const {
@@ -87,6 +88,46 @@ const TeamCollaboration = () => {
     setNewMemberRole('editor');
     setSelectedCampaignId('');
     setShowInviteDialog(false);
+  };
+
+  const handleResendInvitation = async (invitation: any) => {
+    setResendingInvitation(invitation.id);
+    
+    try {
+      // Get campaign details for the email
+      const campaign = campaigns.find(c => c.id === invitation.campaign_id);
+      
+      const response = await fetch('/api/resend-invitation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: invitation.email,
+          campaignName: campaign?.name || 'Campaign',
+          role: invitation.role,
+          invitationId: invitation.id,
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Invitation Resent",
+          description: `Invitation has been resent to ${invitation.email}`,
+        });
+      } else {
+        throw new Error('Failed to resend invitation');
+      }
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to resend invitation. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setResendingInvitation(null);
+    }
   };
 
   const getRoleColor = (role: string) => {
@@ -375,6 +416,9 @@ const TeamCollaboration = () => {
                       <div className="text-sm text-gray-500">
                         Campaign: {campaigns.find(c => c.id === invitation.campaign_id)?.name || 'Unknown'}
                       </div>
+                      <div className="text-xs text-gray-400">
+                        Invited {new Date(invitation.invited_at).toLocaleDateString()}
+                      </div>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Badge className={getRoleColor(invitation.role)}>
@@ -383,6 +427,21 @@ const TeamCollaboration = () => {
                       <Badge className={getStatusColor(invitation.status)}>
                         {invitation.status}
                       </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleResendInvitation(invitation)}
+                        disabled={resendingInvitation === invitation.id}
+                      >
+                        {resendingInvitation === invitation.id ? (
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Mail className="h-4 w-4" />
+                        )}
+                        <span className="ml-1">
+                          {resendingInvitation === invitation.id ? 'Sending...' : 'Resend'}
+                        </span>
+                      </Button>
                     </div>
                   </div>
                 ))}
