@@ -36,108 +36,46 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'editor' | 'viewer';
-  status: 'active' | 'pending' | 'inactive';
-  avatar?: string;
-  joinedAt: string;
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  collaborators: number;
-  lastUpdated: string;
-  status: 'active' | 'draft' | 'completed';
-}
+import { useCampaigns } from '@/hooks/useCampaigns';
+import CampaignForm from '@/components/team/CampaignForm';
 
 const TeamCollaboration = () => {
   const { toast } = useToast();
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberRole, setNewMemberRole] = useState<'editor' | 'viewer'>('editor');
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   const [showInviteDialog, setShowInviteDialog] = useState(false);
 
-  // Mock data - in real app this would come from API
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    {
-      id: '1',
-      name: 'John Doe',
-      email: 'john@company.com',
-      role: 'admin',
-      status: 'active',
-      joinedAt: '2024-01-15',
-    },
-    {
-      id: '2',
-      name: 'Sarah Wilson',
-      email: 'sarah@company.com',
-      role: 'editor',
-      status: 'active',
-      joinedAt: '2024-02-10',
-    },
-    {
-      id: '3',
-      name: 'Mike Johnson',
-      email: 'mike@company.com',
-      role: 'viewer',
-      status: 'pending',
-      joinedAt: '2024-03-01',
-    },
-  ]);
-
-  const [projects, setProjects] = useState<Project[]>([
-    {
-      id: '1',
-      name: 'Q2 Social Media Campaign',
-      description: 'Instagram and LinkedIn content for product launch',
-      collaborators: 3,
-      lastUpdated: '2024-03-15',
-      status: 'active',
-    },
-    {
-      id: '2',
-      name: 'Brand Awareness Content',
-      description: 'Educational content series for all platforms',
-      collaborators: 2,
-      lastUpdated: '2024-03-10',
-      status: 'draft',
-    },
-  ]);
+  const {
+    campaigns,
+    campaignMembers,
+    campaignInvitations,
+    campaignsLoading,
+    inviteMemberMutation,
+    removeMemberMutation,
+    updateMemberRoleMutation,
+  } = useCampaigns();
 
   const handleInviteMember = () => {
-    if (!newMemberEmail) {
+    if (!newMemberEmail || !selectedCampaignId) {
       toast({
-        title: "Email Required",
-        description: "Please enter an email address to send the invitation",
+        title: "Missing Information",
+        description: "Please select a campaign and enter an email address",
         variant: "destructive",
       });
       return;
     }
 
-    // Mock invitation - in real app this would call API
-    const newMember: TeamMember = {
-      id: Date.now().toString(),
-      name: newMemberEmail.split('@')[0],
+    inviteMemberMutation.mutate({
+      campaignId: selectedCampaignId,
       email: newMemberEmail,
       role: newMemberRole,
-      status: 'pending',
-      joinedAt: new Date().toISOString().split('T')[0],
-    };
+    });
 
-    setTeamMembers([...teamMembers, newMember]);
     setNewMemberEmail('');
     setNewMemberRole('editor');
+    setSelectedCampaignId('');
     setShowInviteDialog(false);
-
-    toast({
-      title: "Invitation Sent",
-      description: `Team invitation sent to ${newMemberEmail}`,
-    });
   };
 
   const getRoleColor = (role: string) => {
@@ -158,7 +96,7 @@ const TeamCollaboration = () => {
     }
   };
 
-  const getProjectStatusColor = (status: string) => {
+  const getCampaignStatusColor = (status: string) => {
     switch (status) {
       case 'active': return 'bg-green-100 text-green-800';
       case 'draft': return 'bg-yellow-100 text-yellow-800';
@@ -166,6 +104,21 @@ const TeamCollaboration = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Get members for each campaign
+  const getCampaignMembers = (campaignId: string) => {
+    return campaignMembers.filter(member => member.campaign_id === campaignId);
+  };
+
+  if (campaignsLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -183,6 +136,9 @@ const TeamCollaboration = () => {
         </CardHeader>
       </Card>
 
+      {/* Campaign Creation Form */}
+      <CampaignForm />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Team Members */}
         <Card>
@@ -190,7 +146,7 @@ const TeamCollaboration = () => {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center">
                 <Users className="h-5 w-5 mr-2 text-purple-600" />
-                Team Members ({teamMembers.length})
+                Team Members ({campaignMembers.length})
               </CardTitle>
               <Dialog open={showInviteDialog} onOpenChange={setShowInviteDialog}>
                 <DialogTrigger asChild>
@@ -203,10 +159,26 @@ const TeamCollaboration = () => {
                   <DialogHeader>
                     <DialogTitle>Invite Team Member</DialogTitle>
                     <DialogDescription>
-                      Send an invitation to collaborate on your social media content.
+                      Send an invitation to collaborate on your campaign.
                     </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="campaign">Select Campaign</Label>
+                      <select
+                        id="campaign"
+                        className="w-full p-2 border rounded"
+                        value={selectedCampaignId}
+                        onChange={(e) => setSelectedCampaignId(e.target.value)}
+                      >
+                        <option value="">Select a campaign</option>
+                        {campaigns.map((campaign) => (
+                          <option key={campaign.id} value={campaign.id}>
+                            {campaign.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <Label htmlFor="email">Email Address</Label>
                       <Input
@@ -231,7 +203,12 @@ const TeamCollaboration = () => {
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button onClick={handleInviteMember}>Send Invitation</Button>
+                    <Button 
+                      onClick={handleInviteMember}
+                      disabled={inviteMemberMutation.isPending}
+                    >
+                      {inviteMemberMutation.isPending ? 'Sending...' : 'Send Invitation'}
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
@@ -240,135 +217,152 @@ const TeamCollaboration = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {teamMembers.map((member) => (
-                <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <Avatar>
-                      <AvatarFallback>{member.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{member.name}</div>
-                      <div className="text-sm text-gray-500">{member.email}</div>
+              {campaignMembers.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  No team members yet. Create a campaign and invite collaborators.
+                </div>
+              ) : (
+                campaignMembers.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex items-center space-x-3">
+                      <Avatar>
+                        <AvatarFallback>
+                          {member.profiles?.full_name ? 
+                            member.profiles.full_name.split(' ').map(n => n[0]).join('') :
+                            member.user_id.slice(0, 2).toUpperCase()
+                          }
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">
+                          {member.profiles?.full_name || 'Unknown User'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          Campaign: {campaigns.find(c => c.id === member.campaign_id)?.name || 'Unknown'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={getRoleColor(member.role)}>
+                        {member.role === 'admin' && <Crown className="h-3 w-3 mr-1" />}
+                        {member.role === 'editor' && <Edit className="h-3 w-3 mr-1" />}
+                        {member.role === 'viewer' && <Eye className="h-3 w-3 mr-1" />}
+                        {member.role}
+                      </Badge>
+                      <Badge className={getStatusColor('active')}>
+                        active
+                      </Badge>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          <DropdownMenuItem
+                            onClick={() => updateMemberRoleMutation.mutate({
+                              memberId: member.id,
+                              role: member.role === 'admin' ? 'editor' : 'admin'
+                            })}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Change Role
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600"
+                            onClick={() => removeMemberMutation.mutate(member.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remove
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getRoleColor(member.role)}>
-                      {member.role === 'admin' && <Crown className="h-3 w-3 mr-1" />}
-                      {member.role === 'editor' && <Edit className="h-3 w-3 mr-1" />}
-                      {member.role === 'viewer' && <Eye className="h-3 w-3 mr-1" />}
-                      {member.role}
-                    </Badge>
-                    <Badge className={getStatusColor(member.status)}>
-                      {member.status}
-                    </Badge>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        <DropdownMenuItem>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit Role
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Mail className="h-4 w-4 mr-2" />
-                          Resend Invite
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Remove
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Collaborative Projects */}
+        {/* Collaborative Campaigns */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
               <Shield className="h-5 w-5 mr-2 text-purple-600" />
-              Collaborative Projects ({projects.length})
+              Active Campaigns ({campaigns.length})
             </CardTitle>
-            <CardDescription>Shared content projects and campaigns</CardDescription>
+            <CardDescription>Your collaborative campaigns and projects</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {projects.map((project) => (
-                <div key={project.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium">{project.name}</h4>
-                    <Badge className={getProjectStatusColor(project.status)}>
-                      {project.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600">{project.description}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span className="flex items-center">
-                      <Users className="h-3 w-3 mr-1" />
-                      {project.collaborators} collaborators
-                    </span>
-                    <span>Updated {project.lastUpdated}</span>
-                  </div>
+              {campaigns.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  No campaigns yet. Create your first campaign to get started.
                 </div>
-              ))}
+              ) : (
+                campaigns.map((campaign) => {
+                  const members = getCampaignMembers(campaign.id);
+                  return (
+                    <div key={campaign.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">{campaign.name}</h4>
+                        <Badge className={getCampaignStatusColor(campaign.status)}>
+                          {campaign.status}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-gray-600">{campaign.description || 'No description'}</p>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span className="flex items-center">
+                          <Users className="h-3 w-3 mr-1" />
+                          {members.length} member{members.length !== 1 ? 's' : ''}
+                        </span>
+                        <span>Created {new Date(campaign.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
-            <Button variant="outline" className="w-full mt-4">
-              <UserPlus className="h-4 w-4 mr-2" />
-              Create New Project
-            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Activity Feed */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <MessageSquare className="h-5 w-5 mr-2 text-purple-600" />
-            Recent Activity
-          </CardTitle>
-          <CardDescription>Latest team collaboration activities</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3 p-3 border-l-4 border-blue-500 bg-blue-50">
-              <CheckCircle className="h-4 w-4 text-blue-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Sarah Wilson completed content review</p>
-                <p className="text-xs text-gray-500">Q2 Social Media Campaign • 2 hours ago</p>
-              </div>
+      {/* Pending Invitations */}
+      {campaignInvitations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Mail className="h-5 w-5 mr-2 text-purple-600" />
+              Pending Invitations ({campaignInvitations.filter(inv => inv.status === 'pending').length})
+            </CardTitle>
+            <CardDescription>Track your sent team invitations</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {campaignInvitations
+                .filter(invitation => invitation.status === 'pending')
+                .map((invitation) => (
+                  <div key={invitation.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <div className="font-medium">{invitation.email}</div>
+                      <div className="text-sm text-gray-500">
+                        Campaign: {campaigns.find(c => c.id === invitation.campaign_id)?.name || 'Unknown'}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={getRoleColor(invitation.role)}>
+                        {invitation.role}
+                      </Badge>
+                      <Badge className={getStatusColor(invitation.status)}>
+                        {invitation.status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
             </div>
-            <div className="flex items-start space-x-3 p-3 border-l-4 border-green-500 bg-green-50">
-              <Edit className="h-4 w-4 text-green-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Mike Johnson added new content variations</p>
-                <p className="text-xs text-gray-500">Brand Awareness Content • 4 hours ago</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 p-3 border-l-4 border-purple-500 bg-purple-50">
-              <Calendar className="h-4 w-4 text-purple-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">John Doe scheduled 5 posts for next week</p>
-                <p className="text-xs text-gray-500">Q2 Social Media Campaign • 6 hours ago</p>
-              </div>
-            </div>
-            <div className="flex items-start space-x-3 p-3 border-l-4 border-yellow-500 bg-yellow-50">
-              <UserPlus className="h-4 w-4 text-yellow-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">New team member invitation sent</p>
-                <p className="text-xs text-gray-500">alex@company.com • 1 day ago</p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
