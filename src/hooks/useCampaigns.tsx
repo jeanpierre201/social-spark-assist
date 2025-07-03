@@ -56,7 +56,7 @@ export const useCampaigns = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as Campaign[];
+      return (data || []) as unknown as Campaign[];
     },
     enabled: !!user,
   });
@@ -79,7 +79,7 @@ export const useCampaigns = () => {
         .order('joined_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as CampaignMember[];
+      return (data || []) as unknown as CampaignMember[];
     },
     enabled: !!user,
   });
@@ -96,7 +96,7 @@ export const useCampaigns = () => {
         .order('invited_at', { ascending: false });
       
       if (error) throw error;
-      return (data || []) as CampaignInvitation[];
+      return (data || []) as unknown as CampaignInvitation[];
     },
     enabled: !!user,
   });
