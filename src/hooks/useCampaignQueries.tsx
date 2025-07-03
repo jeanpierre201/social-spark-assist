@@ -1,30 +1,16 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
-import type { CampaignMember, CampaignInvitation } from '@/types/campaign';
-
-// Define the campaign type locally to avoid circular dependencies
-interface Campaign {
-  id: string;
-  name: string;
-  description: string | null;
-  created_by: string;
-  created_at: string;
-  updated_at: string;
-  status: 'active' | 'draft' | 'completed' | 'archived';
-}
+import { useAuth } from './useAuth';
 
 export const useCampaignQueries = () => {
   const { user } = useAuth();
 
-  // Fetch user's campaigns
-  const { data: campaigns = [], isLoading: campaignsLoading, error: campaignsError } = useQuery({
+  // Fetch campaigns created by the current user
+  const campaignQuery = useQuery({
     queryKey: ['campaigns', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      
-      console.log('Fetching campaigns for user:', user.id);
       
       const { data, error } = await supabase
         .from('campaigns')
@@ -37,25 +23,28 @@ export const useCampaignQueries = () => {
         throw error;
       }
       
-      console.log('Campaigns fetched:', data);
-      return (data || []) as Campaign[];
+      return data || [];
     },
     enabled: !!user,
   });
 
-  // Fetch campaign members - simplified query without joins
-  const { data: campaignMembers = [], error: membersError, isLoading: membersLoading } = useQuery({
-    queryKey: ['campaign-members', user?.id, campaigns.length],
+  // Fetch campaign members for user's campaigns
+  const campaignMembersQuery = useQuery({
+    queryKey: ['campaign-members', user?.id],
     queryFn: async () => {
-      if (!user || campaigns.length === 0) return [];
+      if (!user || !campaignQuery.data?.length) return [];
       
-      console.log('Fetching campaign members for campaigns:', campaigns.map(c => c.id));
-      
-      const campaignIds = campaigns.map(c => c.id);
+      const campaignIds = campaignQuery.data.map(c => c.id);
       
       const { data, error } = await supabase
         .from('campaign_members')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            full_name
+          )
+        `)
         .in('campaign_id', campaignIds)
         .order('joined_at', { ascending: false });
       
@@ -64,31 +53,21 @@ export const useCampaignQueries = () => {
         throw error;
       }
       
-      console.log('Campaign members fetched:', data);
-      
-      // Transform the data to match our expected type
-      return (data || []).map(member => ({
-        ...member,
-        profiles: null // Set to null since we're not joining with profiles
-      })) as CampaignMember[];
+      return data || [];
     },
-    enabled: !!user && campaigns.length > 0,
+    enabled: !!user && !!campaignQuery.data?.length,
   });
 
   // Fetch campaign invitations
-  const { data: campaignInvitations = [], error: invitationsError, isLoading: invitationsLoading } = useQuery({
-    queryKey: ['campaign-invitations', user?.id, campaigns.length],
+  const campaignInvitationsQuery = useQuery({
+    queryKey: ['campaign-invitations', user?.id],
     queryFn: async () => {
-      if (!user || campaigns.length === 0) return [];
-      
-      console.log('Fetching campaign invitations for campaigns:', campaigns.map(c => c.id));
-      
-      const campaignIds = campaigns.map(c => c.id);
+      if (!user) return [];
       
       const { data, error } = await supabase
         .from('campaign_invitations')
         .select('*')
-        .in('campaign_id', campaignIds)
+        .eq('invited_by', user.id)
         .order('invited_at', { ascending: false });
       
       if (error) {
@@ -96,23 +75,18 @@ export const useCampaignQueries = () => {
         throw error;
       }
       
-      console.log('Campaign invitations fetched:', data);
-      return (data || []) as CampaignInvitation[];
+      return data || [];
     },
-    enabled: !!user && campaigns.length > 0,
+    enabled: !!user,
   });
 
-  // Log any errors for debugging
-  if (campaignsError) console.error('Campaigns query error:', campaignsError);
-  if (membersError) console.error('Members query error:', membersError);
-  if (invitationsError) console.error('Invitations query error:', invitationsError);
-
-  const isLoading = campaignsLoading || membersLoading || invitationsLoading;
-
   return {
-    campaigns,
-    campaignMembers,
-    campaignInvitations,
-    campaignsLoading: isLoading,
+    campaigns: campaignQuery.data || [],
+    campaignMembers: campaignMembersQuery.data || [],
+    campaignInvitations: campaignInvitationsQuery.data || [],
+    campaignsLoading: campaignQuery.isLoading,
+    membersLoading: campaignMembersQuery.isLoading,
+    invitationsLoading: campaignInvitationsQuery.isLoading,
+    isLoading: campaignQuery.isLoading || campaignMembersQuery.isLoading || campaignInvitationsQuery.isLoading,
   };
 };

@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useCampaigns } from '@/hooks/useCampaigns';
+import { useCampaignQueries } from '@/hooks/useCampaignQueries';
 import CampaignForm from '@/components/team/CampaignForm';
 
 const TeamCollaboration = () => {
@@ -44,18 +45,23 @@ const TeamCollaboration = () => {
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
   const [showInviteDialog, setShowInviteDialog] = useState(false);
 
+  // Use the simplified queries hook
   const {
     campaigns,
     campaignMembers,
     campaignInvitations,
-    campaignsLoading,
+    isLoading
+  } = useCampaignQueries();
+
+  // Use mutations from the existing hook
+  const {
     inviteMemberMutation,
     removeMemberMutation,
     updateMemberRoleMutation,
   } = useCampaigns();
 
   console.log('TeamCollaboration render:', {
-    campaignsLoading,
+    isLoading,
     campaignsCount: campaigns.length,
     membersCount: campaignMembers.length,
     invitationsCount: campaignInvitations.length
@@ -115,7 +121,7 @@ const TeamCollaboration = () => {
     return campaignMembers.filter(member => member.campaign_id === campaignId);
   };
 
-  if (campaignsLoading) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
