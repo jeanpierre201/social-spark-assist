@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 
-type UserRole = 'admin' | 'developer' | 'viewer' | null;
+type UserRole = 'admin' | 'developer' | 'user' | 'viewer' | null;
 
 export const useUserRole = () => {
   const { user } = useAuth();
@@ -44,23 +44,25 @@ export const useUserRole = () => {
   const hasRole = (role: UserRole) => {
     if (!userRole) return false;
     
-    const roleHierarchy = { admin: 3, developer: 2, viewer: 1 };
+    const roleHierarchy = { developer: 4, admin: 3, user: 2, viewer: 1 };
     const userLevel = roleHierarchy[userRole];
     const requiredLevel = roleHierarchy[role || 'viewer'];
     
     return userLevel >= requiredLevel;
   };
 
-  const isAdmin = () => hasRole('admin');
   const isDeveloper = () => hasRole('developer');
+  const isAdmin = () => hasRole('admin');
+  const isUser = () => hasRole('user');
   const isViewer = () => hasRole('viewer');
 
   return {
     userRole,
     loading,
     hasRole,
-    isAdmin,
     isDeveloper,
+    isAdmin,
+    isUser,
     isViewer
   };
 };
