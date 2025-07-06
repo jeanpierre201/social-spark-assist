@@ -11,6 +11,10 @@ export const usePostsManager = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Determine user subscription status
+  const isProUser = subscribed && subscriptionTier === 'Pro';
+  const isStarterUser = subscribed && subscriptionTier === 'Starter';
+
   // Fetch all posts for the current user
   const postsQuery = useQuery({
     queryKey: ['posts', user?.id],
@@ -177,5 +181,7 @@ export const usePostsManager = () => {
     updatePostMutation,
     deletePostMutation,
     canCreatePost: currentMonthPosts < postLimit,
+    isProUser,
+    isStarterUser,
   };
 };

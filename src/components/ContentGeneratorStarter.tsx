@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -143,7 +142,12 @@ const ContentGeneratorStarter = () => {
           </div>
         </div>
 
-        <UsageIndicators monthlyPosts={monthlyPosts} daysRemaining={daysRemaining} />
+        <UsageIndicators 
+          monthlyPosts={monthlyPosts} 
+          daysRemaining={daysRemaining} 
+          maxPosts={10}
+          isProPlan={false}
+        />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <ContentCreationForm 
