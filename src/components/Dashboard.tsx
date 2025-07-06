@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -27,6 +26,10 @@ import ProAnalytics from './ProAnalytics';
 import TeamCollaboration from './TeamCollaboration';
 import SocialMediaSettings from './SocialMediaSettings';
 import NavigationTabs from './content/NavigationTabs';
+import { usePostsManager } from '@/hooks/usePostsManager';
+import UsageIndicators from './starter/UsageIndicators';
+import ContentGenerationForm from './content/ContentGenerationForm';
+import PostsDisplay from './content/PostsDisplay';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -36,6 +39,15 @@ const Dashboard = () => {
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const socialAccountsRef = useRef<HTMLDivElement>(null);
+
+  // Add posts manager for content generation
+  const {
+    posts,
+    currentMonthPosts,
+    createPostMutation,
+    updatePostMutation,
+    deletePostMutation
+  } = usePostsManager();
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
@@ -87,6 +99,29 @@ const Dashboard = () => {
         });
       }, 100);
     }
+  };
+
+  // Content Generator handlers
+  const handleEditPost = (post: any) => {
+    // This could be expanded to open an edit modal or form
+    console.log('Edit post:', post);
+  };
+
+  const handleUpdatePost = async (post: any, newContent: string) => {
+    updatePostMutation.mutate({ 
+      id: post.id, 
+      content: newContent,
+      scheduled_date: post.scheduled_date,
+      scheduled_time: post.scheduled_time
+    });
+  };
+
+  const handleDeletePost = async (id: string) => {
+    deletePostMutation.mutate(id);
+  };
+
+  const handlePostCreated = (newPost: any) => {
+    createPostMutation.mutate(newPost);
   };
 
   // Calculate real metrics - only show for subscribed users
@@ -166,6 +201,35 @@ const Dashboard = () => {
         />
 
         {/* Tab Content for Pro Users */}
+        {isProUser && activeTab === 'content' && (
+          <>
+            {/* Usage Indicators */}
+            <UsageIndicators 
+              monthlyPosts={currentMonthPosts} 
+              daysRemaining={30}
+              maxPosts={isProUser ? 100 : isStarterUser ? 10 : 0}
+              isProPlan={isProUser}
+            />
+
+            {/* Content Generation Form */}
+            <div className="mb-6">
+              <ContentGenerationForm
+                currentMonthPosts={currentMonthPosts}
+                isProUser={isProUser}
+                isStarterUser={isStarterUser}
+                onPostCreated={handlePostCreated}
+              />
+            </div>
+
+            {/* Display Generated Posts */}
+            <PostsDisplay
+              posts={posts}
+              onEditPost={handleEditPost}
+              onUpdatePost={handleUpdatePost}
+              onDeletePost={handleDeletePost}
+            />
+          </>
+        )}
         {isProUser && activeTab === 'analytics' && <ProAnalytics />}
         {isProUser && activeTab === 'team' && <TeamCollaboration />}
         {isProUser && activeTab === 'social' && <SocialMediaSettings />}
@@ -257,7 +321,13 @@ const Dashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <Button 
-                    onClick={handleContentGeneration}
+                    onClick={() => {
+                      if (isProUser) {
+                        setActiveTab('content');
+                      } else {
+                        handleContentGeneration();
+                      }
+                    }}
                     className={`w-full ${
                       isProUser 
                         ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 

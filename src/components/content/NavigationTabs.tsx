@@ -1,6 +1,4 @@
 
-import { useNavigate, useLocation } from 'react-router-dom';
-
 interface NavigationTabsProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -9,23 +7,14 @@ interface NavigationTabsProps {
 }
 
 const NavigationTabs = ({ activeTab, setActiveTab, isProUser, showContentGenerator = true }: NavigationTabsProps) => {
-  const navigate = useNavigate();
-  const location = useLocation();
-
   if (!isProUser) return null;
-
-  // Check if we're on the content generator page
-  const isOnContentGenerator = location.pathname === '/content-generator';
 
   return (
     <div className="mb-6">
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => {
-              setActiveTab('overview');
-              navigate('/dashboard');
-            }}
+            onClick={() => setActiveTab('overview')}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
               activeTab === 'overview'
                 ? 'border-purple-500 text-purple-600'
@@ -36,9 +25,9 @@ const NavigationTabs = ({ activeTab, setActiveTab, isProUser, showContentGenerat
           </button>
           {showContentGenerator && (
             <button
-              onClick={() => navigate('/content-generator')}
+              onClick={() => setActiveTab('content')}
               className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                isOnContentGenerator
+                activeTab === 'content'
                   ? 'border-purple-500 text-purple-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}

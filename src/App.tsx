@@ -53,6 +53,7 @@ const App = () => (
                     <DashboardPage />
                   </ProtectedRoute>
                 } />
+                {/* Keep content generator route for Starter users only */}
                 <Route path="/content-generator" element={
                   <ProtectedRoute>
                     <ContentGeneratorPage />
