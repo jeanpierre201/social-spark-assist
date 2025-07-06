@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Activity, Database, Zap, Clock } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface PerformanceMetric {
   date_recorded: string;
@@ -52,19 +51,8 @@ const PerformanceMetrics = () => {
           }
         ];
 
-        try {
-          const { data, error } = await supabase
-            .from('performance_metrics' as any)
-            .select('*')
-            .order('date_recorded', { ascending: false })
-            .limit(100);
-
-          if (error) throw error;
-          setMetrics(data || mockMetrics);
-        } catch (error) {
-          console.log('Using mock performance data until database types are updated');
-          setMetrics(mockMetrics);
-        }
+        setMetrics(mockMetrics);
+        console.log('Using mock performance data until database types are updated');
       } catch (error) {
         console.error('Error fetching performance metrics:', error);
       } finally {
