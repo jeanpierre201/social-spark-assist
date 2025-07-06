@@ -1,8 +1,8 @@
 
-import ContentGeneratorStarter from '@/components/ContentGeneratorStarter';
+import ContentGeneratorStarterRedirect from '@/components/ContentGeneratorStarterRedirect';
 
 const ContentGeneratorStarterPage = () => {
-  return <ContentGeneratorStarter />;
+  return <ContentGeneratorStarterRedirect />;
 };
 
 export default ContentGeneratorStarterPage;
