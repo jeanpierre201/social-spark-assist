@@ -230,11 +230,11 @@ const TeamCollaboration = () => {
                             <div key={member.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
                               <div className="flex items-center">
                                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3">
-                                  {member.profiles?.full_name?.charAt(0)?.toUpperCase() || member.user_id?.charAt(0)?.toUpperCase() || 'U'}
+                                  {(member.profiles as any)?.full_name?.charAt(0)?.toUpperCase() || member.user_id?.charAt(0)?.toUpperCase() || 'U'}
                                 </div>
                                 <div>
                                   <p className="text-sm font-medium text-gray-900">
-                                    {member.profiles?.full_name || `User ${member.user_id?.slice(0, 8)}`}
+                                    {(member.profiles as any)?.full_name || `User ${member.user_id?.slice(0, 8)}`}
                                   </p>
                                   <div className="flex items-center mt-1">
                                     <Badge 
@@ -262,7 +262,7 @@ const TeamCollaboration = () => {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleRemoveMember(member.id, member.profiles?.full_name || `User ${member.user_id?.slice(0, 8)}`)}
+                                onClick={() => handleRemoveMember(member.id, (member.profiles as any)?.full_name || `User ${member.user_id?.slice(0, 8)}`)}
                                 disabled={removeMemberMutation.isPending}
                                 className="text-red-600 hover:text-red-800 hover:bg-red-50"
                               >
@@ -328,7 +328,10 @@ const TeamCollaboration = () => {
             <h3 className="text-xl font-medium text-gray-900 mb-2">No campaigns yet</h3>
             <p className="text-gray-600 mb-6">Create your first campaign to start collaborating with your team.</p>
             <Button 
-              onClick={() => document.querySelector('input[placeholder="Campaign name"]')?.focus()}
+              onClick={() => {
+                const input = document.querySelector('input[placeholder="Campaign name"]') as HTMLInputElement;
+                input?.focus();
+              }}
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
             >
               Get Started
