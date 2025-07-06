@@ -26,6 +26,7 @@ import {
 import ProAnalytics from './ProAnalytics';
 import TeamCollaboration from './TeamCollaboration';
 import SocialMediaSettings from './SocialMediaSettings';
+import NavigationTabs from './content/NavigationTabs';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -145,72 +146,32 @@ const Dashboard = () => {
               >
                 <span>Home</span>
               </Button>
-              <Button
-                onClick={handleContentGeneration}
-                className={`flex items-center space-x-2 ${
-                  isProUser 
-                    ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
-                    : isStarterUser
-                      ? 'bg-blue-600 hover:bg-blue-700'
-                      : ''
-                }`}
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>Generate Content</span>
-              </Button>
+              {/* Only show Generate Content button when not on content tab */}
+              {activeTab !== 'content' && (
+                <Button
+                  onClick={handleContentGeneration}
+                  className={`flex items-center space-x-2 ${
+                    isProUser 
+                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
+                      : isStarterUser
+                        ? 'bg-blue-600 hover:bg-blue-700'
+                        : ''
+                  }`}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  <span>Generate Content</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
 
         {/* Navigation Tabs for Pro Users Only */}
-        {isProUser && (
-          <div className="mb-6">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8">
-                <button
-                  onClick={() => setActiveTab('overview')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'overview'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Overview
-                </button>
-                <button
-                  onClick={() => setActiveTab('analytics')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'analytics'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Advanced Analytics
-                </button>
-                <button
-                  onClick={() => setActiveTab('team')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'team'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Team Collaboration
-                </button>
-                <button
-                  onClick={() => setActiveTab('social')}
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'social'
-                      ? 'border-purple-500 text-purple-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Social Accounts
-                </button>
-              </nav>
-            </div>
-          </div>
-        )}
+        <NavigationTabs 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          isProUser={isProUser} 
+        />
 
         {/* Tab Content for Pro Users */}
         {isProUser && activeTab === 'analytics' && <ProAnalytics />}
