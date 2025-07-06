@@ -17,16 +17,6 @@ const NavigationTabs = ({ activeTab, setActiveTab, isProUser }: NavigationTabsPr
       <div className="border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
-            onClick={() => setActiveTab('content')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
-              activeTab === 'content'
-                ? 'border-purple-500 text-purple-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            Content Generator
-          </button>
-          <button
             onClick={() => {
               setActiveTab('overview');
               navigate('/dashboard');
@@ -64,6 +54,16 @@ const NavigationTabs = ({ activeTab, setActiveTab, isProUser }: NavigationTabsPr
             }`}
           >
             Social Accounts
+          </button>
+          <button
+            onClick={() => setActiveTab('content')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === 'content'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Content Generator
           </button>
         </nav>
       </div>
