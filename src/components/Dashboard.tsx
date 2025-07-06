@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -55,23 +56,6 @@ const Dashboard = () => {
 
   // Check if we're coming from content generator
   const isFromContentGenerator = location.pathname === '/dashboard' && location.state?.fromContentGenerator;
-
-  // Fetch posts data to get real scheduled posts count
-  const { data: posts = [] } = useQuery({
-    queryKey: ['user-posts', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!user,
-  });
 
   console.log('Dashboard: Current subscription info', { subscribed, subscriptionTier, isProUser, isStarterUser });
 
