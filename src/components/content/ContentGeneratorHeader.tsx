@@ -2,6 +2,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { Crown, Zap } from 'lucide-react';
 
 interface ContentGeneratorHeaderProps {
@@ -11,16 +12,17 @@ interface ContentGeneratorHeaderProps {
 
 const ContentGeneratorHeader = ({ isProUser, isStarterUser }: ContentGeneratorHeaderProps) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <div className="mb-8">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            {isProUser ? 'Pro Content Generator' : isStarterUser ? 'Starter Content Generator' : 'Content Generator'}
+            Pro Dashboard
           </h1>
           <p className="text-muted-foreground flex items-center gap-2">
-            Create engaging social media content with AI
+            Welcome back, {user?.email}
             {isProUser && (
               <Badge className="bg-purple-100 text-purple-800">
                 <Crown className="h-3 w-3 mr-1 text-purple-600" />
