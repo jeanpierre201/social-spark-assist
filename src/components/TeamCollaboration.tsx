@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, Mail, Crown, Eye, Trash2 } from 'lucide-react';
+import { Users, UserPlus, Mail, Crown, Eye, Trash2, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCampaigns } from '@/hooks/useCampaigns';
 
@@ -68,6 +68,28 @@ const TeamCollaboration = () => {
       setInviteEmail('');
     } catch (error) {
       console.error('Error inviting user:', error);
+    }
+  };
+
+  const handleResendInvitation = async (invitationId: string, email: string) => {
+    try {
+      await inviteMemberMutation.mutateAsync({
+        campaignId: selectedCampaign,
+        email: email,
+        role: 'editor',
+      });
+      
+      toast({
+        title: "Invitation Resent",
+        description: `Invitation has been resent to ${email}`,
+      });
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to resend invitation. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -229,6 +251,16 @@ const TeamCollaboration = () => {
                               Pending
                             </Badge>
                           </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResendInvitation(invitation.id, invitation.email)}
+                            disabled={inviteMemberMutation.isPending}
+                            className="text-blue-600 hover:text-blue-800"
+                          >
+                            <Send className="h-4 w-4 mr-1" />
+                            Resend
+                          </Button>
                         </div>
                       ))}
                   </div>
