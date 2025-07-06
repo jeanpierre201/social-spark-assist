@@ -1,8 +1,8 @@
-
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ProAnalytics from './ProAnalytics';
 import TeamCollaboration from './TeamCollaboration';
@@ -21,6 +21,7 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, loading } = useSubscription();
   const { accounts, metrics } = useSocialAccounts();
+  const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
@@ -147,8 +148,45 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} />
+        {/* Header with Admin Dashboard Link */}
+        <div className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">
+                Pro Dashboard
+              </h1>
+              <p className="text-muted-foreground flex items-center gap-2">
+                Welcome back, {user?.email}
+                {isProUser && (
+                  <span className="bg-purple-100 text-purple-800 rounded-full px-2 py-1 text-xs font-medium">
+                    Pro Plan (100 posts/month)
+                  </span>
+                )}
+                {isStarterUser && (
+                  <span className="bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs font-medium">
+                    Starter Plan (10 posts/month)
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              {isAdmin() && (
+                <button
+                  onClick={() => navigate('/admin-dashboard')}
+                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 font-medium"
+                >
+                  Admin Analytics
+                </button>
+              )}
+              <button
+                onClick={() => navigate('/')}
+                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Home
+              </button>
+            </div>
+          </div>
+        </div>
 
         {/* Navigation Tabs for Pro Users Only */}
         <NavigationTabs 
