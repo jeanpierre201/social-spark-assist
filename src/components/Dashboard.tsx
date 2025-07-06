@@ -114,10 +114,6 @@ const Dashboard = () => {
   }) : [];
   const totalScheduledPosts = scheduledPosts.length;
 
-  // Determine if we should show the Generate Content button
-  // Hide it only when we're on a specific tab (not overview) and coming from content generator
-  const shouldShowGenerateContentButton = !isFromContentGenerator || activeTab === 'overview';
-
   // Determine if we should show the Content Generator tab in NavigationTabs
   const shouldShowContentGeneratorTab = !isFromContentGenerator;
 
@@ -166,22 +162,6 @@ const Dashboard = () => {
               >
                 <span>{isFromContentGenerator ? 'Dashboard' : 'Home'}</span>
               </Button>
-              {/* Only show Generate Content button when appropriate */}
-              {shouldShowGenerateContentButton && (
-                <Button
-                  onClick={handleContentGeneration}
-                  className={`flex items-center space-x-2 ${
-                    isProUser 
-                      ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
-                      : isStarterUser
-                        ? 'bg-blue-600 hover:bg-blue-700'
-                        : ''
-                  }`}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  <span>Generate Content</span>
-                </Button>
-              )}
             </div>
           </div>
         </div>
