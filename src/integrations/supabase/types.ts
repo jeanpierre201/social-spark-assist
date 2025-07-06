@@ -9,6 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      analytics_data: {
+        Row: {
+          created_at: string
+          date_recorded: string
+          id: string
+          metric_type: string
+          metric_value: number
+          platform: string
+          post_id: string | null
+          time_period: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          metric_type: string
+          metric_value?: number
+          platform: string
+          post_id?: string | null
+          time_period?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          metric_type?: string
+          metric_value?: number
+          platform?: string
+          post_id?: string | null
+          time_period?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      audience_demographics: {
+        Row: {
+          age_group: string
+          created_at: string
+          date_recorded: string
+          gender: string
+          id: string
+          location: string
+          percentage: number
+          platform: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age_group: string
+          created_at?: string
+          date_recorded?: string
+          gender: string
+          id?: string
+          location: string
+          percentage?: number
+          platform: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age_group?: string
+          created_at?: string
+          date_recorded?: string
+          gender?: string
+          id?: string
+          location?: string
+          percentage?: number
+          platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       campaign_invitations: {
         Row: {
           accepted_at: string | null
@@ -115,6 +193,102 @@ export type Database = {
           name?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      competitor_analysis: {
+        Row: {
+          avg_comments: number | null
+          avg_likes: number | null
+          competitor_handle: string
+          competitor_name: string
+          created_at: string
+          engagement_rate: number | null
+          followers_count: number | null
+          id: string
+          last_analyzed: string | null
+          platform: string
+          posts_per_week: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_comments?: number | null
+          avg_likes?: number | null
+          competitor_handle: string
+          competitor_name: string
+          created_at?: string
+          engagement_rate?: number | null
+          followers_count?: number | null
+          id?: string
+          last_analyzed?: string | null
+          platform: string
+          posts_per_week?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_comments?: number | null
+          avg_likes?: number | null
+          competitor_handle?: string
+          competitor_name?: string
+          created_at?: string
+          engagement_rate?: number | null
+          followers_count?: number | null
+          id?: string
+          last_analyzed?: string | null
+          platform?: string
+          posts_per_week?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      content_insights: {
+        Row: {
+          avg_engagement_rate: number | null
+          avg_impressions: number | null
+          avg_reach: number | null
+          best_performing_day: string | null
+          best_performing_time: string | null
+          content_type: string
+          created_at: string
+          date_analyzed: string
+          id: string
+          platform: string
+          total_posts: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avg_engagement_rate?: number | null
+          avg_impressions?: number | null
+          avg_reach?: number | null
+          best_performing_day?: string | null
+          best_performing_time?: string | null
+          content_type: string
+          created_at?: string
+          date_analyzed?: string
+          id?: string
+          platform: string
+          total_posts?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avg_engagement_rate?: number | null
+          avg_impressions?: number | null
+          avg_reach?: number | null
+          best_performing_day?: string | null
+          best_performing_time?: string | null
+          content_type?: string
+          created_at?: string
+          date_analyzed?: string
+          id?: string
+          platform?: string
+          total_posts?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
