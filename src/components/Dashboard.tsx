@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -67,6 +68,26 @@ const Dashboard = () => {
       navigate('/content-generator-starter');
     } else {
       navigate('/content-generator');
+    }
+  };
+
+  const handleViewAllPosts = () => {
+    if (isProUser) {
+      navigate('/content-generator', { state: { scrollToPosts: true } });
+    } else if (isStarterUser) {
+      navigate('/content-generator-starter', { state: { scrollToPosts: true } });
+    } else {
+      navigate('/content-generator', { state: { scrollToPosts: true } });
+    }
+  };
+
+  const handleCalendarView = () => {
+    if (isProUser) {
+      navigate('/content-generator', { state: { scrollToPosts: true, viewMode: 'calendar' } });
+    } else if (isStarterUser) {
+      navigate('/content-generator-starter', { state: { scrollToPosts: true, viewMode: 'calendar' } });
+    } else {
+      navigate('/content-generator', { state: { scrollToPosts: true, viewMode: 'calendar' } });
     }
   };
 
@@ -346,7 +367,7 @@ const Dashboard = () => {
                     <Button 
                       variant="outline" 
                       className="w-full"
-                      onClick={() => navigate('/content-generator')}
+                      onClick={handleViewAllPosts}
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       View All Posts
@@ -354,14 +375,7 @@ const Dashboard = () => {
                     <Button 
                       variant="outline" 
                       className="w-full"
-                      onClick={() => {
-                        navigate('/content-generator');
-                        // Small delay to ensure page loads before scrolling
-                        setTimeout(() => {
-                          const postsSection = document.querySelector('[data-posts-section]');
-                          postsSection?.scrollIntoView({ behavior: 'smooth' });
-                        }, 100);
-                      }}
+                      onClick={handleCalendarView}
                     >
                       <CalendarDays className="h-4 w-4 mr-2" />
                       Calendar View
