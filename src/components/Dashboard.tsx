@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -70,16 +71,6 @@ const Dashboard = () => {
       navigate('/content-generator-starter');
     } else {
       navigate('/content-generator');
-    }
-  };
-
-  const handleHomeNavigation = () => {
-    if (isFromContentGenerator) {
-      // If coming from content generator, go back to content generator
-      navigate('/content-generator');
-    } else {
-      // Otherwise go to home page
-      navigate('/');
     }
   };
 
@@ -156,11 +147,11 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <Button
-                onClick={handleHomeNavigation}
+                onClick={() => navigate('/')}
                 variant="outline"
                 className="flex items-center space-x-2"
               >
-                <span>{isFromContentGenerator ? 'Dashboard' : 'Home'}</span>
+                <span>Home</span>
               </Button>
             </div>
           </div>
