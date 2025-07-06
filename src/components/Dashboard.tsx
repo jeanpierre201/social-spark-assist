@@ -21,7 +21,6 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, loading } = useSubscription();
   const { accounts, metrics } = useSocialAccounts();
-  const { isAdmin } = useUserRole();
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
@@ -148,7 +147,7 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header with Admin Dashboard Link */}
+        {/* Header without Admin Dashboard Link */}
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <div>
@@ -170,14 +169,6 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {isAdmin() && (
-                <button
-                  onClick={() => navigate('/admin-dashboard')}
-                  className="bg-gradient-to-r from-red-500 to-pink-500 text-white px-4 py-2 rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-200 font-medium"
-                >
-                  Admin Analytics
-                </button>
-              )}
               <button
                 onClick={() => navigate('/')}
                 className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"

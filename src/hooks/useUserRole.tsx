@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 
 type UserRole = 'admin' | 'developer' | 'viewer' | null;
 
@@ -18,20 +19,17 @@ export const useUserRole = () => {
       }
 
       try {
-        // For now, we'll use mock role checking until the database types are updated
-        // This prevents TypeScript errors while maintaining functionality
-        
-        // Mock admin role for testing - in production this would check the user_roles table
-        // You can modify this logic to assign admin role based on email or other criteria
-        const isAdminUser = user.email === 'admin@example.com' || user.email?.includes('admin');
-        
-        if (isAdminUser) {
-          setUserRole('admin');
+        // Use the database function to get user role
+        const { data, error } = await supabase.rpc('get_user_role', {
+          _user_id: user.id
+        });
+
+        if (error) {
+          console.error('Error fetching user role:', error);
+          setUserRole(null);
         } else {
-          setUserRole('viewer');
+          setUserRole(data as UserRole);
         }
-        
-        console.log('Using mock role data until database types are updated');
       } catch (error) {
         console.error('Error checking user role:', error);
         setUserRole(null);
