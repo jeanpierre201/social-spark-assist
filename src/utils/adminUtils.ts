@@ -7,13 +7,13 @@ import { supabase } from '@/integrations/supabase/client';
 export const assignAdminRole = async (userEmail: string, role: 'admin' | 'developer' | 'viewer' = 'admin') => {
   try {
     // First, get the user ID from email
-    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+    const { data, error: listError } = await supabase.auth.admin.listUsers();
     
     if (listError) {
       throw new Error(`Failed to list users: ${listError.message}`);
     }
 
-    const targetUser = users.find(user => user.email === userEmail);
+    const targetUser = data.users.find(user => user.email === userEmail);
     
     if (!targetUser) {
       throw new Error(`User with email ${userEmail} not found`);
@@ -55,13 +55,13 @@ export const assignAdminRole = async (userEmail: string, role: 'admin' | 'develo
 export const removeUserRole = async (userEmail: string, role: 'admin' | 'developer' | 'viewer') => {
   try {
     // First, get the user ID from email
-    const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+    const { data, error: listError } = await supabase.auth.admin.listUsers();
     
     if (listError) {
       throw new Error(`Failed to list users: ${listError.message}`);
     }
 
-    const targetUser = users.find(user => user.email === userEmail);
+    const targetUser = data.users.find(user => user.email === userEmail);
     
     if (!targetUser) {
       throw new Error(`User with email ${userEmail} not found`);
