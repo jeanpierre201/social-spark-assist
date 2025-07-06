@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -45,6 +44,7 @@ const Dashboard = () => {
   const {
     posts,
     currentMonthPosts,
+    postLimit,
     createPostMutation,
     updatePostMutation,
     deletePostMutation
@@ -153,13 +153,13 @@ const Dashboard = () => {
                 {isProUser && (
                   <Badge className="bg-purple-100 text-purple-800">
                     <Crown className="h-3 w-3 mr-1 text-purple-600" />
-                    Pro Plan
+                    Pro Plan (100 posts/month)
                   </Badge>
                 )}
                 {isStarterUser && (
                   <Badge className="bg-blue-100 text-blue-800">
                     <Zap className="h-3 w-3 mr-1 text-blue-600" />
-                    Starter Plan
+                    Starter Plan (10 posts/month)
                   </Badge>
                 )}
               </p>
@@ -191,7 +191,7 @@ const Dashboard = () => {
             <UsageIndicators 
               monthlyPosts={currentMonthPosts} 
               daysRemaining={30}
-              maxPosts={isProUser ? 100 : isStarterUser ? 10 : 0}
+              maxPosts={postLimit}
               isProPlan={isProUser}
             />
 
@@ -232,7 +232,12 @@ const Dashboard = () => {
                   <CardContent>
                     <div className="text-2xl font-bold">{totalPosts || '--'}</div>
                     <p className="text-xs text-muted-foreground">
-                      {totalPosts ? 'Total posts created' : 'No posts yet'}
+                      {isProUser 
+                        ? `${currentMonthPosts}/100 this month`
+                        : isStarterUser 
+                          ? `${currentMonthPosts}/10 this month`
+                          : 'No posts yet'
+                      }
                     </p>
                   </CardContent>
                 </Card>
@@ -296,7 +301,7 @@ const Dashboard = () => {
                   </CardTitle>
                   <CardDescription>
                     {isProUser 
-                      ? 'Create unlimited content with AI assistance and advanced variations'
+                      ? 'Create up to 100 posts per month with AI assistance and advanced variations'
                       : isStarterUser
                         ? 'Generate up to 10 posts per month with AI assistance'
                         : 'Create engaging social media content with AI'

@@ -28,7 +28,7 @@ export const useCampaignQueries = () => {
     enabled: !!user,
   });
 
-  // Fetch campaign members for user's campaigns
+  // Fetch campaign members for user's campaigns with proper profile joins
   const campaignMembersQuery = useQuery({
     queryKey: ['campaign-members', user?.id],
     queryFn: async () => {
@@ -40,7 +40,7 @@ export const useCampaignQueries = () => {
         .from('campaign_members')
         .select(`
           *,
-          profiles!campaign_members_user_id_fkey (
+          profiles!inner (
             id,
             full_name
           )

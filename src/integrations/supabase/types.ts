@@ -510,6 +510,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: number
       }
+      get_monthly_post_count_with_limit: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
       get_user_latest_metrics: {
         Args: { user_uuid: string }
         Returns: {
