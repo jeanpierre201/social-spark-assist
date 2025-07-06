@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -6,7 +5,7 @@ import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -33,12 +32,16 @@ const Dashboard = () => {
   const { subscribed, subscriptionTier, loading } = useSubscription();
   const { accounts, metrics } = useSocialAccounts();
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('overview');
   const socialAccountsRef = useRef<HTMLDivElement>(null);
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
   const hasAnyPlan = subscribed && (subscriptionTier === 'Pro' || subscriptionTier === 'Starter');
+
+  // Check if we're coming from content generator
+  const isFromContentGenerator = location.pathname === '/dashboard' && location.state?.fromContentGenerator;
 
   // Fetch posts data to get real scheduled posts count
   const { data: posts = [] } = useQuery({
@@ -67,6 +70,16 @@ const Dashboard = () => {
       navigate('/content-generator-starter');
     } else {
       navigate('/content-generator');
+    }
+  };
+
+  const handleHomeNavigation = () => {
+    if (isFromContentGenerator) {
+      // If coming from content generator, go back to content generator
+      navigate('/content-generator');
+    } else {
+      // Otherwise go to home page
+      navigate('/');
     }
   };
 
@@ -101,6 +114,13 @@ const Dashboard = () => {
   }) : [];
   const totalScheduledPosts = scheduledPosts.length;
 
+  // Determine if we should show the Generate Content button
+  // Hide it only when we're on a specific tab (not overview) and coming from content generator
+  const shouldShowGenerateContentButton = !isFromContentGenerator || activeTab === 'overview';
+
+  // Determine if we should show the Content Generator tab in NavigationTabs
+  const shouldShowContentGeneratorTab = !isFromContentGenerator;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -120,7 +140,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
-                {isProUser ? 'Pro Dashboard' : isStarterUser ? 'Starter Dashboard' : 'Dashboard'}
+                Pro Dashboard
               </h1>
               <p className="text-muted-foreground flex items-center gap-2">
                 Welcome back, {user?.email}
@@ -140,14 +160,14 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-3">
               <Button
-                onClick={() => navigate('/')}
+                onClick={handleHomeNavigation}
                 variant="outline"
                 className="flex items-center space-x-2"
               >
-                <span>Home</span>
+                <span>{isFromContentGenerator ? 'Dashboard' : 'Home'}</span>
               </Button>
-              {/* Only show Generate Content button when not on content tab */}
-              {activeTab !== 'content' && (
+              {/* Only show Generate Content button when appropriate */}
+              {shouldShowGenerateContentButton && (
                 <Button
                   onClick={handleContentGeneration}
                   className={`flex items-center space-x-2 ${
@@ -170,7 +190,8 @@ const Dashboard = () => {
         <NavigationTabs 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
-          isProUser={isProUser} 
+          isProUser={isProUser}
+          showContentGenerator={shouldShowContentGeneratorTab}
         />
 
         {/* Tab Content for Pro Users */}
