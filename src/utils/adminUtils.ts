@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import type { User } from '@supabase/supabase-js';
 
 /**
  * Assign admin role to a user (must be called by an existing admin)
@@ -13,7 +14,7 @@ export const assignAdminRole = async (userEmail: string, role: 'admin' | 'develo
       throw new Error(`Failed to list users: ${listError.message}`);
     }
 
-    const targetUser = data.users.find(user => user.email === userEmail);
+    const targetUser = data.users.find((user: User) => user.email === userEmail);
     
     if (!targetUser) {
       throw new Error(`User with email ${userEmail} not found`);
@@ -61,7 +62,7 @@ export const removeUserRole = async (userEmail: string, role: 'admin' | 'develop
       throw new Error(`Failed to list users: ${listError.message}`);
     }
 
-    const targetUser = data.users.find(user => user.email === userEmail);
+    const targetUser = data.users.find((user: User) => user.email === userEmail);
     
     if (!targetUser) {
       throw new Error(`User with email ${userEmail} not found`);
