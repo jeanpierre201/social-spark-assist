@@ -15,6 +15,7 @@ import DashboardPage from "./pages/DashboardPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
+import AdminResetPasswordPage from "./pages/AdminResetPasswordPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import ContentGeneratorPage from "./pages/ContentGeneratorPage";
 import ContentGeneratorStarterPage from "./pages/ContentGeneratorStarterPage";
@@ -48,6 +49,7 @@ const App = () => (
                   
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLoginPage />} />
+                  <Route path="/admin/reset-password" element={<AdminResetPasswordPage />} />
                   <Route path="/admin/dashboard" element={
                     <AdminProtectedRoute>
                       <AdminDashboardPage />
