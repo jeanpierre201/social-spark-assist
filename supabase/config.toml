@@ -1,1 +1,74 @@
 project_id = "bmkwrzrcefgoqsgiorek"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+smtp_port = 54325
+pop3_port = 54326
+
+[storage]
+enabled = true
+port = 54327
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+port = 54328
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+security_refresh_token_rotation_enabled = true
+security_captcha_enabled = false
+
+[rest]
+enabled = true
+port = 54329
+
+[realtime]
+enabled = true
+port = 54330
+
+[functions.check-subscription]
+verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.create-pro-checkout]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.generate-content]
+verify_jwt = true
+
+[functions.generate-image]
+verify_jwt = true
+
+[functions.send-campaign-invitation]
+verify_jwt = true
+
+[functions.send-support-email]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.sync-analytics]
+verify_jwt = true

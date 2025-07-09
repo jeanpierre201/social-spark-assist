@@ -33,8 +33,17 @@ const AdminDashboard = () => {
     setSyncing(true);
     try {
       console.log('Starting analytics sync...');
+      
+      // Get the current session to ensure we're authenticated
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('User not authenticated');
+      }
+      
       const { data, error } = await supabase.functions.invoke('sync-analytics', {
-        method: 'POST'
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
       
       if (error) {
@@ -43,10 +52,12 @@ const AdminDashboard = () => {
       }
       
       console.log('Sync successful:', data);
-      toast.success('Analytics synced successfully');
+      toast.success('Analytics synced successfully! Refreshing data...');
       
-      // Refresh the analytics data without reloading the page
-      window.location.reload();
+      // Refresh the page to show updated data
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
     } catch (error) {
       console.error('Sync error:', error);
       toast.error(`Failed to sync analytics: ${error.message || 'Unknown error'}`);
