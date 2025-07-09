@@ -21,7 +21,7 @@ import PerformanceMetrics from './analytics/PerformanceMetrics';
 
 const AdminDashboard = () => {
   const { userRole, loading: roleLoading, isAdmin } = useUserRole();
-  const { subscriptionData, incomeData, userActivityData, contentData, loading } = useAnalytics();
+  const { subscriptionData, incomeData, userActivityData, contentData, currentStats, loading } = useAnalytics();
 
   if (roleLoading || loading) {
     return (
@@ -68,8 +68,8 @@ const AdminDashboard = () => {
 
   const totalRevenue = latestIncomeData?.total_revenue || 0;
   const totalActiveUsers = latestUserActivityData?.total_active_users || 0;
-  const totalPostsGenerated = latestContentData?.total_posts_generated || 0;
-  const totalSubscriptions = latestSubscriptionData.reduce((sum, item) => sum + item.active_subscriptions, 0);
+  const totalPostsGenerated = currentStats.total_posts; // Use real posts count
+  const totalSubscriptions = currentStats.total_active_subscribers; // Use real subscribers count
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

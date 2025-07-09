@@ -41,12 +41,18 @@ interface ContentAnalytics {
   api_cost: number;
 }
 
+interface CurrentStats {
+  total_active_subscribers: number;
+  total_posts: number;
+}
+
 export const useAnalytics = () => {
   const { userRole, loading: roleLoading, isAdmin } = useUserRole();
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionAnalytics[]>([]);
   const [incomeData, setIncomeData] = useState<IncomeAnalytics[]>([]);
   const [userActivityData, setUserActivityData] = useState<UserActivityData[]>([]);
   const [contentData, setContentData] = useState<ContentAnalytics[]>([]);
+  const [currentStats, setCurrentStats] = useState<CurrentStats>({ total_active_subscribers: 0, total_posts: 0 });
   const [loading, setLoading] = useState(true);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
@@ -108,6 +114,30 @@ export const useAnalytics = () => {
         if (contentError) {
           console.error('Error fetching content analytics:', contentError);
         }
+
+        // Fetch current real stats
+        const { data: subscribersData, error: subscribersError } = await supabase
+          .from('subscribers')
+          .select('*')
+          .eq('subscribed', true);
+
+        if (subscribersError) {
+          console.error('Error fetching current subscribers:', subscribersError);
+        }
+
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select('id');
+
+        if (postsError) {
+          console.error('Error fetching total posts:', postsError);
+        }
+
+        // Set current stats
+        setCurrentStats({
+          total_active_subscribers: subscribersData?.length || 0,
+          total_posts: postsData?.length || 0
+        });
 
         // Transform and set the data
         setSubscriptionData(subscriptionAnalytics?.map(item => ({
@@ -171,6 +201,7 @@ export const useAnalytics = () => {
     incomeData,
     userActivityData,
     contentData,
+    currentStats,
     loading,
     refetch: () => {
       // Re-trigger the effect by updating a dependency if needed
