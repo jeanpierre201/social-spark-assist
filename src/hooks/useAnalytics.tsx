@@ -48,14 +48,16 @@ export const useAnalytics = () => {
   const [userActivityData, setUserActivityData] = useState<UserActivityData[]>([]);
   const [contentData, setContentData] = useState<ContentAnalytics[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
   useEffect(() => {
-    if (roleLoading) {
+    if (roleLoading || hasAttemptedFetch) {
       return;
     }
     
     if (!isAdmin()) {
       setLoading(false);
+      setHasAttemptedFetch(true);
       return;
     }
 
@@ -157,11 +159,12 @@ export const useAnalytics = () => {
         setContentData([]);
       } finally {
         setLoading(false);
+        setHasAttemptedFetch(true);
       }
     };
 
     fetchAnalytics();
-  }, [roleLoading, isAdmin]);
+  }, [roleLoading, isAdmin, hasAttemptedFetch]);
 
   return {
     subscriptionData,
