@@ -42,7 +42,7 @@ interface ContentAnalytics {
 }
 
 export const useAnalytics = () => {
-  const { userRole, loading: roleLoading } = useUserRole();
+  const { userRole, loading: roleLoading, isAdmin } = useUserRole();
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionAnalytics[]>([]);
   const [incomeData, setIncomeData] = useState<IncomeAnalytics[]>([]);
   const [userActivityData, setUserActivityData] = useState<UserActivityData[]>([]);
@@ -54,7 +54,7 @@ export const useAnalytics = () => {
       return;
     }
     
-    if (userRole !== 'admin') {
+    if (!isAdmin()) {
       setLoading(false);
       return;
     }
@@ -161,7 +161,7 @@ export const useAnalytics = () => {
     };
 
     fetchAnalytics();
-  }, [userRole, roleLoading]);
+  }, [roleLoading, isAdmin]);
 
   return {
     subscriptionData,

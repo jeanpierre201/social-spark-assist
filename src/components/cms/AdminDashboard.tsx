@@ -20,7 +20,7 @@ import ContentAnalytics from './analytics/ContentAnalytics';
 import PerformanceMetrics from './analytics/PerformanceMetrics';
 
 const AdminDashboard = () => {
-  const { userRole, loading: roleLoading } = useUserRole();
+  const { userRole, loading: roleLoading, isAdmin } = useUserRole();
   const { subscriptionData, incomeData, userActivityData, contentData, loading } = useAnalytics();
 
   if (roleLoading) {
@@ -31,7 +31,7 @@ const AdminDashboard = () => {
     );
   }
 
-  if (userRole !== 'admin') {
+  if (!isAdmin()) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-96">
