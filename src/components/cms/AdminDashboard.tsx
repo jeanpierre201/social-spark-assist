@@ -47,11 +47,29 @@ const AdminDashboard = () => {
     );
   }
 
-  // Calculate summary stats
-  const totalRevenue = incomeData.reduce((sum, item) => sum + item.total_revenue, 0);
-  const totalActiveUsers = userActivityData.reduce((sum, item) => sum + item.total_active_users, 0);
-  const totalPostsGenerated = contentData.reduce((sum, item) => sum + item.total_posts_generated, 0);
-  const totalSubscriptions = subscriptionData.reduce((sum, item) => sum + item.active_subscriptions, 0);
+  // Calculate summary stats from most recent data
+  const latestIncomeData = incomeData[0];
+  const latestUserActivityData = userActivityData[0];
+  const latestContentData = contentData[0];
+  
+  // Get latest subscription data by tier and sum active subscriptions
+  const latestSubscriptionData = subscriptionData.reduce((acc, item) => {
+    const existing = acc.find(s => s.subscription_tier === item.subscription_tier);
+    if (!existing || new Date(item.date_recorded) > new Date(existing.date_recorded)) {
+      const index = acc.findIndex(s => s.subscription_tier === item.subscription_tier);
+      if (index >= 0) {
+        acc[index] = item;
+      } else {
+        acc.push(item);
+      }
+    }
+    return acc;
+  }, [] as typeof subscriptionData);
+
+  const totalRevenue = latestIncomeData?.total_revenue || 0;
+  const totalActiveUsers = latestUserActivityData?.total_active_users || 0;
+  const totalPostsGenerated = latestContentData?.total_posts_generated || 0;
+  const totalSubscriptions = latestSubscriptionData.reduce((sum, item) => sum + item.active_subscriptions, 0);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
