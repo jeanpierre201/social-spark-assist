@@ -26,8 +26,8 @@ const ContentAnalytics = ({ data, loading }: ContentAnalyticsProps) => {
           <Card key={i}>
             <CardContent className="pt-6">
               <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-32 bg-gray-200 rounded"></div>
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="h-32 bg-muted rounded"></div>
               </div>
             </CardContent>
           </Card>
