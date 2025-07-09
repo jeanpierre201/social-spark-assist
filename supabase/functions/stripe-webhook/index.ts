@@ -118,7 +118,7 @@ async function handleSubscriptionChange(
   const isActive = subscription.status === "active";
   const subscriptionEnd = isActive ? new Date(subscription.current_period_end * 1000).toISOString() : null;
 
-  // Update subscribers table
+  // Update subscribers table - the database trigger will automatically handle analytics
   const { error: updateError } = await supabaseClient
     .from("subscribers")
     .upsert({
@@ -134,13 +134,7 @@ async function handleSubscriptionChange(
     logStep("Error updating subscriber", { error: updateError.message });
   } else {
     logStep("Updated subscriber", { email: customerEmail, subscribed: isActive, tier: subscriptionTier });
-  }
-
-  // Update analytics if it's a new subscription or cancellation
-  if (eventType === "customer.subscription.created" && isActive) {
-    await updateSubscriptionAnalytics(supabaseClient, subscriptionTier, "new", revenue);
-  } else if (eventType === "customer.subscription.deleted") {
-    await updateSubscriptionAnalytics(supabaseClient, subscriptionTier, "cancel", 0);
+    logStep("Analytics will be automatically updated by database trigger");
   }
 }
 
@@ -177,49 +171,4 @@ async function handlePaymentSuccess(
   }
 }
 
-async function updateSubscriptionAnalytics(
-  supabaseClient: any,
-  tier: string | null,
-  action: "new" | "cancel",
-  revenue: number
-) {
-  if (!tier) return;
-
-  const today = new Date().toISOString().split('T')[0];
-
-  // Get existing analytics for today
-  const { data: existing } = await supabaseClient
-    .from("subscription_analytics")
-    .select("*")
-    .eq("date_recorded", today)
-    .eq("subscription_tier", tier)
-    .maybeSingle();
-
-  const updates = {
-    date_recorded: today,
-    subscription_tier: tier,
-    new_subscriptions: existing?.new_subscriptions || 0,
-    active_subscriptions: existing?.active_subscriptions || 0,
-    revenue_generated: existing?.revenue_generated || 0,
-    upgrade_count: existing?.upgrade_count || 0,
-    downgrade_count: existing?.downgrade_count || 0,
-  };
-
-  if (action === "new") {
-    updates.new_subscriptions += 1;
-    updates.active_subscriptions += 1;
-    updates.revenue_generated += revenue;
-  } else if (action === "cancel") {
-    updates.active_subscriptions = Math.max(0, updates.active_subscriptions - 1);
-  }
-
-  const { error } = await supabaseClient
-    .from("subscription_analytics")
-    .upsert(updates, { onConflict: 'date_recorded,subscription_tier' });
-
-  if (error) {
-    logStep("Error updating subscription analytics", { error: error.message });
-  } else {
-    logStep("Updated subscription analytics", { tier, action, updates });
-  }
-}
+// This function is no longer needed as the database trigger handles all analytics updates automatically

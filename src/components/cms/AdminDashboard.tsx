@@ -109,7 +109,8 @@ const AdminDashboard = () => {
     return acc;
   }, [] as typeof subscriptionData);
 
-  const totalRevenue = latestIncomeData?.total_revenue || 0;
+  // Calculate total revenue from all subscription tiers
+  const totalRevenue = latestSubscriptionData.reduce((sum, item) => sum + item.revenue_generated, 0);
   const totalActiveUsers = latestUserActivityData?.total_active_users || 0;
   const totalPostsGenerated = currentStats.total_posts; // Use real posts count
   const totalSubscriptions = currentStats.total_active_subscribers; // Use real subscribers count
