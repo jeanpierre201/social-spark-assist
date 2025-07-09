@@ -1,8 +1,9 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Calendar } from 'lucide-react';
+import { Menu, X, Calendar, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -10,6 +11,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileName, setProfileName] = useState<string>('');
   const { user, logout } = useAuth();
+  const { isAuthorized: isAdminAuthorized } = useAdminAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -76,6 +78,16 @@ const Navbar = () => {
                 <Button variant="outline" onClick={() => navigate('/dashboard')}>
                   Dashboard
                 </Button>
+                {isAdminAuthorized && (
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/admin/dashboard')}
+                    className="border-red-200 hover:bg-red-50 text-red-700 hover:text-red-800"
+                  >
+                    <Shield className="h-4 w-4 mr-2" />
+                    Admin CMS
+                  </Button>
+                )}
                 <Button variant="outline" onClick={handleLogout}>
                   Logout
                 </Button>
@@ -116,6 +128,16 @@ const Navbar = () => {
                   <Button variant="outline" onClick={() => navigate('/dashboard')}>
                     Dashboard
                   </Button>
+                  {isAdminAuthorized && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate('/admin/dashboard')}
+                      className="border-red-200 hover:bg-red-50 text-red-700 hover:text-red-800"
+                    >
+                      <Shield className="h-4 w-4 mr-2" />
+                      Admin CMS
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={handleLogout}>
                     Logout
                   </Button>
