@@ -279,6 +279,45 @@ export type Database = {
         }
         Relationships: []
       }
+      content_analytics: {
+        Row: {
+          api_calls_count: number
+          api_cost: number
+          created_at: string
+          date_recorded: string
+          id: string
+          popular_industries: string[]
+          posts_by_tier: Json
+          success_rate: number
+          total_posts_generated: number
+          updated_at: string
+        }
+        Insert: {
+          api_calls_count?: number
+          api_cost?: number
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          popular_industries?: string[]
+          posts_by_tier?: Json
+          success_rate?: number
+          total_posts_generated?: number
+          updated_at?: string
+        }
+        Update: {
+          api_calls_count?: number
+          api_cost?: number
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          popular_industries?: string[]
+          posts_by_tier?: Json
+          success_rate?: number
+          total_posts_generated?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       content_insights: {
         Row: {
           avg_engagement_rate: number | null
@@ -324,6 +363,42 @@ export type Database = {
           total_posts?: number | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      income_analytics: {
+        Row: {
+          created_at: string
+          date_recorded: string
+          id: string
+          monthly_recurring_revenue: number
+          net_revenue: number
+          subscription_revenue: number
+          total_revenue: number
+          transaction_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          monthly_recurring_revenue?: number
+          net_revenue?: number
+          subscription_revenue?: number
+          total_revenue?: number
+          transaction_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          monthly_recurring_revenue?: number
+          net_revenue?: number
+          subscription_revenue?: number
+          total_revenue?: number
+          transaction_count?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -533,6 +608,81 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscription_analytics: {
+        Row: {
+          active_subscriptions: number
+          created_at: string
+          date_recorded: string
+          downgrade_count: number
+          id: string
+          new_subscriptions: number
+          revenue_generated: number
+          subscription_tier: string
+          updated_at: string
+          upgrade_count: number
+        }
+        Insert: {
+          active_subscriptions?: number
+          created_at?: string
+          date_recorded?: string
+          downgrade_count?: number
+          id?: string
+          new_subscriptions?: number
+          revenue_generated?: number
+          subscription_tier: string
+          updated_at?: string
+          upgrade_count?: number
+        }
+        Update: {
+          active_subscriptions?: number
+          created_at?: string
+          date_recorded?: string
+          downgrade_count?: number
+          id?: string
+          new_subscriptions?: number
+          revenue_generated?: number
+          subscription_tier?: string
+          updated_at?: string
+          upgrade_count?: number
+        }
+        Relationships: []
+      }
+      user_activity_analytics: {
+        Row: {
+          created_at: string
+          date_recorded: string
+          id: string
+          new_users: number
+          page_views: number
+          returning_users: number
+          total_active_users: number
+          total_sessions: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          new_users?: number
+          page_views?: number
+          returning_users?: number
+          total_active_users?: number
+          total_sessions?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_recorded?: string
+          id?: string
+          new_users?: number
+          page_views?: number
+          returning_users?: number
+          total_active_users?: number
+          total_sessions?: number
+          updated_at?: string
         }
         Relationships: []
       }

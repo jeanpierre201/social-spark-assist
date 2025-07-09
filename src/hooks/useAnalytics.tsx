@@ -59,72 +59,90 @@ export const useAnalytics = () => {
       try {
         setLoading(true);
 
-        // Mock subscription analytics data
-        const mockSubscriptionData: SubscriptionAnalytics[] = [
-          {
-            date_recorded: '2024-01-01',
-            subscription_tier: 'Pro',
-            new_subscriptions: 15,
-            active_subscriptions: 120,
-            revenue_generated: 2400,
-            upgrade_count: 8,
-            downgrade_count: 2
-          },
-          {
-            date_recorded: '2024-01-01',
-            subscription_tier: 'Starter',
-            new_subscriptions: 25,
-            active_subscriptions: 200,
-            revenue_generated: 1000,
-            upgrade_count: 3,
-            downgrade_count: 1
-          }
-        ];
+        // Fetch subscription analytics data
+        const { data: subscriptionAnalytics, error: subError } = await supabase
+          .from('subscription_analytics')
+          .select('*')
+          .order('date_recorded', { ascending: false })
+          .limit(30);
 
-        // Mock income analytics data
-        const mockIncomeData: IncomeAnalytics[] = [
-          {
-            date_recorded: '2024-01-01',
-            total_revenue: 3400,
-            subscription_revenue: 3200,
-            net_revenue: 3100,
-            transaction_count: 40,
-            monthly_recurring_revenue: 3200
-          }
-        ];
+        if (subError) {
+          console.error('Error fetching subscription analytics:', subError);
+        }
 
-        // Mock user activity data
-        const mockUserActivityData: UserActivityData[] = [
-          {
-            date_recorded: '2024-01-01',
-            total_active_users: 450,
-            new_users: 35,
-            returning_users: 415,
-            total_sessions: 1200,
-            page_views: 5400
-          }
-        ];
+        // Fetch income analytics data
+        const { data: incomeAnalytics, error: incomeError } = await supabase
+          .from('income_analytics')
+          .select('*')
+          .order('date_recorded', { ascending: false })
+          .limit(30);
 
-        // Mock content analytics data
-        const mockContentData: ContentAnalytics[] = [
-          {
-            date_recorded: '2024-01-01',
-            total_posts_generated: 890,
-            posts_by_tier: { 'Pro': 650, 'Starter': 240 },
-            success_rate: 96.5,
-            popular_industries: ['Technology', 'Marketing', 'Healthcare'],
-            api_calls_count: 1200,
-            api_cost: 45.60
-          }
-        ];
+        if (incomeError) {
+          console.error('Error fetching income analytics:', incomeError);
+        }
 
-        // Set mock data immediately to prevent loading state issues
-        setSubscriptionData(mockSubscriptionData);
-        setIncomeData(mockIncomeData);
-        setUserActivityData(mockUserActivityData);
-        setContentData(mockContentData);
+        // Fetch user activity data
+        const { data: userActivityAnalytics, error: userError } = await supabase
+          .from('user_activity_analytics')
+          .select('*')
+          .order('date_recorded', { ascending: false })
+          .limit(30);
 
-        console.log('Using mock analytics data until database types are updated');
+        if (userError) {
+          console.error('Error fetching user activity analytics:', userError);
+        }
+
+        // Fetch content analytics data
+        const { data: contentAnalytics, error: contentError } = await supabase
+          .from('content_analytics')
+          .select('*')
+          .order('date_recorded', { ascending: false })
+          .limit(30);
+
+        if (contentError) {
+          console.error('Error fetching content analytics:', contentError);
+        }
+
+        // Transform and set the data
+        setSubscriptionData(subscriptionAnalytics?.map(item => ({
+          date_recorded: item.date_recorded,
+          subscription_tier: item.subscription_tier,
+          new_subscriptions: item.new_subscriptions,
+          active_subscriptions: item.active_subscriptions,
+          revenue_generated: Number(item.revenue_generated),
+          upgrade_count: item.upgrade_count,
+          downgrade_count: item.downgrade_count
+        })) || []);
+
+        setIncomeData(incomeAnalytics?.map(item => ({
+          date_recorded: item.date_recorded,
+          total_revenue: Number(item.total_revenue),
+          subscription_revenue: Number(item.subscription_revenue),
+          net_revenue: Number(item.net_revenue),
+          transaction_count: item.transaction_count,
+          monthly_recurring_revenue: Number(item.monthly_recurring_revenue)
+        })) || []);
+
+        setUserActivityData(userActivityAnalytics?.map(item => ({
+          date_recorded: item.date_recorded,
+          total_active_users: item.total_active_users,
+          new_users: item.new_users,
+          returning_users: item.returning_users,
+          total_sessions: item.total_sessions,
+          page_views: item.page_views
+        })) || []);
+
+        setContentData(contentAnalytics?.map(item => ({
+          date_recorded: item.date_recorded,
+          total_posts_generated: item.total_posts_generated,
+          posts_by_tier: item.posts_by_tier as Record<string, number>,
+          success_rate: Number(item.success_rate),
+          popular_industries: item.popular_industries,
+          api_calls_count: item.api_calls_count,
+          api_cost: Number(item.api_cost)
+        })) || []);
+
+        console.log('Successfully fetched real analytics data from database');
 
       } catch (error) {
         console.error('Error fetching analytics:', error);
