@@ -1,8 +1,12 @@
 
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useUserRole } from '@/hooks/useUserRole';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { 
   Users, 
   DollarSign, 
@@ -11,7 +15,8 @@ import {
   Activity,
   Crown,
   Zap,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from 'lucide-react';
 import SubscriptionAnalytics from './analytics/SubscriptionAnalytics';
 import IncomeAnalytics from './analytics/IncomeAnalytics';
@@ -22,6 +27,23 @@ import PerformanceMetrics from './analytics/PerformanceMetrics';
 const AdminDashboard = () => {
   const { userRole, loading: roleLoading, isAdmin } = useUserRole();
   const { subscriptionData, incomeData, userActivityData, contentData, currentStats, loading } = useAnalytics();
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSyncAnalytics = async () => {
+    setSyncing(true);
+    try {
+      const { error } = await supabase.functions.invoke('sync-analytics');
+      if (error) throw error;
+      toast.success('Analytics synced successfully');
+      // Reload the page to show updated data
+      window.location.reload();
+    } catch (error) {
+      console.error('Sync error:', error);
+      toast.error('Failed to sync analytics');
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   if (roleLoading || loading) {
     return (
@@ -74,13 +96,23 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">
-            Admin Analytics Dashboard
-          </h1>
-          <p className="text-muted-foreground">
-            Comprehensive analytics and performance insights
-          </p>
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              Admin Analytics Dashboard
+            </h1>
+            <p className="text-muted-foreground">
+              Comprehensive analytics and performance insights
+            </p>
+          </div>
+          <Button 
+            onClick={handleSyncAnalytics} 
+            disabled={syncing}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Syncing...' : 'Sync Analytics'}
+          </Button>
         </div>
 
         {/* Summary Cards */}
