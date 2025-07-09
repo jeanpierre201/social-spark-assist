@@ -123,6 +123,8 @@ export const useAnalytics = () => {
 
         if (subscribersError) {
           console.error('Error fetching current subscribers:', subscribersError);
+        } else {
+          console.log('Fetched subscribers data:', subscribersData);
         }
 
         const { data: postsData, error: postsError } = await supabase
@@ -131,13 +133,18 @@ export const useAnalytics = () => {
 
         if (postsError) {
           console.error('Error fetching total posts:', postsError);
+        } else {
+          console.log('Fetched posts data:', postsData);
         }
 
         // Set current stats
-        setCurrentStats({
+        const currentStatsData = {
           total_active_subscribers: subscribersData?.length || 0,
           total_posts: postsData?.length || 0
-        });
+        };
+        
+        console.log('Setting current stats:', currentStatsData);
+        setCurrentStats(currentStatsData);
 
         // Transform and set the data
         setSubscriptionData(subscriptionAnalytics?.map(item => ({
