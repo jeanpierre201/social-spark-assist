@@ -32,14 +32,24 @@ const AdminDashboard = () => {
   const handleSyncAnalytics = async () => {
     setSyncing(true);
     try {
-      const { error } = await supabase.functions.invoke('sync-analytics');
-      if (error) throw error;
+      console.log('Starting analytics sync...');
+      const { data, error } = await supabase.functions.invoke('sync-analytics', {
+        method: 'POST'
+      });
+      
+      if (error) {
+        console.error('Sync error:', error);
+        throw error;
+      }
+      
+      console.log('Sync successful:', data);
       toast.success('Analytics synced successfully');
-      // Reload the page to show updated data
+      
+      // Refresh the analytics data without reloading the page
       window.location.reload();
     } catch (error) {
       console.error('Sync error:', error);
-      toast.error('Failed to sync analytics');
+      toast.error(`Failed to sync analytics: ${error.message || 'Unknown error'}`);
     } finally {
       setSyncing(false);
     }
