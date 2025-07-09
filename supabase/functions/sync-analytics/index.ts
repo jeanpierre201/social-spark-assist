@@ -65,14 +65,16 @@ async function syncSubscriptionAnalytics(supabaseClient: any, date: string) {
     return;
   }
 
-  // Count by tier
+  // Count by tier - only real tiers
   const tierCounts = subscribers.reduce((acc: any, sub: any) => {
-    const tier = sub.subscription_tier || "Basic";
-    acc[tier] = (acc[tier] || 0) + 1;
+    const tier = sub.subscription_tier;
+    if (tier) { // Only count actual tiers, not null/basic
+      acc[tier] = (acc[tier] || 0) + 1;
+    }
     return acc;
   }, {});
 
-  // Update analytics for each tier
+  // Only create analytics for tiers that actually exist
   for (const [tier, count] of Object.entries(tierCounts)) {
     const { error: upsertError } = await supabaseClient
       .from("subscription_analytics")
@@ -85,8 +87,7 @@ async function syncSubscriptionAnalytics(supabaseClient: any, date: string) {
         upgrade_count: 0,
         downgrade_count: 0,
       }, { 
-        onConflict: 'date_recorded,subscription_tier',
-        ignoreDuplicates: false
+        onConflict: 'date_recorded,subscription_tier'
       });
 
     if (upsertError) {

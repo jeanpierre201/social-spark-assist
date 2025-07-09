@@ -137,9 +137,10 @@ export const useAnalytics = () => {
           console.log('Fetched posts data:', postsData);
         }
 
-        // Set current stats
+        // Set current stats using real data only
+        const activeSubscribers = subscribersData?.filter(sub => sub.subscribed) || [];
         const currentStatsData = {
-          total_active_subscribers: subscribersData?.length || 0,
+          total_active_subscribers: activeSubscribers.length,
           total_posts: postsData?.length || 0
         };
         
