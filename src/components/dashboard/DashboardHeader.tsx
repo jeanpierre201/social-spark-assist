@@ -19,7 +19,7 @@ const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => 
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Pro Dashboard
+            Dashboard
           </h1>
           <p className="text-muted-foreground flex items-center gap-2">
             Welcome back, {user?.email}
