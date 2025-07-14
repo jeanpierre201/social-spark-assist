@@ -33,7 +33,8 @@ const Dashboard = () => {
     postLimit,
     createPostMutation,
     updatePostMutation,
-    deletePostMutation
+    deletePostMutation,
+    isFreeUser
   } = usePostsManager();
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
@@ -204,6 +205,7 @@ const Dashboard = () => {
                 currentMonthPosts={currentMonthPosts}
                 isProUser={isProUser}
                 isStarterUser={isStarterUser}
+                isFreeUser={isFreeUser}
                 onPostCreated={handlePostCreated}
               />
             </div>

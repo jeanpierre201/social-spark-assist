@@ -14,6 +14,7 @@ export const usePostsManager = () => {
   // Determine user subscription status
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
+  const isFreeUser = !subscribed;
 
   // Fetch all posts for the current user
   const postsQuery = useQuery({
@@ -47,10 +48,10 @@ export const usePostsManager = () => {
 
   // Determine post limit based on subscription
   const getPostLimit = () => {
-    if (!subscribed) return 0;
+    if (!subscribed) return 1; // Free users get 1 post per month
     if (subscriptionTier === 'Starter') return 10;
     if (subscriptionTier === 'Pro') return 100;
-    return 0;
+    return 1; // Default to 1 for any edge cases
   };
 
   const postLimit = getPostLimit();
@@ -183,5 +184,6 @@ export const usePostsManager = () => {
     canCreatePost: currentMonthPosts < postLimit,
     isProUser,
     isStarterUser,
+    isFreeUser,
   };
 };

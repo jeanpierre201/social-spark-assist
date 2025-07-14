@@ -8,9 +8,10 @@ import { Crown, Zap } from 'lucide-react';
 interface ContentGeneratorHeaderProps {
   isProUser: boolean;
   isStarterUser: boolean;
+  isFreeUser: boolean;
 }
 
-const ContentGeneratorHeader = ({ isProUser, isStarterUser }: ContentGeneratorHeaderProps) => {
+const ContentGeneratorHeader = ({ isProUser, isStarterUser, isFreeUser }: ContentGeneratorHeaderProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -19,7 +20,7 @@ const ContentGeneratorHeader = ({ isProUser, isStarterUser }: ContentGeneratorHe
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Pro Dashboard
+            Content Generator
           </h1>
           <p className="text-muted-foreground flex items-center gap-2">
             Welcome back, {user?.email}
@@ -33,6 +34,11 @@ const ContentGeneratorHeader = ({ isProUser, isStarterUser }: ContentGeneratorHe
               <Badge className="bg-blue-100 text-blue-800">
                 <Zap className="h-3 w-3 mr-1 text-blue-600" />
                 Starter Plan
+              </Badge>
+            )}
+            {isFreeUser && (
+              <Badge className="bg-gray-100 text-gray-800">
+                Free Plan (1 post/month)
               </Badge>
             )}
           </p>

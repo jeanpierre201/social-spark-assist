@@ -22,6 +22,7 @@ const ContentGenerator = () => {
     currentMonthPosts,
     isProUser,
     isStarterUser,
+    isFreeUser,
     createPostMutation,
     updatePostMutation,
     deletePostMutation
@@ -54,7 +55,7 @@ const ContentGenerator = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
-        <ContentGeneratorHeader isProUser={isProUser} isStarterUser={isStarterUser} />
+        <ContentGeneratorHeader isProUser={isProUser} isStarterUser={isStarterUser} isFreeUser={isFreeUser} />
 
         <NavigationTabs 
           activeTab={activeTab} 
@@ -74,7 +75,7 @@ const ContentGenerator = () => {
             <UsageIndicators 
               monthlyPosts={currentMonthPosts} 
               daysRemaining={30}
-              maxPosts={isProUser ? 100 : isStarterUser ? 10 : 0}
+              maxPosts={isProUser ? 100 : isStarterUser ? 10 : 1}
               isProPlan={isProUser}
             />
 
@@ -84,6 +85,7 @@ const ContentGenerator = () => {
                 currentMonthPosts={currentMonthPosts}
                 isProUser={isProUser}
                 isStarterUser={isStarterUser}
+                isFreeUser={isFreeUser}
                 onPostCreated={handlePostCreated}
               />
             </div>

@@ -19,10 +19,11 @@ interface ContentGenerationFormProps {
   currentMonthPosts: number;
   isProUser: boolean;
   isStarterUser: boolean;
+  isFreeUser: boolean;
   onPostCreated: (newPost: any) => void;
 }
 
-const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, onPostCreated }: ContentGenerationFormProps) => {
+const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, isFreeUser, onPostCreated }: ContentGenerationFormProps) => {
   const { user } = useAuth();
   const { subscribed } = useSubscription();
   const navigate = useNavigate();
@@ -48,10 +49,11 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, on
       return;
     }
 
-    if (!subscribed) {
+    // Free users get 1 post per month
+    if (isFreeUser && currentMonthPosts >= 1) {
       toast({
-        title: "Subscribe to generate content.",
-        description: "You need an active subscription to use this feature.",
+        title: "Monthly limit reached",
+        description: "Free users can generate 1 post per month. Upgrade to get more posts!",
       });
       navigate('/#pricing');
       return;
@@ -175,7 +177,10 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, on
       <CardHeader>
         <CardTitle>Generate Social Media Content</CardTitle>
         <CardDescription>
-          Enter your business details to generate engaging content.
+          {isFreeUser 
+            ? "Generate 1 free post per month. Upgrade for more posts and advanced features!"
+            : "Enter your business details to generate engaging content."
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -214,76 +219,101 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, on
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="platform">Platform</Label>
-            <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
-              <SelectTrigger id="platform">
-                <SelectValue placeholder="Select" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="twitter">Twitter</SelectItem>
-                <SelectItem value="facebook">Facebook</SelectItem>
-                <SelectItem value="linkedin">LinkedIn</SelectItem>
-                <SelectItem value="instagram">Instagram</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>Image Upload</Label>
-            <Input type="file" accept="image/*" onChange={handleImageUpload} />
-            {isImageUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
-            {imageUrl && (
-              <div className="mt-2">
-                <img src={imageUrl} alt="Uploaded" className="max-h-32 rounded-md" />
+        {/* Advanced features for subscribed users only */}
+        {!isFreeUser && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="platform">Platform</Label>
+                <Select value={selectedPlatform} onValueChange={setSelectedPlatform}>
+                  <SelectTrigger id="platform">
+                    <SelectValue placeholder="Select" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="twitter">Twitter</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="linkedin">LinkedIn</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="generate-images"
-            checked={generateWithImages}
-            onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
-            disabled={!!selectedImage}
-          />
-          <Label htmlFor="generate-images" className="text-sm">
-            Generate AI images (Coming soon) {selectedImage && '- Disabled when image uploaded'}
-          </Label>
-        </div>
-
-        {/* Scheduling Section */}
-        <div className="border-t pt-4">
-          <h4 className="text-sm font-medium mb-3 flex items-center">
-            <Calendar className="h-4 w-4 mr-2" />
-            Schedule Post (Optional)
-          </h4>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="scheduledDate" className="text-sm">Date</Label>
-              <Input
-                type="date"
-                id="scheduledDate"
-                value={scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : ''}
-                onChange={(e) => setScheduledDate(new Date(e.target.value))}
-              />
+              <div>
+                <Label>Image Upload</Label>
+                <Input type="file" accept="image/*" onChange={handleImageUpload} />
+                {isImageUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
+                {imageUrl && (
+                  <div className="mt-2">
+                    <img src={imageUrl} alt="Uploaded" className="max-h-32 rounded-md" />
+                  </div>
+                )}
+              </div>
             </div>
-            <div>
-              <Label htmlFor="scheduledTime" className="text-sm">Time (UTC)</Label>
-              <Input
-                type="time"
-                id="scheduledTime"
-                value={scheduledTime}
-                onChange={(e) => setScheduledTime(e.target.value)}
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="generate-images"
+                checked={generateWithImages}
+                onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
+                disabled={!!selectedImage}
               />
+              <Label htmlFor="generate-images" className="text-sm">
+                Generate AI images (Coming soon) {selectedImage && '- Disabled when image uploaded'}
+              </Label>
+            </div>
+
+            {/* Scheduling Section */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium mb-3 flex items-center">
+                <Calendar className="h-4 w-4 mr-2" />
+                Schedule Post (Optional)
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label htmlFor="scheduledDate" className="text-sm">Date</Label>
+                  <Input
+                    type="date"
+                    id="scheduledDate"
+                    value={scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : ''}
+                    onChange={(e) => setScheduledDate(new Date(e.target.value))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="scheduledTime" className="text-sm">Time (UTC)</Label>
+                  <Input
+                    type="time"
+                    id="scheduledTime"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                <Clock className="h-3 w-3 inline mr-1" />
+                Times are stored in UTC. Your local time will be converted automatically.
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* Upgrade prompt for free users */}
+        {isFreeUser && (
+          <div className="border-t pt-4">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-900 mb-2">Want more features?</h4>
+              <p className="text-sm text-blue-700 mb-3">
+                Upgrade to unlock scheduling, platform selection, image uploads, and more posts per month!
+              </p>
+              <Button 
+                onClick={() => navigate('/#pricing')}
+                variant="outline" 
+                size="sm"
+                className="border-blue-300 text-blue-700 hover:bg-blue-50"
+              >
+                View Plans
+              </Button>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            <Clock className="h-3 w-3 inline mr-1" />
-            Times are stored in UTC. Your local time will be converted automatically.
-          </p>
-        </div>
+        )}
 
         <Button 
           onClick={handleGenerateContent}
