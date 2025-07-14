@@ -2,7 +2,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const openAIApiKey = Deno.env.get('OPENAI_API');
+// Try both possible environment variable names
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY') || Deno.env.get('OPENAI_API');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -269,8 +270,20 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in generate-content function:', error);
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
+    // Return more specific error information
+    let errorMessage = 'Failed to generate content. Please try again.';
+    if (error.message.includes('OpenAI API error')) {
+      errorMessage = `OpenAI API error: ${error.message}`;
+    } else if (error.message.includes('fetch')) {
+      errorMessage = 'Network error connecting to OpenAI API. Please try again.';
+    }
+    
     return new Response(
-      JSON.stringify({ error: 'Failed to generate content. Please try again.' }),
+      JSON.stringify({ error: errorMessage, details: error.message }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
