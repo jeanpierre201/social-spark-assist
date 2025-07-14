@@ -156,12 +156,20 @@ Make the content professional, engaging, and appropriate for social media platfo
 };
 
 serve(async (req) => {
+  console.log('=== Generate Content Function Called ===');
+  console.log('Request method:', req.method);
+  console.log('Request URL:', req.url);
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling CORS preflight request');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('Checking OpenAI API key...');
+    console.log('OPENAI_API environment variable exists:', !!Deno.env.get('OPENAI_API'));
+    
     if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
       return new Response(
