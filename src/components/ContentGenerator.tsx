@@ -9,7 +9,6 @@ import ContentGeneratorHeader from './content/ContentGeneratorHeader';
 import NavigationTabs from './content/NavigationTabs';
 import ContentGenerationForm from './content/ContentGenerationForm';
 import PostsDisplay from './content/PostsDisplay';
-import TestOpenAI from './TestOpenAI';
 
 const ContentGenerator = () => {
   const [activeTab, setActiveTab] = useState('content');
@@ -57,10 +56,6 @@ const ContentGenerator = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-6">
         <ContentGeneratorHeader isProUser={isProUser} isStarterUser={isStarterUser} isFreeUser={isFreeUser} />
-
-        <div className="mb-6">
-          <TestOpenAI />
-        </div>
 
         <NavigationTabs 
           activeTab={activeTab} 

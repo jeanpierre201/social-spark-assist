@@ -12,7 +12,6 @@ import ContentCreationForm from '@/components/starter/ContentCreationForm';
 import GeneratedPostsPreview from '@/components/starter/GeneratedPostsPreview';
 import UpgradePrompt from '@/components/starter/UpgradePrompt';
 import CalendarView from '@/components/starter/CalendarView';
-import TestOpenAI from '@/components/TestOpenAI';
 
 interface GeneratedContent {
   caption: string;
@@ -141,10 +140,6 @@ const ContentGeneratorStarter = () => {
               <span>Home</span>
             </Button>
           </div>
-        </div>
-
-        <div className="mb-6">
-          <TestOpenAI />
         </div>
 
         <UsageIndicators 

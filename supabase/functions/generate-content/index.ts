@@ -199,7 +199,8 @@ serve(async (req) => {
     }
 
     const body: RequestBody = await req.json();
-    console.log('Request body:', body);
+    console.log('Request body received:', JSON.stringify(body, null, 2));
+    console.log('Body type:', typeof body);
 
     const validationError = validateInput(body);
     if (validationError) {
