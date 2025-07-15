@@ -123,7 +123,19 @@ Make the content professional, engaging, and appropriate for social media platfo
     let hashtags: string[] = [];
 
     try {
-      const parsed = JSON.parse(generatedText);
+      // Clean the text by removing markdown code blocks
+      let cleanText = generatedText.trim();
+      
+      // Remove ```json and ``` markers if present
+      if (cleanText.startsWith('```json')) {
+        cleanText = cleanText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanText.startsWith('```')) {
+        cleanText = cleanText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      console.log('Cleaned text for parsing:', cleanText);
+      
+      const parsed = JSON.parse(cleanText);
       caption = parsed.caption || '';
       hashtags = Array.isArray(parsed.hashtags) ? parsed.hashtags : [];
     } catch (parseError) {
