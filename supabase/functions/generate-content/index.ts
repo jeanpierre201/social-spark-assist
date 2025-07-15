@@ -40,26 +40,39 @@ const checkRateLimit = (userId: string): boolean => {
 };
 
 const validateInput = (body: RequestBody): string | null => {
+  console.log('Validating input:', body);
+  
+  if (!body || typeof body !== 'object') {
+    console.log('Invalid body type:', typeof body);
+    return 'Invalid request body';
+  }
+  
   if (!body.industry || typeof body.industry !== 'string' || body.industry.trim().length === 0) {
+    console.log('Industry validation failed:', body.industry);
     return 'Industry is required';
   }
   
   if (!body.goal || typeof body.goal !== 'string' || body.goal.trim().length === 0) {
+    console.log('Goal validation failed:', body.goal);
     return 'Goal is required';
   }
   
   if (body.industry.length > 100) {
+    console.log('Industry too long:', body.industry.length);
     return 'Industry must be less than 100 characters';
   }
   
   if (body.goal.length > 200) {
+    console.log('Goal too long:', body.goal.length);
     return 'Goal must be less than 200 characters';
   }
   
   if (body.nicheInfo && body.nicheInfo.length > 300) {
+    console.log('Niche info too long:', body.nicheInfo.length);
     return 'Niche information must be less than 300 characters';
   }
   
+  console.log('Validation passed');
   return null;
 };
 
