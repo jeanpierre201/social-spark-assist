@@ -100,7 +100,23 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       return;
     }
 
-    if (monthlyPosts >= 10) {
+    // Check monthly usage limit using the new tracking system
+    const { data: monthlyUsage, error: usageError } = await supabase
+      .rpc('get_monthly_usage_count', { user_uuid: user.id });
+
+    if (usageError) {
+      console.error('Error checking monthly usage:', usageError);
+      toast({
+        title: "Error checking usage limits",
+        description: "Please try again",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentMonthlyUsage = monthlyUsage || 0;
+
+    if (currentMonthlyUsage >= 10) {
       toast({
         title: "Monthly Limit Reached",
         description: "You've reached your Starter plan limit of 10 posts per month.",
@@ -192,6 +208,15 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         generatedContent
       };
 
+      // Increment monthly usage counter
+      const { error: incrementError } = await supabase
+        .rpc('increment_monthly_usage', { user_uuid: user.id });
+
+      if (incrementError) {
+        console.error('Error incrementing usage:', incrementError);
+        // Don't block the user, just log the error
+      }
+
       setPosts(prev => [...prev, newPost]);
       setMonthlyPosts(prev => prev + 1);
 
@@ -240,7 +265,23 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       return;
     }
 
-    const remainingPosts = 10 - monthlyPosts;
+    // Check monthly usage limit using the new tracking system
+    const { data: monthlyUsage, error: usageError } = await supabase
+      .rpc('get_monthly_usage_count', { user_uuid: user.id });
+
+    if (usageError) {
+      console.error('Error checking monthly usage:', usageError);
+      toast({
+        title: "Error checking usage limits",
+        description: "Please try again",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentMonthlyUsage = monthlyUsage || 0;
+    const remainingPosts = 10 - currentMonthlyUsage;
+
     if (remainingPosts <= 0) {
       toast({
         title: "Monthly Limit Reached",
@@ -328,6 +369,15 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           scheduledTime: scheduledTime,
           generatedContent
         };
+
+        // Increment monthly usage counter
+        const { error: incrementError } = await supabase
+          .rpc('increment_monthly_usage', { user_uuid: user.id });
+
+        if (incrementError) {
+          console.error('Error incrementing usage:', incrementError);
+          // Don't block the user, just log the error
+        }
 
         setPosts(prev => [...prev, newPost]);
         setMonthlyPosts(prev => prev + 1);

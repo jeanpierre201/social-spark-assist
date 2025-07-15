@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -49,8 +48,24 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       return;
     }
 
+    // Check monthly usage limit using the new tracking system
+    const { data: monthlyUsage, error: usageError } = await supabase
+      .rpc('get_monthly_usage_count', { user_uuid: user.id });
+
+    if (usageError) {
+      console.error('Error checking monthly usage:', usageError);
+      toast({
+        title: "Error checking usage limits",
+        description: "Please try again",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const currentMonthlyUsage = monthlyUsage || 0;
+
     // Free users get 1 post per month
-    if (isFreeUser && currentMonthPosts >= 1) {
+    if (isFreeUser && currentMonthlyUsage >= 1) {
       toast({
         title: "Monthly limit reached",
         description: "Free users can generate 1 post per month. Upgrade to get more posts!",
@@ -59,7 +74,8 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       return;
     }
 
-    if (isStarterUser && currentMonthPosts >= 10) {
+    // Starter users get 10 posts per month
+    if (isStarterUser && currentMonthlyUsage >= 10) {
       toast({
         title: "You've reached your monthly limit.",
         description: "Upgrade to Pro for unlimited content generation.",
@@ -89,6 +105,15 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
       if (error) throw error;
 
+      // Increment monthly usage counter
+      const { data: newUsageCount, error: incrementError } = await supabase
+        .rpc('increment_monthly_usage', { user_uuid: user.id });
+
+      if (incrementError) {
+        console.error('Error incrementing usage:', incrementError);
+        // Don't block the user, just log the error
+      }
+
       const newPost = {
         user_id: user.id,
         generated_caption: data.caption,
@@ -111,13 +136,13 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
       toast({
         title: "Content generated successfully!",
-        description: "Your post has been saved.",
+        description: `You have used ${(newUsageCount || currentMonthlyUsage + 1)} of your monthly posts.`,
       });
     } catch (error: any) {
       console.error('Error generating content:', error);
       toast({
         title: "Oh no! Something went wrong.",
-        description: error.message,
+        description: error.message || "Edge Function returned a non-2xx status code",
         variant: "destructive",
       });
     } finally {
@@ -142,7 +167,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       const storagePath = `images/${user?.id}/${timestamp}-${file.name}`;
 
       const { data, error } = await supabase.storage
-        .from('social-posts')
+        .from('media')
         .upload(storagePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -152,8 +177,11 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         throw error;
       }
 
-      const publicUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/social-posts/${data.path}`;
-      setImageUrl(publicUrl);
+      const { data: publicUrlData } = supabase.storage
+        .from('media')
+        .getPublicUrl(data.path);
+
+      setImageUrl(publicUrlData.publicUrl);
 
       toast({
         description: "Image uploaded successfully!",

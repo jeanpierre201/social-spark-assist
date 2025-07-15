@@ -402,6 +402,33 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_usage: {
+        Row: {
+          created_at: string | null
+          id: string
+          month_year: string
+          posts_created: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          month_year: string
+          posts_created?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          month_year?: string
+          posts_created?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           created_at: string | null
@@ -726,6 +753,10 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: number
       }
+      get_monthly_usage_count: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
       get_user_latest_metrics: {
         Args: { user_uuid: string }
         Returns: {
@@ -743,6 +774,10 @@ export type Database = {
       has_role: {
         Args: { _user_id: string; _role: string }
         Returns: boolean
+      }
+      increment_monthly_usage: {
+        Args: { user_uuid: string }
+        Returns: number
       }
       user_can_access_campaign: {
         Args: { campaign_uuid: string }
