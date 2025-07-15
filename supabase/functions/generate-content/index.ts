@@ -2,8 +2,8 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-// Try both possible environment variable names
-const openAIApiKey = Deno.env.get('OPENAI_API_KEY') || Deno.env.get('OPENAI_API');
+// Use the standard OPENAI_API_KEY environment variable
+const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -169,7 +169,8 @@ serve(async (req) => {
 
   try {
     console.log('Checking OpenAI API key...');
-    console.log('OPENAI_API environment variable exists:', !!Deno.env.get('OPENAI_API'));
+    console.log('OPENAI_API_KEY environment variable exists:', !!openAIApiKey);
+    console.log('OPENAI_API_KEY length:', openAIApiKey?.length || 0);
     
     if (!openAIApiKey) {
       console.error('OpenAI API key not configured');
