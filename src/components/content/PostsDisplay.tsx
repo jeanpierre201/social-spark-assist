@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -49,24 +48,37 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
             <Card key={post.id}>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
-                  {post.platform.charAt(0).toUpperCase() + post.platform.slice(1)}
+                  {post.industry || 'Social Media Post'}
                   <div className="flex space-x-2">
-                    <Button variant="ghost" size="icon" onClick={() => handleCopyToClipboard(post.content)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleCopyToClipboard(post.generated_caption || '')}>
                       <Copy className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDownloadPost(post.content)}>
+                    <Button variant="ghost" size="icon" onClick={() => handleDownloadPost(post.generated_caption || '')}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
                 </CardTitle>
                 <CardDescription>
-                  Created on {format(new Date(post.created_at), 'MMM dd, yyyy')}
+                  {post.created_at ? (
+                    <>Created on {format(new Date(post.created_at), 'MMM dd, yyyy')}</>
+                  ) : (
+                    'Recently created'
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
-                <p>{post.content}</p>
-                {post.image_url && (
-                  <img src={post.image_url} alt="Post" className="max-h-48 w-full object-cover rounded-md mt-2" />
+                <p>{post.generated_caption || 'No caption available'}</p>
+                {post.generated_hashtags && post.generated_hashtags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {post.generated_hashtags.map((hashtag: string, index: number) => (
+                      <span key={index} className="text-blue-500 text-sm">
+                        #{hashtag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {post.media_url && (
+                  <img src={post.media_url} alt="Post" className="max-h-48 w-full object-cover rounded-md mt-2" />
                 )}
                 {post.scheduled_date && post.scheduled_time && (
                   <p className="text-sm text-muted-foreground">
