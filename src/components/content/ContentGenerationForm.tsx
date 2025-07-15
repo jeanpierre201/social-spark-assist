@@ -91,16 +91,14 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
       const newPost = {
         user_id: user.id,
-        content: data.caption,
-        platform: selectedPlatform,
-        created_at: new Date().toISOString(),
-        scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
-        scheduled_time: scheduledTime || null,
-        image_url: imageUrl,
-        hashtags: data.hashtags,
+        generated_caption: data.caption,
+        generated_hashtags: data.hashtags,
         industry: industry.trim(),
         goal: goal.trim(),
         niche_info: nicheInfo.trim() || null,
+        scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
+        scheduled_time: scheduledTime || null,
+        media_url: imageUrl,
       };
 
       onPostCreated(newPost);
