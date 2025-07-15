@@ -140,9 +140,27 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       });
     } catch (error: any) {
       console.error('Error generating content:', error);
+      
+      // Handle specific error types
+      let errorTitle = "Oh no! Something went wrong.";
+      let errorDescription = "Please try again.";
+      
+      if (error.message.includes('insufficient_quota')) {
+        errorTitle = "OpenAI API Quota Exceeded";
+        errorDescription = "You've exceeded your OpenAI API quota. Please check your plan and billing details at https://platform.openai.com/account/billing";
+      } else if (error.message.includes('rate_limit_exceeded')) {
+        errorTitle = "Rate Limit Exceeded";
+        errorDescription = "Too many requests. Please wait a moment and try again.";
+      } else if (error.message.includes('invalid_api_key')) {
+        errorTitle = "Invalid API Key";
+        errorDescription = "The OpenAI API key is invalid. Please check your configuration.";
+      } else if (error.message) {
+        errorDescription = error.message;
+      }
+      
       toast({
-        title: "Oh no! Something went wrong.",
-        description: error.message || "Edge Function returned a non-2xx status code",
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     } finally {

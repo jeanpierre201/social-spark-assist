@@ -84,7 +84,32 @@ Make the content professional, engaging, and appropriate for social media platfo
       console.error('OpenAI API error:', response.status, response.statusText);
       const errorText = await response.text();
       console.error('OpenAI API error details:', errorText);
-      throw new Error(`OpenAI API error: ${response.status} - ${errorText}`);
+      
+      // Parse OpenAI error response
+      let errorMessage = 'Failed to generate content. Please try again.';
+      let errorType = 'api_error';
+      
+      try {
+        const errorData = JSON.parse(errorText);
+        if (errorData.error) {
+          errorMessage = errorData.error.message || errorMessage;
+          errorType = errorData.error.type || 'api_error';
+        }
+      } catch (parseError) {
+        console.log('Could not parse error response, using default message');
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          error: errorMessage,
+          error_type: errorType,
+          status: response.status
+        }),
+        {
+          status: response.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const data = await response.json();
