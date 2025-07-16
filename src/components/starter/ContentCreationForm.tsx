@@ -46,6 +46,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const [generateWithImages, setGenerateWithImages] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+  const [includeEmojis, setIncludeEmojis] = useState(true);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -141,7 +142,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         body: {
           industry: industry.trim(),
           goal: goal.trim(),
-          nicheInfo: nicheInfo.trim()
+          nicheInfo: nicheInfo.trim(),
+          includeEmojis
         }
       });
 
@@ -228,6 +230,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setScheduledTime('');
       setUploadedImage(null);
       setUploadedImageUrl('');
+      setIncludeEmojis(true);
 
       toast({
         title: "Content Generated!",
@@ -331,7 +334,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           body: {
             industry: industry.trim(),
             goal: currentGoal,
-            nicheInfo: nicheInfo.trim()
+            nicheInfo: nicheInfo.trim(),
+            includeEmojis
           }
         });
 
@@ -391,6 +395,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setScheduledTime('');
       setUploadedImage(null);
       setUploadedImageUrl('');
+      setIncludeEmojis(true);
 
       toast({
         title: "Batch Generation Complete!",
@@ -535,6 +540,17 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
               />
               <Label htmlFor="generate-images" className="text-sm">
                 Generate AI images (Coming soon) {uploadedImage && '- Disabled when image uploaded'}
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="include-emojis"
+                checked={includeEmojis}
+                onCheckedChange={(checked) => setIncludeEmojis(checked as boolean)}
+              />
+              <Label htmlFor="include-emojis" className="text-sm">
+                Include emojis in content
               </Label>
             </div>
           </div>
