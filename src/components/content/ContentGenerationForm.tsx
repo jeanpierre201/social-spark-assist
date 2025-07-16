@@ -39,6 +39,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const [generateWithImages, setGenerateWithImages] = useState(false);
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [includeEmojis, setIncludeEmojis] = useState(true);
 
   const handleGenerateContent = async () => {
     if (!user) {
@@ -99,7 +100,8 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         body: {
           industry: industry.trim(),
           goal: goal.trim(),
-          nicheInfo: nicheInfo.trim()
+          nicheInfo: nicheInfo.trim(),
+          includeEmojis: includeEmojis
         }
       });
 
@@ -261,6 +263,17 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
             maxLength={300}
             rows={2}
           />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="include-emojis"
+            checked={includeEmojis}
+            onCheckedChange={(checked) => setIncludeEmojis(checked as boolean)}
+          />
+          <Label htmlFor="include-emojis" className="text-sm">
+            Include emojis in content
+          </Label>
         </div>
 
         {/* Advanced features for subscribed users only */}

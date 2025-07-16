@@ -46,7 +46,13 @@ serve(async (req) => {
       );
     }
 
+    const includeEmojis = body.includeEmojis !== false; // Default to true if not specified
+
     // Create prompt
+    const emojiInstructions = includeEmojis 
+      ? "Include relevant emojis to make the content more engaging and visually appealing." 
+      : "Do NOT include any emojis in the content.";
+    
     const prompt = `Create a social media post for the ${body.industry} industry. 
 Goal: ${body.goal}
 ${body.nicheInfo ? `Additional context: ${body.nicheInfo}` : ''}
@@ -54,6 +60,8 @@ ${body.nicheInfo ? `Additional context: ${body.nicheInfo}` : ''}
 Please provide:
 1. An engaging caption (max 150 words)
 2. 5-8 relevant hashtags
+
+${emojiInstructions}
 
 Make the content professional, engaging, and appropriate for social media platforms like Instagram, LinkedIn, and Twitter.`;
 
