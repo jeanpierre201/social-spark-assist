@@ -745,6 +745,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      extend_creation_period: {
+        Args: { user_uuid: string; extension_days?: number }
+        Returns: boolean
+      }
       get_monthly_post_count: {
         Args: { user_uuid: string }
         Returns: number

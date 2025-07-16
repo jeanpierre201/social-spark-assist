@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +40,7 @@ const ContentGeneratorStarter = () => {
   const { subscribed } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [posts, setPosts] = useState<PostData[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
@@ -100,6 +101,31 @@ const ContentGeneratorStarter = () => {
     loadPosts();
   }, [user, toast]);
 
+  // Handle navigation from dashboard with scroll and view mode
+  useEffect(() => {
+    const state = location.state as { scrollToPosts?: boolean; viewMode?: ViewMode };
+    if (state?.scrollToPosts) {
+      // Set view mode if specified
+      if (state.viewMode) {
+        setViewMode(state.viewMode);
+      }
+      
+      // Scroll to posts section after a brief delay to ensure it's rendered
+      setTimeout(() => {
+        const postsSection = document.querySelector('[data-posts-section]');
+        if (postsSection) {
+          postsSection.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'start' 
+          });
+        }
+      }, 100);
+      
+      // Clear the state to prevent repeated scrolling
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, navigate]);
+
   const handleGoHome = () => {
     navigate('/');
   };
@@ -157,7 +183,7 @@ const ContentGeneratorStarter = () => {
             setPosts={setPosts}
           />
           
-          <div className="space-y-4">
+          <div className="space-y-4" data-posts-section>
             {/* View Toggle */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">Your Posts</h2>
