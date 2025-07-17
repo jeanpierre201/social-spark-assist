@@ -27,9 +27,10 @@ interface Post {
 
 interface PostsListProps {
   onEditPost: (post: Post) => void;
+  refreshTrigger?: number;
 }
 
-const PostsList = ({ onEditPost }: PostsListProps) => {
+const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -44,7 +45,7 @@ const PostsList = ({ onEditPost }: PostsListProps) => {
     if (user) {
       fetchPosts();
     }
-  }, [user, currentPage, searchTerm, statusFilter]);
+  }, [user, currentPage, searchTerm, statusFilter, refreshTrigger]);
 
   const fetchPosts = async () => {
     try {

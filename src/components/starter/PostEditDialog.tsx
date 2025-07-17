@@ -237,16 +237,30 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: 'draft' | 'scheduled') => 
+                onValueChange={(value: 'draft' | 'scheduled') => {
+                  // Only allow 'scheduled' if both date and time are set
+                  if (value === 'scheduled' && (!formData.scheduled_date || !formData.scheduled_time)) {
+                    toast({
+                      title: "Scheduling Required",
+                      description: "Please set both scheduled date and time before marking as scheduled",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
                   setFormData(prev => ({ ...prev, status: value }))
-                }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
+                  <SelectItem 
+                    value="scheduled"
+                    disabled={!formData.scheduled_date || !formData.scheduled_time}
+                  >
+                    Scheduled {(!formData.scheduled_date || !formData.scheduled_time) && '(Set date & time first)'}
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

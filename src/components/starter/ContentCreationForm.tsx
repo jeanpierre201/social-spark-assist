@@ -32,9 +32,10 @@ interface ContentCreationFormProps {
   setMonthlyPosts: (value: number | ((prev: number) => number)) => void;
   canCreatePosts: boolean;
   setPosts: (value: PostData[] | ((prev: PostData[]) => PostData[])) => void;
+  onPostCreated?: () => void;
 }
 
-const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, setPosts }: ContentCreationFormProps) => {
+const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, setPosts, onPostCreated }: ContentCreationFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [industry, setIndustry] = useState('');
@@ -237,6 +238,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         description: "Your post has been generated and added to your collection",
       });
 
+      // Notify parent component to refresh
+      onPostCreated?.();
+
     } catch (error) {
       console.error('Error generating content:', error);
       toast({
@@ -401,6 +405,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         title: "Batch Generation Complete!",
         description: `Generated ${Math.min(remainingPosts, 10)} posts successfully`,
       });
+
+      // Notify parent component to refresh
+      onPostCreated?.();
 
     } catch (error) {
       console.error('Error generating content:', error);

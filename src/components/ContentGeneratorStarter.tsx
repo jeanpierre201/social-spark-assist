@@ -47,6 +47,7 @@ const ContentGeneratorStarter = () => {
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [postsRefreshTrigger, setPostsRefreshTrigger] = useState(0);
   
   const {
     monthlyPosts,
@@ -143,50 +144,7 @@ const ContentGeneratorStarter = () => {
   };
 
   const handlePostUpdated = () => {
-    // Reload posts after update
-    const loadPosts = async () => {
-      if (!user) return;
-      
-      try {
-        setIsLoadingPosts(true);
-        const { data, error } = await supabase
-          .from('posts')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-
-        const transformedPosts = data?.map(post => ({
-          id: post.id,
-          industry: post.industry,
-          goal: post.goal,
-          nicheInfo: post.niche_info || '',
-          scheduledDate: post.scheduled_date,
-          scheduledTime: post.scheduled_time,
-          generatedContent: {
-            caption: post.generated_caption,
-            hashtags: post.generated_hashtags || [],
-            image: post.media_url,
-            isGenerated: false
-          },
-          created_at: post.created_at
-        })) || [];
-
-        setPosts(transformedPosts);
-      } catch (error) {
-        console.error('Error loading posts:', error);
-        toast({
-          title: "Error",
-          description: "Failed to load your posts",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoadingPosts(false);
-      }
-    };
-
-    loadPosts();
+    setPostsRefreshTrigger(prev => prev + 1);
   };
 
   if (isLoading) {
@@ -231,11 +189,12 @@ const ContentGeneratorStarter = () => {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <ContentCreationForm 
+            <ContentCreationForm 
             monthlyPosts={monthlyPosts}
             setMonthlyPosts={setMonthlyPosts}
             canCreatePosts={canCreatePosts}
             setPosts={setPosts}
+            onPostCreated={() => setPostsRefreshTrigger(prev => prev + 1)}
           />
           
           <div className="space-y-4" data-posts-section>
@@ -270,7 +229,7 @@ const ContentGeneratorStarter = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : viewMode === 'list' ? (
-              <PostsList onEditPost={handleEditPost} />
+              <PostsList onEditPost={handleEditPost} refreshTrigger={postsRefreshTrigger} />
             ) : (
               <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
             )}
