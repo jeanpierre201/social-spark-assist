@@ -461,6 +461,17 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           />
         </div>
 
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="include-emojis"
+            checked={includeEmojis}
+            onCheckedChange={(checked) => setIncludeEmojis(checked as boolean)}
+          />
+          <Label htmlFor="include-emojis" className="text-sm">
+            Include emojis in content
+          </Label>
+        </div>
+
         {/* Scheduling Section */}
         <div className="border-t pt-4">
           <h4 className="text-sm font-medium mb-3 flex items-center">
@@ -543,16 +554,6 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
               </Label>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="include-emojis"
-                checked={includeEmojis}
-                onCheckedChange={(checked) => setIncludeEmojis(checked as boolean)}
-              />
-              <Label htmlFor="include-emojis" className="text-sm">
-                Include emojis in content
-              </Label>
-            </div>
           </div>
         </div>
 

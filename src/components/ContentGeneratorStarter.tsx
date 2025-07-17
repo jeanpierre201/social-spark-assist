@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import UsageIndicators from '@/components/starter/UsageIndicators';
 import ContentCreationForm from '@/components/starter/ContentCreationForm';
-import GeneratedPostsPreview from '@/components/starter/GeneratedPostsPreview';
+import PostsList from '@/components/starter/PostsList';
+import PostEditDialog from '@/components/starter/PostEditDialog';
 import UpgradePrompt from '@/components/starter/UpgradePrompt';
 import CalendarView from '@/components/starter/CalendarView';
 
@@ -44,6 +45,8 @@ const ContentGeneratorStarter = () => {
   const [posts, setPosts] = useState<PostData[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   
   const {
     monthlyPosts,
@@ -134,6 +137,58 @@ const ContentGeneratorStarter = () => {
     navigate('/dashboard');
   };
 
+  const handleEditPost = (post: any) => {
+    setSelectedPost(post);
+    setShowEditDialog(true);
+  };
+
+  const handlePostUpdated = () => {
+    // Reload posts after update
+    const loadPosts = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoadingPosts(true);
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        const transformedPosts = data?.map(post => ({
+          id: post.id,
+          industry: post.industry,
+          goal: post.goal,
+          nicheInfo: post.niche_info || '',
+          scheduledDate: post.scheduled_date,
+          scheduledTime: post.scheduled_time,
+          generatedContent: {
+            caption: post.generated_caption,
+            hashtags: post.generated_hashtags || [],
+            image: post.media_url,
+            isGenerated: false
+          },
+          created_at: post.created_at
+        })) || [];
+
+        setPosts(transformedPosts);
+      } catch (error) {
+        console.error('Error loading posts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your posts",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingPosts(false);
+      }
+    };
+
+    loadPosts();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -215,12 +270,19 @@ const ContentGeneratorStarter = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : viewMode === 'list' ? (
-              <GeneratedPostsPreview posts={posts} setPosts={setPosts} />
+              <PostsList onEditPost={handleEditPost} />
             ) : (
               <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
             )}
           </div>
         </div>
+        
+        <PostEditDialog
+          post={selectedPost}
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          onPostUpdated={handlePostUpdated}
+        />
       </div>
     </div>
   );
