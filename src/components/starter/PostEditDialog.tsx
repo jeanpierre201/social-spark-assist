@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar, Clock, Save, Eye } from 'lucide-react';
 import { format } from 'date-fns';
@@ -35,6 +36,7 @@ interface PostEditDialogProps {
 
 const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDialogProps) => {
   const { toast } = useToast();
+  const { subscriptionEnd } = useSubscription();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     caption: '',
@@ -46,6 +48,28 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
   const isEditable = post?.status === 'draft' || post?.status === 'scheduled';
   const isReadOnly = !isEditable;
+
+  // Calculate the maximum allowed scheduling date
+  const getMaxScheduleDate = () => {
+    if (!post) return format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+    
+    const today = new Date();
+    const postCreationDate = new Date(post.created_at);
+    
+    // Calculate limits
+    const thirtyDaysFromCreation = new Date(postCreationDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysFromToday = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+    
+    let maxDate = new Date(Math.min(thirtyDaysFromCreation.getTime(), thirtyDaysFromToday.getTime()));
+    
+    // If subscription has an end date, use that as an additional limit
+    if (subscriptionEnd) {
+      const subscriptionEndDate = new Date(subscriptionEnd);
+      maxDate = new Date(Math.min(maxDate.getTime(), subscriptionEndDate.getTime()));
+    }
+    
+    return format(maxDate, 'yyyy-MM-dd');
+  };
 
   useEffect(() => {
     if (post) {
@@ -214,7 +238,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   type="date"
                   value={formData.scheduled_date}
                   min={format(new Date(), 'yyyy-MM-dd')}
-                  max={format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')}
+                  max={getMaxScheduleDate()}
                   onChange={(e) => setFormData(prev => ({ ...prev, scheduled_date: e.target.value }))}
                 />
               </div>
