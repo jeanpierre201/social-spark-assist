@@ -213,6 +213,8 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   id="scheduled_date"
                   type="date"
                   value={formData.scheduled_date}
+                  min={format(new Date(), 'yyyy-MM-dd')}
+                  max={format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')}
                   onChange={(e) => setFormData(prev => ({ ...prev, scheduled_date: e.target.value }))}
                 />
               </div>
