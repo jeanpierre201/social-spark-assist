@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, isAfter, startOfMonth } from 'date-fns';
 
 interface Post {
   id: string;
@@ -39,6 +40,7 @@ const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [postToDelete, setPostToDelete] = useState<Post | null>(null);
   const postsPerPage = 10;
 
   useEffect(() => {
@@ -106,6 +108,52 @@ const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
 
   const isEditable = (status: string) => {
     return status === 'draft' || status === 'scheduled';
+  };
+
+  // Check if post is from previous subscription period
+  const isFromPreviousPeriod = (createdAt: string) => {
+    const postCreatedDate = new Date(createdAt);
+    const currentMonthStart = startOfMonth(new Date());
+    return isAfter(currentMonthStart, postCreatedDate);
+  };
+
+  // Handle post deletion
+  const handleDeletePost = (post: Post) => {
+    setPostToDelete(post);
+  };
+
+  // Confirm and execute deletion
+  const confirmDelete = async () => {
+    if (!postToDelete?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postToDelete.id);
+
+      if (error) throw error;
+
+      // Remove from local state
+      setPosts(posts.filter(p => p.id !== postToDelete.id));
+
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+
+      setPostToDelete(null);
+      
+      // Refresh the posts to update pagination
+      fetchPosts();
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -176,6 +224,12 @@ const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
                     <span className="text-sm text-gray-500">
                       {post.industry}
                     </span>
+                    {isFromPreviousPeriod(post.created_at) && (
+                      <Badge variant="outline" className="text-xs text-orange-600 border-orange-200 bg-orange-50">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        Previous Period
+                      </Badge>
+                    )}
                   </div>
                   
                   <h4 className="font-medium text-sm mb-1">
@@ -215,6 +269,14 @@ const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
                       <Eye className="h-4 w-4" />
                     </Button>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDeletePost(post)}
+                    className="hover:bg-red-50 hover:border-red-200"
+                  >
+                    <Trash2 className="h-4 w-4 text-red-600" />
+                  </Button>
                 </div>
               </div>
             </div>
@@ -261,6 +323,29 @@ const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
             </div>
           </div>
         )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Post</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this post? This action cannot be undone.
+                {postToDelete && (
+                  <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                    <strong>Post preview:</strong> {postToDelete.generated_caption.slice(0, 100)}...
+                  </div>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setPostToDelete(null)}>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   );

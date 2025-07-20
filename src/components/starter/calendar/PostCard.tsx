@@ -1,6 +1,8 @@
 
 import { Badge } from '@/components/ui/badge';
-import { Edit } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Edit, Trash2, Calendar } from 'lucide-react';
+import { format, isAfter, startOfMonth, endOfMonth } from 'date-fns';
 
 interface GeneratedContent {
   caption: string;
@@ -22,30 +24,67 @@ interface PostData {
 interface PostCardProps {
   post: PostData;
   onClick: (post: PostData) => void;
+  onDelete: (post: PostData) => void;
 }
 
-const PostCard = ({ post, onClick }: PostCardProps) => {
+const PostCard = ({ post, onClick, onDelete }: PostCardProps) => {
+  // Determine if post is from previous subscription period
+  const isFromPreviousPeriod = () => {
+    if (!post.created_at) return false;
+    const postCreatedDate = new Date(post.created_at);
+    const currentMonthStart = startOfMonth(new Date());
+    return isAfter(currentMonthStart, postCreatedDate);
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick(post);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete(post);
+  };
+
   return (
-    <div 
-      className="border rounded-lg p-4 cursor-pointer hover:bg-gray-50 transition-colors w-full"
-      onClick={() => onClick(post)}
-    >
+    <div className="border rounded-lg p-4 hover:bg-gray-50 transition-colors w-full relative">
       <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-wrap">
           <Badge variant="secondary" className="text-xs">
             {post.industry}
           </Badge>
           <Badge variant="outline" className="text-xs">
             {post.goal}
           </Badge>
+          {isFromPreviousPeriod() && (
+            <Badge variant="outline" className="text-xs text-orange-600 border-orange-200 bg-orange-50">
+              <Calendar className="h-3 w-3 mr-1" />
+              Previous Period
+            </Badge>
+          )}
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1">
           {post.scheduledTime && (
-            <span className="text-sm text-gray-500">
+            <span className="text-sm text-gray-500 mr-2">
               {post.scheduledTime} UTC
             </span>
           )}
-          <Edit className="h-4 w-4 text-blue-600" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEdit}
+            className="h-8 w-8 p-0 hover:bg-blue-100"
+          >
+            <Edit className="h-4 w-4 text-blue-600" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="h-8 w-8 p-0 hover:bg-red-100"
+          >
+            <Trash2 className="h-4 w-4 text-red-600" />
+          </Button>
         </div>
       </div>
       

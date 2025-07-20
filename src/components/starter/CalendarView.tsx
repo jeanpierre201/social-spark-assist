@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import CalendarDisplay from './calendar/CalendarDisplay';
 import PostsList from './calendar/PostsList';
 import PostEditDialog from './calendar/PostEditDialog';
@@ -34,6 +35,7 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostData | null>(null);
+  const [postToDelete, setPostToDelete] = useState<PostData | null>(null);
   const { toast } = useToast();
 
   // Get posts for a specific date
@@ -47,6 +49,44 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
   const handlePostClick = (post: PostData) => {
     setEditingPost({ ...post });
     setIsEditDialogOpen(true);
+  };
+
+  // Handle post deletion
+  const handlePostDelete = (post: PostData) => {
+    setPostToDelete(post);
+  };
+
+  // Confirm and execute deletion
+  const confirmDelete = async () => {
+    if (!postToDelete?.id) return;
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', postToDelete.id);
+
+      if (error) throw error;
+
+      // Update the posts list if setPosts is provided
+      if (setPosts) {
+        setPosts(posts.filter(post => post.id !== postToDelete.id));
+      }
+
+      toast({
+        title: "Success",
+        description: "Post deleted successfully",
+      });
+
+      setPostToDelete(null);
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete post",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle saving post edits
@@ -115,6 +155,7 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
           selectedDate={selectedDate}
           posts={selectedDatePosts}
           onPostClick={handlePostClick}
+          onPostDelete={handlePostDelete}
         />
       </div>
 
@@ -125,6 +166,29 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
         onPostChange={setEditingPost}
         onSave={handleSavePost}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Post</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+              {postToDelete?.generatedContent?.caption && (
+                <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                  <strong>Post preview:</strong> {postToDelete.generatedContent.caption.slice(0, 100)}...
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPostToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

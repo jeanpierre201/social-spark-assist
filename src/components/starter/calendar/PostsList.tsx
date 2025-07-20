@@ -25,9 +25,10 @@ interface PostsListProps {
   selectedDate: Date | undefined;
   posts: PostData[];
   onPostClick: (post: PostData) => void;
+  onPostDelete: (post: PostData) => void;
 }
 
-const PostsList = ({ selectedDate, posts, onPostClick }: PostsListProps) => {
+const PostsList = ({ selectedDate, posts, onPostClick, onPostDelete }: PostsListProps) => {
   return (
     <Card className="w-full">
       <CardHeader>
@@ -44,6 +45,7 @@ const PostsList = ({ selectedDate, posts, onPostClick }: PostsListProps) => {
                 key={post.id || index}
                 post={post}
                 onClick={onPostClick}
+                onDelete={onPostDelete}
               />
             ))}
           </div>
