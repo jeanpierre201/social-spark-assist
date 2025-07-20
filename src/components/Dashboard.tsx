@@ -58,12 +58,18 @@ const Dashboard = () => {
   };
 
   const handleViewAllPosts = () => {
-    if (isProUser) {
-      navigate('/content-generator', { state: { scrollToPosts: true } });
-    } else if (isStarterUser) {
-      navigate('/content-generator-starter', { state: { scrollToPosts: true } });
+    // Scroll to posts section instead of navigating away
+    const postsSection = document.querySelector('[data-posts-section]');
+    if (postsSection) {
+      postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
-      navigate('/content-generator', { state: { scrollToPosts: true } });
+      // Fallback: Set active tab to content if posts section not found
+      if (isProUser) {
+        setActiveTab('content');
+      } else {
+        // For Starter users, navigate to the starter page
+        navigate('/content-generator-starter', { state: { scrollToPosts: true } });
+      }
     }
   };
 
@@ -249,6 +255,18 @@ const Dashboard = () => {
               onConnectAccounts={handleConnectAccounts}
               onSetActiveTab={setActiveTab}
             />
+
+            {/* Posts Display for subscribed users */}
+            {hasAnyPlan && posts.length > 0 && (
+              <div className="mt-8">
+                <PostsDisplay
+                  posts={posts}
+                  onEditPost={handleEditPost}
+                  onUpdatePost={handleUpdatePost}
+                  onDeletePost={handleDeletePost}
+                />
+              </div>
+            )}
 
             {/* Show Social Accounts tab for Starter users */}
             {isStarterUser && activeTab === 'social' && (

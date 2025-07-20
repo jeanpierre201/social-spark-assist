@@ -79,7 +79,7 @@ Make the content professional, engaging, and appropriate for social media platfo
         messages: [
           { 
             role: 'system', 
-            content: 'You are a professional social media content creator. Generate engaging, authentic content that drives engagement. Format your response as JSON with "caption" and "hashtags" fields. The hashtags field should be an array of strings without the # symbol.' 
+            content: 'You are a professional social media content creator. Generate engaging, authentic content that drives engagement. Format your response as JSON with "caption" and "hashtags" fields. The hashtags field should be an array of strings without the # symbol (we will add them automatically).' 
           },
           { role: 'user', content: prompt }
         ],

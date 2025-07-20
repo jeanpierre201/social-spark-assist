@@ -93,6 +93,20 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
               <span className="text-muted-foreground">Days until reset</span>
               <span className="font-medium">{daysRemaining} days</span>
             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Reset date</span>
+              <span className="font-medium">
+                {(() => {
+                  const now = new Date();
+                  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                  return nextMonth.toLocaleDateString('en-US', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+                })()}
+              </span>
+            </div>
             <div className="text-xs text-muted-foreground">
               Posts reset on the 1st of each month at 00:00 UTC
             </div>
