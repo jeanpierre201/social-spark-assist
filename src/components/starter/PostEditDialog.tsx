@@ -5,12 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { supabase } from '@/integrations/supabase/client';
 import { Calendar, Clock, Save, Eye } from 'lucide-react';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 interface Post {
   id: string;
@@ -22,6 +25,7 @@ interface Post {
   media_url: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
+  social_platforms: string[];
   status: 'draft' | 'scheduled' | 'published' | 'archived';
   created_at: string;
   posted_at: string | null;
@@ -37,14 +41,25 @@ interface PostEditDialogProps {
 const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDialogProps) => {
   const { toast } = useToast();
   const { subscriptionEnd } = useSubscription();
+  const { accounts } = useSocialAccounts();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     caption: '',
     hashtags: '',
     scheduled_date: '',
     scheduled_time: '',
+    social_platforms: [] as string[],
     status: 'draft' as 'draft' | 'scheduled' | 'published' | 'archived'
   });
+
+  const socialPlatforms = [
+    { id: 'facebook', name: 'Facebook' },
+    { id: 'instagram', name: 'Instagram' },
+    { id: 'twitter', name: 'X (Twitter)' },
+    { id: 'linkedin', name: 'LinkedIn' },
+    { id: 'tiktok', name: 'TikTok' },
+    { id: 'snapchat', name: 'Snapchat' }
+  ];
 
   const isEditable = post?.status === 'draft' || post?.status === 'scheduled';
   const isReadOnly = !isEditable;
@@ -78,6 +93,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         hashtags: post.generated_hashtags.join(' '),
         scheduled_date: post.scheduled_date || '',
         scheduled_time: post.scheduled_time || '',
+        social_platforms: post.social_platforms || [],
         status: post.status
       });
     }
@@ -94,6 +110,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         generated_hashtags: formData.hashtags.split(' ').filter(tag => tag.trim()),
         scheduled_date: formData.scheduled_date || null,
         scheduled_time: formData.scheduled_time || null,
+        social_platforms: formData.social_platforms,
         status: formData.status,
         updated_at: new Date().toISOString()
       };
@@ -225,6 +242,49 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
             />
           </div>
 
+          {/* Social Media Platforms */}
+          {!isReadOnly && (
+            <div>
+              <Label className="text-sm font-medium mb-3 block">Social Media Platforms</Label>
+              <div className="grid grid-cols-2 gap-3">
+                {socialPlatforms.map((platform) => {
+                  const isConnected = accounts.some(acc => acc.platform === platform.id);
+                  return (
+                    <div key={platform.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={platform.id}
+                        checked={formData.social_platforms.includes(platform.id)}
+                        disabled={!isConnected}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFormData(prev => ({
+                              ...prev,
+                              social_platforms: [...prev.social_platforms, platform.id]
+                            }));
+                          } else {
+                            setFormData(prev => ({
+                              ...prev,
+                              social_platforms: prev.social_platforms.filter(p => p !== platform.id)
+                            }));
+                          }
+                        }}
+                      />
+                      <Label 
+                        htmlFor={platform.id} 
+                        className={`text-sm ${!isConnected ? 'text-gray-400' : ''}`}
+                      >
+                        {platform.name} {!isConnected && '(Not connected)'}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Connect <Link to="/dashboard" className="text-primary hover:underline">Social Accounts</Link> in the Social Media Accounts section to enable posting.
+              </p>
+            </div>
+          )}
+
           {/* Scheduling */}
           {!isReadOnly && (
             <div className="grid grid-cols-2 gap-4">
@@ -264,11 +324,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               <Select
                 value={formData.status}
                 onValueChange={(value: 'draft' | 'scheduled') => {
-                  // Only allow 'scheduled' if both date and time are set
-                  if (value === 'scheduled' && (!formData.scheduled_date || !formData.scheduled_time)) {
+                  // Only allow 'scheduled' if date, time and at least one social platform are set
+                  if (value === 'scheduled' && (!formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0)) {
                     toast({
                       title: "Scheduling Required",
-                      description: "Please set both scheduled date and time before marking as scheduled",
+                      description: "Please set scheduled date, time, and select at least one social media platform before marking as scheduled",
                       variant: "destructive",
                     });
                     return;
@@ -283,9 +343,9 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem 
                     value="scheduled"
-                    disabled={!formData.scheduled_date || !formData.scheduled_time}
+                    disabled={!formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0}
                   >
-                    Scheduled {(!formData.scheduled_date || !formData.scheduled_time) && '(Set date & time first)'}
+                    Scheduled {(!formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0) && '(Set date, time & platform first)'}
                   </SelectItem>
                 </SelectContent>
               </Select>

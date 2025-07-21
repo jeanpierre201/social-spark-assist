@@ -8,7 +8,6 @@ import {
   Twitter, 
   Facebook, 
   Linkedin,
-  Youtube,
   Plus,
   Unlink,
   RefreshCw 
@@ -19,10 +18,11 @@ const SocialMediaSettings = () => {
 
   const platforms = [
     { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500' },
-    { id: 'twitter', name: 'Twitter', icon: Twitter, color: 'bg-blue-500' },
+    { id: 'twitter', name: 'X (Twitter)', icon: Twitter, color: 'bg-blue-500' },
     { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600' },
     { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700' },
-    { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'bg-red-600' }
+    { id: 'tiktok', name: 'TikTok', icon: Twitter, color: 'bg-black' },
+    { id: 'snapchat', name: 'Snapchat', icon: Twitter, color: 'bg-yellow-500' }
   ];
 
   const getAccountByPlatform = (platform: string) => {
