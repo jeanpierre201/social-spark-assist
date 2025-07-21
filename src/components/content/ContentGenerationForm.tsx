@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +26,7 @@ interface ContentGenerationFormProps {
 const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, isFreeUser, onPostCreated }: ContentGenerationFormProps) => {
   const { user } = useAuth();
   const { subscribed } = useSubscription();
+  const { accounts } = useSocialAccounts();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -40,6 +42,16 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const [isImageUploading, setIsImageUploading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [includeEmojis, setIncludeEmojis] = useState(true);
+  const [selectedSocialPlatforms, setSelectedSocialPlatforms] = useState<string[]>([]);
+
+  const socialPlatforms = [
+    { id: 'facebook', name: 'Facebook' },
+    { id: 'instagram', name: 'Instagram' },
+    { id: 'twitter', name: 'X (Twitter)' },
+    { id: 'linkedin', name: 'LinkedIn' },
+    { id: 'tiktok', name: 'TikTok' },
+    { id: 'snapchat', name: 'Snapchat' }
+  ];
 
   const handleGenerateContent = async () => {
     if (!user) {
@@ -116,6 +128,12 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         // Don't block the user, just log the error
       }
 
+      // Determine post status based on scheduling and social media selection
+      let postStatus = 'draft';
+      if (scheduledDate && scheduledTime && selectedSocialPlatforms.length > 0) {
+        postStatus = 'scheduled';
+      }
+
       const newPost = {
         user_id: user.id,
         generated_caption: data.caption,
@@ -126,6 +144,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
         scheduled_time: scheduledTime || null,
         media_url: imageUrl,
+        status: postStatus,
       };
 
       onPostCreated(newPost);
@@ -135,6 +154,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       setScheduledDate(null);
       setScheduledTime('');
       setImageUrl(null);
+      setSelectedSocialPlatforms([]);
 
       toast({
         title: "Content generated successfully!",
@@ -318,6 +338,41 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
               </Label>
             </div>
 
+            {/* Social Media Selection */}
+            <div className="border-t pt-4">
+              <h4 className="text-sm font-medium mb-3">Social Media Platforms</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {socialPlatforms.map((platform) => {
+                  const isConnected = accounts.some(account => account.platform === platform.id && account.is_active);
+                  return (
+                    <div key={platform.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={platform.id}
+                        checked={selectedSocialPlatforms.includes(platform.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedSocialPlatforms(prev => [...prev, platform.id]);
+                          } else {
+                            setSelectedSocialPlatforms(prev => prev.filter(id => id !== platform.id));
+                          }
+                        }}
+                        disabled={!isConnected}
+                      />
+                      <Label 
+                        htmlFor={platform.id} 
+                        className={`text-sm ${!isConnected ? 'text-muted-foreground' : ''}`}
+                      >
+                        {platform.name} {!isConnected && '(Not connected)'}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Connect social accounts in the Social Media Accounts section to enable posting.
+              </p>
+            </div>
+
             {/* Scheduling Section */}
             <div className="border-t pt-4">
               <h4 className="text-sm font-medium mb-3 flex items-center">
@@ -346,7 +401,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 <Clock className="h-3 w-3 inline mr-1" />
-                Times are stored in UTC. Your local time will be converted automatically.
+                Post will be set to 'Scheduled' when date, time and at least one social platform is selected.
               </p>
             </div>
           </>

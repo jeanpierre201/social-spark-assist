@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Loader2, Wand2, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +38,7 @@ interface ContentCreationFormProps {
 
 const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, setPosts, onPostCreated }: ContentCreationFormProps) => {
   const { user } = useAuth();
+  const { accounts } = useSocialAccounts();
   const { toast } = useToast();
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
@@ -48,6 +50,16 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
   const [includeEmojis, setIncludeEmojis] = useState(true);
+  const [selectedSocialPlatforms, setSelectedSocialPlatforms] = useState<string[]>([]);
+
+  const socialPlatforms = [
+    { id: 'facebook', name: 'Facebook' },
+    { id: 'instagram', name: 'Instagram' },
+    { id: 'twitter', name: 'X (Twitter)' },
+    { id: 'linkedin', name: 'LinkedIn' },
+    { id: 'tiktok', name: 'TikTok' },
+    { id: 'snapchat', name: 'Snapchat' }
+  ];
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -185,6 +197,12 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         utcDateTime = localDateTime.toISOString();
       }
 
+      // Determine post status based on scheduling and social media selection
+      let postStatus = 'draft';
+      if (scheduledDate && scheduledTime && selectedSocialPlatforms.length > 0) {
+        postStatus = 'scheduled';
+      }
+
       // Save to database
       const { error: dbError } = await supabase
         .from('posts')
@@ -197,7 +215,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           scheduled_time: scheduledTime || null,
           generated_caption: generatedContent.caption,
           generated_hashtags: generatedContent.hashtags,
-          media_url: imageUrl || null
+          media_url: imageUrl || null,
+          status: postStatus
         });
 
       if (dbError) throw dbError;
@@ -232,6 +251,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setUploadedImage(null);
       setUploadedImageUrl('');
       setIncludeEmojis(true);
+      setSelectedSocialPlatforms([]);
 
       toast({
         title: "Content Generated!",
@@ -352,6 +372,12 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           isGenerated: false
         };
 
+        // Determine post status based on scheduling and social media selection
+        let postStatus = 'draft';
+        if (scheduledDate && scheduledTime && selectedSocialPlatforms.length > 0) {
+          postStatus = 'scheduled';
+        }
+
         // Save to database
         const { error: dbError } = await supabase
           .from('posts')
@@ -364,7 +390,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             scheduled_time: scheduledTime || null,
             generated_caption: generatedContent.caption,
             generated_hashtags: generatedContent.hashtags,
-            media_url: imageUrl || null
+            media_url: imageUrl || null,
+            status: postStatus
           });
 
         if (dbError) throw dbError;
@@ -400,6 +427,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setUploadedImage(null);
       setUploadedImageUrl('');
       setIncludeEmojis(true);
+      setSelectedSocialPlatforms([]);
 
       toast({
         title: "Batch Generation Complete!",
@@ -479,6 +507,41 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           </Label>
         </div>
 
+        {/* Social Media Selection */}
+        <div className="border-t pt-4">
+          <h4 className="text-sm font-medium mb-3">Social Media Platforms</h4>
+          <div className="grid grid-cols-2 gap-3">
+            {socialPlatforms.map((platform) => {
+              const isConnected = accounts.some(account => account.platform === platform.id && account.is_active);
+              return (
+                <div key={platform.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={platform.id}
+                    checked={selectedSocialPlatforms.includes(platform.id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedSocialPlatforms(prev => [...prev, platform.id]);
+                      } else {
+                        setSelectedSocialPlatforms(prev => prev.filter(id => id !== platform.id));
+                      }
+                    }}
+                    disabled={!isConnected}
+                  />
+                  <Label 
+                    htmlFor={platform.id} 
+                    className={`text-sm ${!isConnected ? 'text-muted-foreground' : ''}`}
+                  >
+                    {platform.name} {!isConnected && '(Not connected)'}
+                  </Label>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Connect social accounts in the Social Media Accounts section to enable posting.
+          </p>
+        </div>
+
         {/* Scheduling Section */}
         <div className="border-t pt-4">
           <h4 className="text-sm font-medium mb-3 flex items-center">
@@ -509,7 +572,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           </div>
           <p className="text-xs text-gray-500 mt-1">
             <Clock className="h-3 w-3 inline mr-1" />
-            Times are stored in UTC. Your local time will be converted automatically.
+            Post will be set to 'Scheduled' when date, time and at least one social platform is selected.
           </p>
         </div>
 

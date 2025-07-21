@@ -91,7 +91,8 @@ export const SocialAccountsProvider = ({ children }: { children: React.ReactNode
         'twitter': 'twitter',
         'facebook': 'facebook',
         'linkedin': 'linkedin_oidc',
-        'youtube': 'google' // YouTube uses Google OAuth
+        'tiktok': null, // TikTok OAuth not yet supported
+        'snapchat': null // Snapchat OAuth not yet supported
       };
 
       const oauthProvider = providerMap[platform];
@@ -218,7 +219,8 @@ const getOAuthScopes = (platform: string): string => {
     twitter: 'tweet.read,users.read,offline.access',
     facebook: 'pages_show_list,pages_read_engagement,instagram_basic',
     linkedin: 'r_liteprofile,r_emailaddress,w_member_social',
-    youtube: 'https://www.googleapis.com/auth/youtube.readonly'
+    tiktok: '',
+    snapchat: ''
   };
   return scopes[platform as keyof typeof scopes] || '';
 };
