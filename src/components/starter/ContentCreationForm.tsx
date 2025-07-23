@@ -175,13 +175,71 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         }
       }
 
-      // Generate image if requested and no uploaded image
-      if (generateWithImages && !uploadedImage) {
-        toast({
-          title: "Image Generation",
-          description: "Image generation will be implemented in the next update",
-        });
-        isImageGenerated = true;
+      // Generate AI image if requested
+      if (generateWithImages) {
+        try {
+          let imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+          if (nicheInfo.trim()) {
+            imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
+          }
+          if (uploadedImage) {
+            imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
+          }
+
+          const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {
+            body: {
+              prompt: imagePrompt,
+              size: '1024x1024',
+              quality: 'standard',
+              style: 'vivid'
+            }
+          });
+
+          if (imageError) {
+            console.error('Error generating image:', imageError);
+            toast({
+              title: "Image generation failed",
+              description: "Content was created but image generation failed. You can upload an image manually.",
+              variant: "destructive",
+            });
+          } else if (imageData?.image) {
+            // Convert base64 to blob and upload to storage
+            const base64Data = imageData.image.split(',')[1];
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/png' });
+
+            const timestamp = new Date().getTime();
+            const storagePath = `ai-images/${user.id}/${timestamp}-generated.png`;
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('media')
+              .upload(storagePath, blob, {
+                cacheControl: '3600',
+                upsert: false
+              });
+
+            if (!uploadError) {
+              const { data: publicUrlData } = supabase.storage
+                .from('media')
+                .getPublicUrl(uploadData.path);
+              
+              imageUrl = publicUrlData.publicUrl;
+              isImageGenerated = true;
+            }
+          }
+        } catch (imageError) {
+          console.error('AI image generation error:', imageError);
+          toast({
+            title: "Image generation failed", 
+            description: "Content was created but image generation failed.",
+            variant: "destructive",
+          });
+        }
       }
 
       const generatedContent: GeneratedContent = {
@@ -344,11 +402,11 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         "Gather feedback"
       ];
 
-      let imageUrl = '';
+      let baseImageUrl = '';
       if (uploadedImage) {
         const uploadedUrl = await uploadImageToStorage(uploadedImage);
         if (uploadedUrl) {
-          imageUrl = uploadedUrl;
+          baseImageUrl = uploadedUrl;
         }
       }
 
@@ -369,7 +427,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         const generatedContent: GeneratedContent = {
           caption: data.caption,
           hashtags: data.hashtags,
-          image: imageUrl,
+          image: baseImageUrl,
           isGenerated: false
         };
 
@@ -391,7 +449,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             scheduled_time: scheduledTime || null,
             generated_caption: generatedContent.caption,
             generated_hashtags: generatedContent.hashtags,
-            media_url: imageUrl || null,
+            media_url: baseImageUrl || null,
             status: postStatus
           });
 
@@ -618,10 +676,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                 id="generate-images"
                 checked={generateWithImages}
                 onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
-                disabled={!!uploadedImage}
               />
               <Label htmlFor="generate-images" className="text-sm">
-                Generate AI images (Coming soon) {uploadedImage && '- Disabled when image uploaded'}
+                Generate AI images {uploadedImage && '(will incorporate uploaded image)'}
               </Label>
             </div>
 

@@ -119,6 +119,74 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
       if (error) throw error;
 
+      // Generate AI image if requested
+      let generatedImageUrl = imageUrl; // Use uploaded image if available
+      if (generateWithImages) {
+        try {
+          let imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+          if (nicheInfo.trim()) {
+            imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
+          }
+          if (selectedImage) {
+            imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
+          }
+
+          const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {
+            body: {
+              prompt: imagePrompt,
+              size: '1024x1024',
+              quality: 'standard',
+              style: 'vivid'
+            }
+          });
+
+          if (imageError) {
+            console.error('Error generating image:', imageError);
+            toast({
+              title: "Image generation failed",
+              description: "Content was created but image generation failed. You can upload an image manually.",
+              variant: "destructive",
+            });
+          } else if (imageData?.image) {
+            // Convert base64 to blob and upload to storage
+            const base64Data = imageData.image.split(',')[1];
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/png' });
+
+            const timestamp = new Date().getTime();
+            const storagePath = `ai-images/${user.id}/${timestamp}-generated.png`;
+
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('media')
+              .upload(storagePath, blob, {
+                cacheControl: '3600',
+                upsert: false
+              });
+
+            if (!uploadError) {
+              const { data: publicUrlData } = supabase.storage
+                .from('media')
+                .getPublicUrl(uploadData.path);
+              
+              generatedImageUrl = publicUrlData.publicUrl;
+              setImageUrl(generatedImageUrl);
+            }
+          }
+        } catch (imageError) {
+          console.error('AI image generation error:', imageError);
+          toast({
+            title: "Image generation failed", 
+            description: "Content was created but image generation failed.",
+            variant: "destructive",
+          });
+        }
+      }
+
       // Increment monthly usage counter
       const { data: newUsageCount, error: incrementError } = await supabase
         .rpc('increment_monthly_usage', { user_uuid: user.id });
@@ -331,10 +399,9 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                 id="generate-images"
                 checked={generateWithImages}
                 onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
-                disabled={!!selectedImage}
               />
               <Label htmlFor="generate-images" className="text-sm">
-                Generate AI images (Coming soon) {selectedImage && '- Disabled when image uploaded'}
+                Generate AI images {selectedImage && '(will incorporate uploaded image)'}
               </Label>
             </div>
 
