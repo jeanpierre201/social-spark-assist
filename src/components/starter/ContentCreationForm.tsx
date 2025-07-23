@@ -11,6 +11,7 @@ import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Loader2, Wand2, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 interface GeneratedContent {
   caption: string;
@@ -538,7 +539,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             })}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Connect social accounts in the Social Media Accounts section to enable posting.
+            Connect <Link to="/dashboard" className="text-primary hover:underline">social accounts</Link> in the Social Media Accounts section to enable posting.
           </p>
         </div>
 

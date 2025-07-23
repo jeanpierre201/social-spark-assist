@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Sparkles, Calendar, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
@@ -369,7 +369,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                 })}
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Connect social accounts in the Social Media Accounts section to enable posting.
+                Connect <Link to="/dashboard" className="text-primary hover:underline">social accounts</Link> in the Social Media Accounts section to enable posting.
               </p>
             </div>
 

@@ -77,6 +77,7 @@ const ContentGenerator = () => {
               daysRemaining={30}
               maxPosts={isProUser ? 100 : isStarterUser ? 10 : 1}
               isProPlan={isProUser}
+              subscriptionStartDate={null}
             />
 
             {/* Content Generation Form */}

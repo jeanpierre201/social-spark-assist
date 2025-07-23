@@ -54,7 +54,8 @@ const ContentGeneratorStarter = () => {
     setMonthlyPosts,
     isLoading,
     canCreatePosts,
-    daysRemaining
+    daysRemaining,
+    subscriptionStartDate
   } = useStarterSubscriptionStatus();
 
   // Load existing posts from database
@@ -186,6 +187,7 @@ const ContentGeneratorStarter = () => {
           daysRemaining={daysRemaining} 
           maxPosts={10}
           isProPlan={false}
+          subscriptionStartDate={subscriptionStartDate}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

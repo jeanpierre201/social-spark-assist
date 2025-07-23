@@ -9,9 +9,10 @@ interface UsageIndicatorsProps {
   daysRemaining: number;
   maxPosts: number;
   isProPlan?: boolean;
+  subscriptionStartDate?: string | null;
 }
 
-const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = false }: UsageIndicatorsProps) => {
+const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = false, subscriptionStartDate }: UsageIndicatorsProps) => {
   const usagePercentage = maxPosts > 0 ? Math.min((monthlyPosts / maxPosts) * 100, 100) : 0;
   const isNearLimit = usagePercentage >= 80;
   const isAtLimit = monthlyPosts >= maxPosts;
@@ -84,7 +85,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             Reset Timeline
           </CardTitle>
           <CardDescription>
-            Your monthly post limit will reset at the beginning of next month
+            Your monthly post limit will reset {daysRemaining} days from now
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -97,9 +98,11 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
               <span className="text-muted-foreground">Reset date</span>
               <span className="font-medium">
                 {(() => {
-                  const now = new Date();
-                  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-                  return nextMonth.toLocaleDateString('en-US', { 
+                  if (!subscriptionStartDate) return 'N/A';
+                  const startDate = new Date(subscriptionStartDate);
+                  const resetDate = new Date(startDate);
+                  resetDate.setDate(resetDate.getDate() + 30);
+                  return resetDate.toLocaleDateString('en-US', { 
                     month: 'short', 
                     day: 'numeric',
                     year: 'numeric'
@@ -108,7 +111,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
               </span>
             </div>
             <div className="text-xs text-muted-foreground">
-              Posts reset on the 1st of each month at 00:00 UTC
+              Posts reset 30 days after subscription start/upgrade
             </div>
           </div>
         </CardContent>

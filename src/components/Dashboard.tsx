@@ -197,6 +197,7 @@ const Dashboard = () => {
               daysRemaining={30}
               maxPosts={postLimit}
               isProPlan={isProUser}
+              subscriptionStartDate={null}
             />
 
             {/* Content Generation Form */}
