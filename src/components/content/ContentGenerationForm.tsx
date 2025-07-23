@@ -43,6 +43,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const [isGenerating, setIsGenerating] = useState(false);
   const [includeEmojis, setIncludeEmojis] = useState(true);
   const [selectedSocialPlatforms, setSelectedSocialPlatforms] = useState<string[]>([]);
+  const [customImagePrompt, setCustomImagePrompt] = useState('');
 
   const socialPlatforms = [
     { id: 'facebook', name: 'Facebook' },
@@ -123,8 +124,8 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       let generatedImageUrl = imageUrl; // Use uploaded image if available
       if (generateWithImages) {
         try {
-          let imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
-          if (nicheInfo.trim()) {
+          let imagePrompt = customImagePrompt.trim() || `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+          if (!customImagePrompt.trim() && nicheInfo.trim()) {
             imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
           }
           if (selectedImage) {
@@ -223,6 +224,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       setScheduledTime('');
       setImageUrl(null);
       setSelectedSocialPlatforms([]);
+      setCustomImagePrompt('');
 
       toast({
         title: "Content generated successfully!",
@@ -394,15 +396,38 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="generate-images"
-                checked={generateWithImages}
-                onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
-              />
-              <Label htmlFor="generate-images" className="text-sm">
-                Generate AI images {selectedImage && '(will incorporate uploaded image)'}
-              </Label>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="generate-images"
+                  checked={generateWithImages}
+                  onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
+                />
+                <Label htmlFor="generate-images" className="text-sm">
+                  Generate AI images {selectedImage && '(will incorporate uploaded image)'}
+                </Label>
+              </div>
+              
+              {generateWithImages && (
+                <div className="ml-6 space-y-2">
+                  <Label htmlFor="image-prompt" className="text-sm">Custom Image Description (Optional)</Label>
+                  <Textarea
+                    id="image-prompt"
+                    placeholder="Describe how you want your image to look... e.g., 'Modern office setting with laptop, professional lighting, blue color scheme'"
+                    value={customImagePrompt}
+                    onChange={(e) => setCustomImagePrompt(e.target.value)}
+                    maxLength={500}
+                    rows={2}
+                    className="text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {selectedImage 
+                      ? "Your uploaded image (logo, icon, etc.) will be incorporated into the AI-generated image."
+                      : "AI will create a professional image based on your industry and goals, or use your custom description above."
+                    }
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Social Media Selection */}
