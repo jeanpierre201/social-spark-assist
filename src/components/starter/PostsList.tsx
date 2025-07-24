@@ -240,6 +240,17 @@ const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
                     {truncateText(post.generated_caption, 120)}
                   </p>
                   
+                  {/* Display AI-generated image thumbnail */}
+                  {post.media_url && (
+                    <div className="mb-2">
+                      <img 
+                        src={post.media_url} 
+                        alt="Generated content" 
+                        className="w-16 h-16 object-cover rounded border"
+                      />
+                    </div>
+                  )}
+                  
                   <div className="flex items-center gap-4 text-xs text-gray-500">
                     <span>Created: {format(new Date(post.created_at), 'MMM dd, yyyy')}</span>
                     {post.scheduled_date && (

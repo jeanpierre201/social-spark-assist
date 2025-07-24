@@ -700,8 +700,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                   />
                   <p className="text-xs text-muted-foreground">
                     {uploadedImage 
-                      ? "Your uploaded image (logo, icon, etc.) will be incorporated into the AI-generated image."
-                      : "AI will create a professional image based on your industry and goals, or use your custom description above."
+                      ? "Your uploaded private image (logo, icon, etc.) will be incorporated into the AI-generated image for enhanced brand consistency."
+                      : "💡 Pro tip: Upload a private image above (logo, brand elements, or personal photo) to enhance your AI-generated content. The AI will incorporate your image into the generated visual for better brand alignment."
                     }
                   </p>
                 </div>
