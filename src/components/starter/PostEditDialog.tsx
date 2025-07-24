@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, Clock, Save, Eye } from 'lucide-react';
+import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 
@@ -40,16 +41,20 @@ interface PostEditDialogProps {
 
 const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDialogProps) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const { subscriptionEnd } = useSubscription();
   const { accounts } = useSocialAccounts();
   const [loading, setLoading] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
   const [formData, setFormData] = useState({
     caption: '',
     hashtags: '',
     scheduled_date: '',
     scheduled_time: '',
     social_platforms: [] as string[],
-    status: 'draft' as 'draft' | 'scheduled' | 'published' | 'archived'
+    status: 'draft' as 'draft' | 'scheduled' | 'published' | 'archived',
+    media_url: ''
   });
 
   const socialPlatforms = [
@@ -94,10 +99,107 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         scheduled_date: post.scheduled_date || '',
         scheduled_time: post.scheduled_time || '',
         social_platforms: post.social_platforms || [],
-        status: post.status
+        status: post.status,
+        media_url: post.media_url || ''
       });
     }
   }, [post]);
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please select an image file (JPG, PNG, etc.)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setImageUploading(true);
+
+    try {
+      const timestamp = new Date().getTime();
+      const storagePath = `images/${user.id}/${timestamp}-${file.name}`;
+
+      const { data, error } = await supabase.storage
+        .from('media')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('media')
+        .getPublicUrl(data.path);
+
+      setFormData(prev => ({ ...prev, media_url: publicUrlData.publicUrl }));
+
+      toast({
+        description: "Image uploaded successfully!",
+      });
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setImageUploading(false);
+    }
+  };
+
+  const handleGenerateAIImage = async () => {
+    if (!user || !post) return;
+
+    setGeneratingImage(true);
+
+    try {
+      const prompt = `Create a professional image for: ${post.goal}. Industry: ${post.industry}. ${post.niche_info ? `Additional context: ${post.niche_info}` : ''}`;
+
+      const response = await supabase.functions.invoke('generate-image', {
+        body: { prompt }
+      });
+
+      if (response.error) throw response.error;
+
+      const { image } = response.data;
+      setFormData(prev => ({ ...prev, media_url: image }));
+
+      toast({
+        description: "AI image generated successfully!",
+      });
+    } catch (error: any) {
+      console.error("Error generating image:", error);
+      toast({
+        title: "Generation failed",
+        description: error.message || "Failed to generate image",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData(prev => ({ ...prev, media_url: '' }));
+  };
 
   const handleSave = async () => {
     if (!post || isReadOnly) return;
@@ -112,6 +214,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         scheduled_time: formData.scheduled_time || null,
         social_platforms: formData.social_platforms,
         status: formData.status,
+        media_url: formData.media_url || null,
         updated_at: new Date().toISOString()
       };
 
@@ -240,6 +343,112 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               readOnly={isReadOnly}
               className={isReadOnly ? 'bg-gray-50' : ''}
             />
+          </div>
+
+          {/* Image Section */}
+          <div>
+            <Label className="text-sm font-medium flex items-center mb-3">
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Post Image
+            </Label>
+            
+            {formData.media_url ? (
+              <div className="space-y-3">
+                <div className="relative">
+                  <img 
+                    src={formData.media_url} 
+                    alt="Post image" 
+                    className="w-full h-48 object-cover rounded-lg border"
+                  />
+                  {!isReadOnly && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 bg-white/90 hover:bg-white"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                
+                {!isReadOnly && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('image-upload')?.click()}
+                      disabled={imageUploading}
+                    >
+                      {imageUploading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-2" />
+                      )}
+                      Replace Image
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateAIImage}
+                      disabled={generatingImage}
+                    >
+                      {generatingImage ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                      )}
+                      Generate AI Image
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              !isReadOnly && (
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                  <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                  <p className="text-sm text-gray-600 mb-3">No image attached</p>
+                  <div className="flex gap-2 justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('image-upload')?.click()}
+                      disabled={imageUploading}
+                    >
+                      {imageUploading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-2" />
+                      )}
+                      Upload Image
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleGenerateAIImage}
+                      disabled={generatingImage}
+                    >
+                      {generatingImage ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                      )}
+                      Generate AI Image
+                    </Button>
+                  </div>
+                </div>
+              )
+            )}
+
+            {!isReadOnly && (
+              <input
+                id="image-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="hidden"
+              />
+            )}
           </div>
 
           {/* Social Media Platforms */}
