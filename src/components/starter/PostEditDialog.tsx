@@ -12,7 +12,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2, RotateCcw, Sparkles, Palette } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 
@@ -47,6 +47,10 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [showImageLightbox, setShowImageLightbox] = useState(false);
+  const [aiImagePrompt, setAiImagePrompt] = useState('');
+  const [originalImageUrl, setOriginalImageUrl] = useState('');
+  const [hasGeneratedAI, setHasGeneratedAI] = useState(false);
   const [formData, setFormData] = useState({
     caption: '',
     hashtags: '',
@@ -102,6 +106,9 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         status: post.status,
         media_url: post.media_url || ''
       });
+      setOriginalImageUrl(post.media_url || '');
+      setHasGeneratedAI(false); // Reset AI generation flag for new posts
+      setAiImagePrompt('');
     }
   }, [post]);
 
@@ -165,13 +172,25 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     }
   };
 
-  const handleGenerateAIImage = async () => {
-    if (!user || !post) return;
+  const handleGenerateAIImage = async (includeExistingImage = false) => {
+    if (!user || !post || hasGeneratedAI) return;
 
     setGeneratingImage(true);
 
     try {
-      const prompt = `Create a professional image for: ${post.goal}. Industry: ${post.industry}. ${post.niche_info ? `Additional context: ${post.niche_info}` : ''}`;
+      let prompt = `Create a professional image for: ${post.goal}. Industry: ${post.industry}. Content: ${formData.caption}. Hashtags: ${formData.hashtags}`;
+      
+      if (post.niche_info) {
+        prompt += `. Additional context: ${post.niche_info}`;
+      }
+      
+      if (aiImagePrompt.trim()) {
+        prompt += `. User requirements: ${aiImagePrompt}`;
+      }
+
+      if (includeExistingImage && originalImageUrl) {
+        prompt += '. Please incorporate elements from the existing uploaded image (like logos, branding, etc.) into the new AI-generated image.';
+      }
 
       const response = await supabase.functions.invoke('generate-image', {
         body: { prompt }
@@ -181,6 +200,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
       const { image } = response.data;
       setFormData(prev => ({ ...prev, media_url: image }));
+      setHasGeneratedAI(true);
 
       toast({
         description: "AI image generated successfully!",
@@ -194,6 +214,15 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       });
     } finally {
       setGeneratingImage(false);
+    }
+  };
+
+  const handleRecoverImage = () => {
+    if (originalImageUrl) {
+      setFormData(prev => ({ ...prev, media_url: originalImageUrl }));
+      toast({
+        description: "Original image recovered!",
+      });
     }
   };
 
@@ -358,22 +387,27 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   <img 
                     src={formData.media_url} 
                     alt="Post image" 
-                    className="w-full h-48 object-cover rounded-lg border"
+                    className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setShowImageLightbox(true)}
                   />
                   {!isReadOnly && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleRemoveImage}
+                      onClick={originalImageUrl && !formData.media_url ? handleRecoverImage : handleRemoveImage}
                       className="absolute top-2 right-2 bg-white/90 hover:bg-white"
                     >
-                      <X className="h-4 w-4" />
+                      {originalImageUrl && !formData.media_url ? (
+                        <RotateCcw className="h-4 w-4" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
                     </Button>
                   )}
                 </div>
                 
                 {!isReadOnly && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Button
                       variant="outline"
                       size="sm"
@@ -387,57 +421,122 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                       )}
                       Replace Image
                     </Button>
+                    
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={handleGenerateAIImage}
-                      disabled={generatingImage}
+                      onClick={() => handleGenerateAIImage(false)}
+                      disabled={generatingImage || hasGeneratedAI}
+                      className="flex-1"
                     >
                       {generatingImage ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
-                        <ImageIcon className="h-4 w-4 mr-2" />
+                        <Sparkles className="h-4 w-4 mr-2" />
                       )}
-                      Generate AI Image
+                      {hasGeneratedAI ? 'AI Generated' : 'Generate AI Image'}
                     </Button>
+                    
+                    {originalImageUrl && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleGenerateAIImage(true)}
+                        disabled={generatingImage || hasGeneratedAI}
+                        className="flex-1"
+                      >
+                        {generatingImage ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Palette className="h-4 w-4 mr-2" />
+                        )}
+                        {hasGeneratedAI ? 'AI + Original Used' : 'AI + Original Image'}
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
-            ) : (
-              !isReadOnly && (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                  <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                  <p className="text-sm text-gray-600 mb-3">No image attached</p>
-                  <div className="flex gap-2 justify-center">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('image-upload')?.click()}
-                      disabled={imageUploading}
-                    >
-                      {imageUploading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-2" />
-                      )}
-                      Upload Image
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleGenerateAIImage}
-                      disabled={generatingImage}
-                    >
-                      {generatingImage ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                      )}
-                      Generate AI Image
-                    </Button>
-                  </div>
+            ) : originalImageUrl && !isReadOnly ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                <p className="text-sm text-gray-600 mb-3">Image was removed</p>
+                <div className="flex gap-2 justify-center flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRecoverImage}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Recover Original
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                    disabled={imageUploading}
+                  >
+                    {imageUploading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    Upload New
+                  </Button>
                 </div>
-              )
+              </div>
+            ) : !isReadOnly ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
+                <p className="text-sm text-gray-600 mb-3">No image attached</p>
+                <div className="flex gap-2 justify-center flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('image-upload')?.click()}
+                    disabled={imageUploading}
+                  >
+                    {imageUploading ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-2" />
+                    )}
+                    Upload Image
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleGenerateAIImage(false)}
+                    disabled={generatingImage || hasGeneratedAI}
+                  >
+                    {generatingImage ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4 mr-2" />
+                    )}
+                    Generate AI Image
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+
+            {/* AI Image Prompt Text Area */}
+            {!isReadOnly && !hasGeneratedAI && (
+              <div className="mt-4">
+                <Label htmlFor="ai-prompt" className="text-sm font-medium mb-2 block">
+                  AI Image Requirements (Optional)
+                </Label>
+                <Textarea
+                  id="ai-prompt"
+                  value={aiImagePrompt}
+                  onChange={(e) => setAiImagePrompt(e.target.value)}
+                  placeholder="Describe specific requirements for the AI image (e.g., 'include company logo', 'modern minimalist style', 'bright colors')"
+                  rows={2}
+                  className="text-sm"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  If you have an uploaded image, you can use the "AI + Original Image" button to incorporate elements like logos or branding into the AI-generated image.
+                </p>
+              </div>
             )}
 
             {!isReadOnly && (
@@ -450,6 +549,32 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               />
             )}
           </div>
+
+          {/* Image Lightbox */}
+          {showImageLightbox && formData.media_url && (
+            <Dialog open={showImageLightbox} onOpenChange={setShowImageLightbox}>
+              <DialogContent className="max-w-4xl p-2">
+                <DialogHeader className="sr-only">
+                  <DialogTitle>View Image</DialogTitle>
+                </DialogHeader>
+                <div className="relative">
+                  <img 
+                    src={formData.media_url} 
+                    alt="Full size post image" 
+                    className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowImageLightbox(false)}
+                    className="absolute top-2 right-2 bg-white/90 hover:bg-white"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
 
           {/* Social Media Platforms */}
           {!isReadOnly && (
