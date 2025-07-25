@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Save, X } from 'lucide-react';
+import { Save, X, Upload, ImageIcon, Wand2, Edit, Trash2, RotateCcw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePostsManager } from '@/hooks/usePostsManager';
+import { useState } from 'react';
 
 interface GeneratedContent {
   caption: string;
@@ -35,10 +37,36 @@ interface PostEditDialogProps {
 
 const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: PostEditDialogProps) => {
   const { toast } = useToast();
+  const { updatePostMutation } = usePostsManager();
+  const [showFullImage, setShowFullImage] = useState(false);
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [isGeneratingEditedImage, setIsGeneratingEditedImage] = useState(false);
+  const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
+  const [deletedImageBackup, setDeletedImageBackup] = useState<string | null>(null);
 
   const handleSave = async () => {
+    if (!editingPost?.id) return;
+    
     try {
-      await onSave();
+      await updatePostMutation.mutateAsync({
+        id: editingPost.id,
+        industry: editingPost.industry,
+        goal: editingPost.goal,
+        niche_info: editingPost.nicheInfo,
+        content: editingPost.generatedContent?.caption || '',
+        hashtags: editingPost.generatedContent?.hashtags || [],
+        scheduled_date: editingPost.scheduledDate,
+        scheduled_time: editingPost.scheduledTime,
+        media_url: editingPost.generatedContent?.image
+      });
+      
+      toast({
+        title: "Success",
+        description: "Post updated successfully!",
+      });
+      
+      onClose();
     } catch (error) {
       console.error('Error saving post:', error);
       toast({
@@ -46,6 +74,120 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         description: "Failed to save post changes",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileName = `${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('media')
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('media')
+        .getPublicUrl(fileName);
+
+      onPostChange({
+        ...editingPost!,
+        generatedContent: {
+          ...editingPost!.generatedContent!,
+          image: publicUrl
+        }
+      });
+
+      toast({
+        title: "Success",
+        description: "Image uploaded successfully!",
+      });
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateAIImage = async (includeExistingImage: boolean = false) => {
+    if (hasGeneratedOnce) {
+      toast({
+        title: "Limit Reached",
+        description: "You can only generate one AI image per post.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    try {
+      const prompt = `${imagePrompt || `Create a professional image for ${editingPost?.industry} industry. Goal: ${editingPost?.goal}. Caption: ${editingPost?.generatedContent?.caption}`}`;
+      
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: { 
+          prompt,
+          ...(includeExistingImage && editingPost?.generatedContent?.image && {
+            image: editingPost.generatedContent.image
+          })
+        }
+      });
+
+      if (error) throw error;
+
+      onPostChange({
+        ...editingPost!,
+        generatedContent: {
+          ...editingPost!.generatedContent!,
+          image: data.image
+        }
+      });
+
+      setHasGeneratedOnce(true);
+      toast({
+        title: "Success",
+        description: "AI image generated successfully!",
+      });
+    } catch (error) {
+      console.error('Error generating image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate AI image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const handleImageDelete = () => {
+    if (editingPost?.generatedContent?.image) {
+      setDeletedImageBackup(editingPost.generatedContent.image);
+      onPostChange({
+        ...editingPost,
+        generatedContent: {
+          ...editingPost.generatedContent,
+          image: undefined
+        }
+      });
+    }
+  };
+
+  const handleImageRecover = () => {
+    if (deletedImageBackup) {
+      onPostChange({
+        ...editingPost!,
+        generatedContent: {
+          ...editingPost!.generatedContent!,
+          image: deletedImageBackup
+        }
+      });
+      setDeletedImageBackup(null);
     }
   };
 
@@ -154,6 +296,114 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             />
           </div>
 
+          {/* Image Section */}
+          <div>
+            <Label>Post Image</Label>
+            {editingPost.generatedContent?.image ? (
+              <div className="space-y-2">
+                <div 
+                  className="relative group cursor-pointer border rounded-lg overflow-hidden"
+                  onClick={() => setShowFullImage(true)}
+                >
+                  <img 
+                    src={editingPost.generatedContent.image} 
+                    alt="Generated content" 
+                    className="w-full h-32 object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <span className="text-white opacity-0 group-hover:opacity-100 text-sm">Click to view full size</span>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleImageDelete}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {deletedImageBackup && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleImageRecover}
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Recover Image
+                  </Button>
+                )}
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
+                  <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-2">No image added</p>
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="image-upload"
+                    />
+                    <label htmlFor="image-upload">
+                      <Button variant="outline" size="sm" asChild>
+                        <span>
+                          <Upload className="h-4 w-4 mr-2" />
+                          Upload Image
+                        </span>
+                      </Button>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* AI Image Generation Section */}
+            <div className="space-y-3 mt-4">
+              <Label htmlFor="image-prompt">AI Image Description (Optional)</Label>
+              <Textarea
+                id="image-prompt"
+                placeholder="Describe the image you want to generate or modifications you'd like to make..."
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                rows={2}
+              />
+              
+              <div className="flex space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateAIImage(false)}
+                  disabled={isGeneratingImage || hasGeneratedOnce}
+                >
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  {isGeneratingImage ? 'Generating...' : 'Generate AI Image'}
+                </Button>
+                
+                {editingPost.generatedContent?.image && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => generateAIImage(true)}
+                    disabled={isGeneratingImage || hasGeneratedOnce}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    {isGeneratingImage ? 'Generating...' : 'Enhance with AI'}
+                  </Button>
+                )}
+              </div>
+              
+              {hasGeneratedOnce && (
+                <p className="text-xs text-gray-500">
+                  AI image generation is limited to once per post to preserve resources.
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={onClose}>
               <X className="h-4 w-4 mr-2" />
@@ -164,6 +414,43 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
               Save Changes
             </Button>
           </div>
+
+          {/* Full Image View Modal */}
+          {showFullImage && editingPost.generatedContent?.image && (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowFullImage(false)}>
+              <div className="relative max-w-4xl max-h-[90vh] p-4">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowFullImage(false);
+                  }}
+                  className="absolute -top-2 -right-2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <img 
+                  src={editingPost.generatedContent.image} 
+                  alt="Generated content" 
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsGeneratingEditedImage(true);
+                      // This would open an AI image editor - for now just close
+                      setShowFullImage(false);
+                    }}
+                    className="mr-2"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Image
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

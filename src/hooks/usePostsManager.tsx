@@ -108,23 +108,41 @@ export const usePostsManager = () => {
   const updatePostMutation = useMutation({
     mutationFn: async ({ 
       id, 
+      industry,
+      goal,
+      niche_info,
       content, 
+      hashtags,
       scheduled_date, 
-      scheduled_time 
+      scheduled_time,
+      media_url
     }: { 
       id: string; 
+      industry?: string;
+      goal?: string;
+      niche_info?: string;
       content: string; 
+      hashtags?: string[];
       scheduled_date?: string; 
       scheduled_time?: string; 
+      media_url?: string;
     }) => {
+      const updateData: any = {
+        generated_caption: content,
+        updated_at: new Date().toISOString()
+      };
+
+      if (industry !== undefined) updateData.industry = industry;
+      if (goal !== undefined) updateData.goal = goal;
+      if (niche_info !== undefined) updateData.niche_info = niche_info;
+      if (hashtags !== undefined) updateData.generated_hashtags = hashtags;
+      if (scheduled_date !== undefined) updateData.scheduled_date = scheduled_date;
+      if (scheduled_time !== undefined) updateData.scheduled_time = scheduled_time;
+      if (media_url !== undefined) updateData.media_url = media_url;
+
       const { error } = await supabase
         .from('posts')
-        .update({ 
-          generated_caption: content,
-          scheduled_date,
-          scheduled_time,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id);
       
       if (error) throw error;
