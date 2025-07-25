@@ -1,4 +1,3 @@
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -415,7 +414,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             </Button>
           </div>
 
-          {/* Full Image View Modal */}
+          {/* Full Image View Modal - NO DELETE ICON */}
           {showFullImage && editingPost.generatedContent?.image && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowFullImage(false)}>
               <div className="relative max-w-4xl max-h-[90vh] p-4">
@@ -434,20 +433,6 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
                   className="max-w-full max-h-full object-contain rounded-lg"
                   onClick={(e) => e.stopPropagation()}
                 />
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/90 backdrop-blur-sm rounded-lg p-2 shadow-lg">
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsGeneratingEditedImage(true);
-                      // This would open an AI image editor - for now just close
-                      setShowFullImage(false);
-                    }}
-                    className="mr-2"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Image
-                  </Button>
-                </div>
               </div>
             </div>
           )}
