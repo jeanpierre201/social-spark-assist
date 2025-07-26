@@ -241,7 +241,6 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         generated_hashtags: formData.hashtags.split(' ').filter(tag => tag.trim()),
         scheduled_date: formData.scheduled_date || null,
         scheduled_time: formData.scheduled_time || null,
-        social_platforms: formData.social_platforms,
         status: formData.status,
         media_url: formData.media_url || null,
         updated_at: new Date().toISOString()
