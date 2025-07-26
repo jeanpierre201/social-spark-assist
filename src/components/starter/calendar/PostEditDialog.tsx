@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Save, X, Upload, ImageIcon, Wand2, Edit, Trash2, RotateCcw, CheckCircle } from 'lucide-react';
+import { Save, X, Upload, ImageIcon, Wand2, Edit, Trash2, RotateCcw, CheckCircle, Layers } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePostsManager } from '@/hooks/usePostsManager';
@@ -202,8 +202,8 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
           prompt,
-          ...(includeExistingImage && content?.image && {
-            image: content.image
+          ...(includeExistingImage && content?.uploadedImage && {
+            image: content.uploadedImage
           })
         }
       });
@@ -243,6 +243,60 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
       toast({
         title: "Error",
         description: "Failed to generate AI image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
+  const modifyAIImage = async () => {
+    const content = editingPost?.generatedContent;
+    
+    if (!content?.aiImage1 || !imagePrompt.trim()) {
+      toast({
+        title: "Error",
+        description: "Need first AI image and modification requirements",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    try {
+      // Use edit_image function to modify the existing AI image
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: { 
+          prompt: imagePrompt,
+          edit_image: true,
+          image: content.aiImage1
+        }
+      });
+
+      if (error) throw error;
+
+      const updatedContent = {
+        ...content,
+        aiImage1: data.image,
+        selectedImageType: 'ai_1' as const,
+        image: data.image,
+        aiImagePrompts: [...(content.aiImagePrompts || []), `Modified: ${imagePrompt}`]
+      };
+
+      onPostChange({
+        ...editingPost!,
+        generatedContent: updatedContent
+      });
+
+      toast({
+        title: "Success",
+        description: "AI Image 1 modified successfully!",
+      });
+    } catch (error) {
+      console.error('Error modifying image:', error);
+      toast({
+        title: "Error",
+        description: "Failed to modify AI image",
         variant: "destructive",
       });
     } finally {
@@ -598,7 +652,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             {/* AI Image Generation Section */}
             {canGenerateAI && (
               <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
-                <Label htmlFor="image-prompt">AI Image Generation</Label>
+                <Label htmlFor="image-prompt">AI Image Requirements (Optional)</Label>
                 <Textarea
                   id="image-prompt"
                   placeholder="Describe the image you want to generate or modifications you'd like to make..."
@@ -607,7 +661,8 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
                   rows={2}
                 />
                 
-                <div className="flex space-x-2">
+                <div className="flex flex-wrap gap-2">
+                  {/* Generate New AI Image Button */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -615,24 +670,45 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
                     disabled={isGeneratingImage}
                   >
                     <Wand2 className="h-4 w-4 mr-2" />
-                    {isGeneratingImage ? 'Generating...' : 'Generate New AI Image'}
+                    {isGeneratingImage ? 'Generating...' : 
+                     (content?.aiImage1 ? 'Generate New AI Image' : 'Generate AI Image')}
                   </Button>
                   
-                  {content?.image && (
+                   {/* Modify First AI Image Button */}
+                   {content?.aiImage1 && (
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={modifyAIImage}
+                       disabled={isGeneratingImage || !imagePrompt.trim()}
+                       title={!imagePrompt.trim() ? "Enter requirements to modify the first AI image" : ""}
+                     >
+                       <Edit className="h-4 w-4 mr-2" />
+                       {isGeneratingImage ? 'Modifying...' : 'Modify AI Image 1'}
+                     </Button>
+                   )}
+                  
+                  {/* AI + Original Image Button (only when uploaded image exists and no AI images yet) */}
+                  {content?.uploadedImage && !content?.aiImage1 && (
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => generateAIImage(true)}
                       disabled={isGeneratingImage}
                     >
-                      <Edit className="h-4 w-4 mr-2" />
-                      {isGeneratingImage ? 'Generating...' : 'Enhance/Modify Current'}
+                      <Layers className="h-4 w-4 mr-2" />
+                      {isGeneratingImage ? 'Generating...' : 'AI + Original Image'}
                     </Button>
                   )}
                 </div>
                 
                 <p className="text-xs text-gray-500">
                   AI generations used: {content?.aiGenerationsCount || 0}/2
+                  {content?.aiImage1 && imagePrompt.trim() && (
+                    <span className="block mt-1 text-blue-600">
+                      Tip: "Modify AI Image 1" will edit your first AI image based on your requirements above.
+                    </span>
+                  )}
                 </p>
               </div>
             )}
