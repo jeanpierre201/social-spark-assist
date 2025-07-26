@@ -66,7 +66,12 @@ export const usePostsManager = () => {
       generated_hashtags: string[];
       scheduled_date?: string;
       scheduled_time?: string;
-      media_url?: string;
+      uploaded_image_url?: string;
+      ai_generated_image_1_url?: string;
+      ai_generated_image_2_url?: string;
+      selected_image_type?: string;
+      ai_generations_count?: number;
+      ai_image_prompts?: string[];
     }) => {
       if (!user) throw new Error('User not authenticated');
       
@@ -115,7 +120,12 @@ export const usePostsManager = () => {
       hashtags,
       scheduled_date, 
       scheduled_time,
-      media_url
+      uploaded_image_url,
+      ai_generated_image_1_url,
+      ai_generated_image_2_url,
+      selected_image_type,
+      ai_generations_count,
+      ai_image_prompts
     }: { 
       id: string; 
       industry?: string;
@@ -125,7 +135,12 @@ export const usePostsManager = () => {
       hashtags?: string[];
       scheduled_date?: string; 
       scheduled_time?: string; 
-      media_url?: string;
+      uploaded_image_url?: string;
+      ai_generated_image_1_url?: string;
+      ai_generated_image_2_url?: string;
+      selected_image_type?: string;
+      ai_generations_count?: number;
+      ai_image_prompts?: string[];
     }) => {
       const updateData: any = {
         generated_caption: content,
@@ -138,7 +153,29 @@ export const usePostsManager = () => {
       if (hashtags !== undefined) updateData.generated_hashtags = hashtags;
       if (scheduled_date !== undefined) updateData.scheduled_date = scheduled_date;
       if (scheduled_time !== undefined) updateData.scheduled_time = scheduled_time;
-      if (media_url !== undefined) updateData.media_url = media_url;
+      if (uploaded_image_url !== undefined) updateData.uploaded_image_url = uploaded_image_url;
+      if (ai_generated_image_1_url !== undefined) updateData.ai_generated_image_1_url = ai_generated_image_1_url;
+      if (ai_generated_image_2_url !== undefined) updateData.ai_generated_image_2_url = ai_generated_image_2_url;
+      if (selected_image_type !== undefined) updateData.selected_image_type = selected_image_type;
+      if (ai_generations_count !== undefined) updateData.ai_generations_count = ai_generations_count;
+      if (ai_image_prompts !== undefined) updateData.ai_image_prompts = ai_image_prompts;
+      
+      // Update media_url based on selected image type for backward compatibility
+      if (selected_image_type !== undefined) {
+        switch (selected_image_type) {
+          case 'uploaded':
+            updateData.media_url = uploaded_image_url;
+            break;
+          case 'ai_1':
+            updateData.media_url = ai_generated_image_1_url;
+            break;
+          case 'ai_2':
+            updateData.media_url = ai_generated_image_2_url;
+            break;
+          default:
+            updateData.media_url = null;
+        }
+      }
 
       const { error } = await supabase
         .from('posts')

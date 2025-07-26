@@ -3,16 +3,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Save, X, Upload, ImageIcon, Wand2, Edit, Trash2, RotateCcw } from 'lucide-react';
+import { Save, X, Upload, ImageIcon, Wand2, Edit, Trash2, RotateCcw, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePostsManager } from '@/hooks/usePostsManager';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface GeneratedContent {
   caption: string;
   hashtags: string[];
+  // Current selected image
   image?: string;
+  // Image storage
+  uploadedImage?: string;
+  aiImage1?: string;
+  aiImage2?: string;
+  // Image management
+  selectedImageType?: 'none' | 'uploaded' | 'ai_1' | 'ai_2';
+  aiGenerationsCount?: number;
+  aiImagePrompts?: string[];
 }
 
 interface PostData {
@@ -40,24 +49,52 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
   const [showFullImage, setShowFullImage] = useState(false);
   const [imagePrompt, setImagePrompt] = useState('');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
-  const [isGeneratingEditedImage, setIsGeneratingEditedImage] = useState(false);
-  const [hasGeneratedOnce, setHasGeneratedOnce] = useState(false);
-  const [deletedImageBackup, setDeletedImageBackup] = useState<string | null>(null);
+  const [selectedImageBackup, setSelectedImageBackup] = useState<{
+    uploadedImage?: string;
+    aiImage1?: string;
+    aiImage2?: string;
+  } | null>(null);
+
+  // Initialize image management state from existing post data
+  useEffect(() => {
+    if (editingPost?.generatedContent) {
+      const content = editingPost.generatedContent;
+      // Initialize the new structure from existing data if needed
+      if (!content.selectedImageType && content.image) {
+        onPostChange({
+          ...editingPost,
+          generatedContent: {
+            ...content,
+            uploadedImage: content.image,
+            selectedImageType: 'uploaded',
+            aiGenerationsCount: 0,
+            aiImagePrompts: []
+          }
+        });
+      }
+    }
+  }, [editingPost?.id]);
 
   const handleSave = async () => {
     if (!editingPost?.id) return;
     
     try {
+      const content = editingPost.generatedContent;
       await updatePostMutation.mutateAsync({
         id: editingPost.id,
         industry: editingPost.industry,
         goal: editingPost.goal,
         niche_info: editingPost.nicheInfo,
-        content: editingPost.generatedContent?.caption || '',
-        hashtags: editingPost.generatedContent?.hashtags || [],
+        content: content?.caption || '',
+        hashtags: content?.hashtags || [],
         scheduled_date: editingPost.scheduledDate,
         scheduled_time: editingPost.scheduledTime,
-        media_url: editingPost.generatedContent?.image
+        uploaded_image_url: content?.uploadedImage,
+        ai_generated_image_1_url: content?.aiImage1,
+        ai_generated_image_2_url: content?.aiImage2,
+        selected_image_type: content?.selectedImageType || 'none',
+        ai_generations_count: content?.aiGenerationsCount || 0,
+        ai_image_prompts: content?.aiImagePrompts || []
       });
       
       toast({
@@ -76,6 +113,34 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
     }
   };
 
+  const updateImageSelection = (imageType: 'none' | 'uploaded' | 'ai_1' | 'ai_2') => {
+    const content = editingPost?.generatedContent;
+    let selectedImageUrl = '';
+    
+    switch (imageType) {
+      case 'uploaded':
+        selectedImageUrl = content?.uploadedImage || '';
+        break;
+      case 'ai_1':
+        selectedImageUrl = content?.aiImage1 || '';
+        break;
+      case 'ai_2':
+        selectedImageUrl = content?.aiImage2 || '';
+        break;
+      default:
+        selectedImageUrl = '';
+    }
+
+    onPostChange({
+      ...editingPost!,
+      generatedContent: {
+        ...content!,
+        selectedImageType: imageType,
+        image: selectedImageUrl
+      }
+    });
+  };
+
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -92,10 +157,13 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         .from('media')
         .getPublicUrl(fileName);
 
+      const content = editingPost?.generatedContent;
       onPostChange({
         ...editingPost!,
         generatedContent: {
-          ...editingPost!.generatedContent!,
+          ...content!,
+          uploadedImage: publicUrl,
+          selectedImageType: 'uploaded',
           image: publicUrl
         }
       });
@@ -115,10 +183,13 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
   };
 
   const generateAIImage = async (includeExistingImage: boolean = false) => {
-    if (hasGeneratedOnce) {
+    const content = editingPost?.generatedContent;
+    const generationsCount = content?.aiGenerationsCount || 0;
+    
+    if (generationsCount >= 2) {
       toast({
         title: "Limit Reached",
-        description: "You can only generate one AI image per post.",
+        description: "You can only generate 2 AI images per post.",
         variant: "destructive",
       });
       return;
@@ -126,31 +197,46 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
 
     setIsGeneratingImage(true);
     try {
-      const prompt = `${imagePrompt || `Create a professional image for ${editingPost?.industry} industry. Goal: ${editingPost?.goal}. Caption: ${editingPost?.generatedContent?.caption}`}`;
+      const prompt = imagePrompt || `Create a professional image for ${editingPost?.industry} industry. Goal: ${editingPost?.goal}. Caption: ${editingPost?.generatedContent?.caption}`;
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
           prompt,
-          ...(includeExistingImage && editingPost?.generatedContent?.image && {
-            image: editingPost.generatedContent.image
+          ...(includeExistingImage && content?.image && {
+            image: content.image
           })
         }
       });
 
       if (error) throw error;
 
+      const isFirstGeneration = !content?.aiImage1;
+      const newGenerationsCount = generationsCount + 1;
+      const newPrompts = [...(content?.aiImagePrompts || []), prompt];
+
+      const updatedContent = {
+        ...content!,
+        ...(isFirstGeneration ? { 
+          aiImage1: data.image,
+          selectedImageType: 'ai_1' as const,
+          image: data.image
+        } : { 
+          aiImage2: data.image,
+          selectedImageType: 'ai_2' as const,
+          image: data.image
+        }),
+        aiGenerationsCount: newGenerationsCount,
+        aiImagePrompts: newPrompts
+      };
+
       onPostChange({
         ...editingPost!,
-        generatedContent: {
-          ...editingPost!.generatedContent!,
-          image: data.image
-        }
+        generatedContent: updatedContent
       });
 
-      setHasGeneratedOnce(true);
       toast({
         title: "Success",
-        description: "AI image generated successfully!",
+        description: `AI image ${isFirstGeneration ? '1' : '2'} generated successfully!`,
       });
     } catch (error) {
       console.error('Error generating image:', error);
@@ -164,37 +250,87 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
     }
   };
 
-  const handleImageDelete = () => {
-    if (editingPost?.generatedContent?.image) {
-      setDeletedImageBackup(editingPost.generatedContent.image);
-      onPostChange({
-        ...editingPost,
-        generatedContent: {
-          ...editingPost.generatedContent,
-          image: undefined
-        }
-      });
+  const handleImageDelete = (imageType: 'uploaded' | 'ai_1' | 'ai_2') => {
+    const content = editingPost?.generatedContent;
+    if (!content) return;
+
+    // Backup the deleted image
+    setSelectedImageBackup({
+      uploadedImage: content.uploadedImage,
+      aiImage1: content.aiImage1,
+      aiImage2: content.aiImage2
+    });
+
+    const updatedContent = { ...content };
+    
+    switch (imageType) {
+      case 'uploaded':
+        updatedContent.uploadedImage = undefined;
+        break;
+      case 'ai_1':
+        updatedContent.aiImage1 = undefined;
+        if (content.aiGenerationsCount) updatedContent.aiGenerationsCount -= 1;
+        break;
+      case 'ai_2':
+        updatedContent.aiImage2 = undefined;
+        if (content.aiGenerationsCount) updatedContent.aiGenerationsCount -= 1;
+        break;
     }
+
+    // If the deleted image was selected, reset selection
+    if (content.selectedImageType === imageType) {
+      updatedContent.selectedImageType = 'none';
+      updatedContent.image = '';
+    }
+
+    onPostChange({
+      ...editingPost!,
+      generatedContent: updatedContent
+    });
   };
 
-  const handleImageRecover = () => {
-    if (deletedImageBackup) {
-      onPostChange({
-        ...editingPost!,
-        generatedContent: {
-          ...editingPost!.generatedContent!,
-          image: deletedImageBackup
+  const handleImageRecover = (imageType: 'uploaded' | 'ai_1' | 'ai_2') => {
+    if (!selectedImageBackup) return;
+
+    const content = editingPost?.generatedContent;
+    const updatedContent = { ...content! };
+
+    switch (imageType) {
+      case 'uploaded':
+        if (selectedImageBackup.uploadedImage) {
+          updatedContent.uploadedImage = selectedImageBackup.uploadedImage;
         }
-      });
-      setDeletedImageBackup(null);
+        break;
+      case 'ai_1':
+        if (selectedImageBackup.aiImage1) {
+          updatedContent.aiImage1 = selectedImageBackup.aiImage1;
+          updatedContent.aiGenerationsCount = (content?.aiGenerationsCount || 0) + 1;
+        }
+        break;
+      case 'ai_2':
+        if (selectedImageBackup.aiImage2) {
+          updatedContent.aiImage2 = selectedImageBackup.aiImage2;
+          updatedContent.aiGenerationsCount = (content?.aiGenerationsCount || 0) + 1;
+        }
+        break;
     }
+
+    onPostChange({
+      ...editingPost!,
+      generatedContent: updatedContent
+    });
+
+    setSelectedImageBackup(null);
   };
 
   if (!editingPost) return null;
 
+  const content = editingPost.generatedContent;
+  const canGenerateAI = (content?.aiGenerationsCount || 0) < 2;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Post</DialogTitle>
         </DialogHeader>
@@ -269,11 +405,11 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             <Textarea
               id="caption"
               rows={4}
-              value={editingPost.generatedContent?.caption || ''}
+              value={content?.caption || ''}
               onChange={(e) => onPostChange({
                 ...editingPost,
                 generatedContent: {
-                  ...editingPost.generatedContent!,
+                  ...content!,
                   caption: e.target.value
                 }
               })}
@@ -284,123 +420,228 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             <Label htmlFor="hashtags">Hashtags (comma separated)</Label>
             <Input
               id="hashtags"
-              value={editingPost.generatedContent?.hashtags?.join(', ') || ''}
+              value={content?.hashtags?.join(', ') || ''}
               onChange={(e) => onPostChange({
                 ...editingPost,
                 generatedContent: {
-                  ...editingPost.generatedContent!,
+                  ...content!,
                   hashtags: e.target.value.split(',').map(tag => tag.trim())
                 }
               })}
             />
           </div>
 
-          {/* Image Section */}
+          {/* Image Management Section */}
           <div>
-            <Label>Post Image</Label>
-            {editingPost.generatedContent?.image ? (
-              <div className="space-y-2">
+            <Label>Image Management</Label>
+            
+            {/* Current Selected Image Display */}
+            {content?.image && (
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">Currently Selected Image:</p>
                 <div 
-                  className="relative group cursor-pointer border rounded-lg overflow-hidden"
+                  className="relative group cursor-pointer border rounded-lg overflow-hidden w-full h-32"
                   onClick={() => setShowFullImage(true)}
                 >
                   <img 
-                    src={editingPost.generatedContent.image} 
-                    alt="Generated content" 
-                    className="w-full h-32 object-cover"
+                    src={content.image} 
+                    alt="Selected content" 
+                    className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                     <span className="text-white opacity-0 group-hover:opacity-100 text-sm">Click to view full size</span>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Image Selection Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              {/* Uploaded Image */}
+              <div className="border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-sm">Uploaded Image</h4>
+                  {content?.selectedImageType === 'uploaded' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                </div>
+                
+                {content?.uploadedImage ? (
+                  <div className="space-y-2">
+                    <img src={content.uploadedImage} alt="Uploaded" className="w-full h-20 object-cover rounded" />
+                    <div className="flex space-x-1">
+                      <Button 
+                        size="sm" 
+                        variant={content.selectedImageType === 'uploaded' ? 'default' : 'outline'}
+                        onClick={() => updateImageSelection('uploaded')}
+                        className="flex-1 text-xs"
+                      >
+                        Select
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleImageDelete('uploaded')}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedImageBackup?.uploadedImage ? (
+                      <Button size="sm" variant="outline" onClick={() => handleImageRecover('uploaded')}>
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Recover
+                      </Button>
+                    ) : (
+                      <>
+                        <div className="h-20 border-2 border-dashed border-gray-300 rounded flex items-center justify-center">
+                          <ImageIcon className="h-6 w-6 text-gray-400" />
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                          id="image-upload"
+                        />
+                        <label htmlFor="image-upload">
+                          <Button size="sm" variant="outline" asChild className="w-full text-xs">
+                            <span>
+                              <Upload className="h-3 w-3 mr-1" />
+                              Upload
+                            </span>
+                          </Button>
+                        </label>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* AI Image 1 */}
+              <div className="border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-sm">AI Image 1</h4>
+                  {content?.selectedImageType === 'ai_1' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                </div>
+                
+                {content?.aiImage1 ? (
+                  <div className="space-y-2">
+                    <img src={content.aiImage1} alt="AI Generated 1" className="w-full h-20 object-cover rounded" />
+                    <div className="flex space-x-1">
+                      <Button 
+                        size="sm" 
+                        variant={content.selectedImageType === 'ai_1' ? 'default' : 'outline'}
+                        onClick={() => updateImageSelection('ai_1')}
+                        className="flex-1 text-xs"
+                      >
+                        Select
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleImageDelete('ai_1')}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedImageBackup?.aiImage1 ? (
+                      <Button size="sm" variant="outline" onClick={() => handleImageRecover('ai_1')}>
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Recover
+                      </Button>
+                    ) : (
+                      <div className="h-20 border-2 border-dashed border-gray-300 rounded flex items-center justify-center">
+                        <span className="text-xs text-gray-400">No AI Image 1</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* AI Image 2 */}
+              <div className="border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-semibold text-sm">AI Image 2</h4>
+                  {content?.selectedImageType === 'ai_2' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                </div>
+                
+                {content?.aiImage2 ? (
+                  <div className="space-y-2">
+                    <img src={content.aiImage2} alt="AI Generated 2" className="w-full h-20 object-cover rounded" />
+                    <div className="flex space-x-1">
+                      <Button 
+                        size="sm" 
+                        variant={content.selectedImageType === 'ai_2' ? 'default' : 'outline'}
+                        onClick={() => updateImageSelection('ai_2')}
+                        className="flex-1 text-xs"
+                      >
+                        Select
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => handleImageDelete('ai_2')}>
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedImageBackup?.aiImage2 ? (
+                      <Button size="sm" variant="outline" onClick={() => handleImageRecover('ai_2')}>
+                        <RotateCcw className="h-3 w-3 mr-1" />
+                        Recover
+                      </Button>
+                    ) : (
+                      <div className="h-20 border-2 border-dashed border-gray-300 rounded flex items-center justify-center">
+                        <span className="text-xs text-gray-400">No AI Image 2</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* AI Image Generation Section */}
+            {canGenerateAI && (
+              <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+                <Label htmlFor="image-prompt">AI Image Generation</Label>
+                <Textarea
+                  id="image-prompt"
+                  placeholder="Describe the image you want to generate or modifications you'd like to make..."
+                  value={imagePrompt}
+                  onChange={(e) => setImagePrompt(e.target.value)}
+                  rows={2}
+                />
+                
                 <div className="flex space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={handleImageDelete}
+                    onClick={() => generateAIImage(false)}
+                    disabled={isGeneratingImage}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Remove
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    {isGeneratingImage ? 'Generating...' : 'Generate New AI Image'}
                   </Button>
+                  
+                  {content?.image && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateAIImage(true)}
+                      disabled={isGeneratingImage}
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      {isGeneratingImage ? 'Generating...' : 'Enhance/Modify Current'}
+                    </Button>
+                  )}
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {deletedImageBackup && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleImageRecover}
-                  >
-                    <RotateCcw className="h-4 w-4 mr-2" />
-                    Recover Image
-                  </Button>
-                )}
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                  <ImageIcon className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-600 mb-2">No image added</p>
-                  <div className="space-y-2">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="image-upload"
-                    />
-                    <label htmlFor="image-upload">
-                      <Button variant="outline" size="sm" asChild>
-                        <span>
-                          <Upload className="h-4 w-4 mr-2" />
-                          Upload Image
-                        </span>
-                      </Button>
-                    </label>
-                  </div>
-                </div>
+                
+                <p className="text-xs text-gray-500">
+                  AI generations used: {content?.aiGenerationsCount || 0}/2
+                </p>
               </div>
             )}
 
-            {/* AI Image Generation Section */}
-            <div className="space-y-3 mt-4">
-              <Label htmlFor="image-prompt">AI Image Description (Optional)</Label>
-              <Textarea
-                id="image-prompt"
-                placeholder="Describe the image you want to generate or modifications you'd like to make..."
-                value={imagePrompt}
-                onChange={(e) => setImagePrompt(e.target.value)}
-                rows={2}
-              />
-              
-              <div className="flex space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => generateAIImage(false)}
-                  disabled={isGeneratingImage || hasGeneratedOnce}
-                >
-                  <Wand2 className="h-4 w-4 mr-2" />
-                  {isGeneratingImage ? 'Generating...' : 'Generate AI Image'}
-                </Button>
-                
-                {editingPost.generatedContent?.image && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => generateAIImage(true)}
-                    disabled={isGeneratingImage || hasGeneratedOnce}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    {isGeneratingImage ? 'Generating...' : 'Enhance with AI'}
-                  </Button>
-                )}
-              </div>
-              
-              {hasGeneratedOnce && (
-                <p className="text-xs text-gray-500">
-                  AI image generation is limited to once per post to preserve resources.
-                </p>
-              )}
-            </div>
+            {!canGenerateAI && (
+              <p className="text-sm text-gray-500 p-3 bg-gray-50 rounded-lg">
+                Maximum AI image generations reached (2/2). You can still upload images or select from existing ones.
+              </p>
+            )}
           </div>
 
           <div className="flex justify-end space-x-2">
@@ -414,8 +655,8 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             </Button>
           </div>
 
-          {/* Full Image View Modal - NO DELETE ICON */}
-          {showFullImage && editingPost.generatedContent?.image && (
+          {/* Full Image View Modal */}
+          {showFullImage && content?.image && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowFullImage(false)}>
               <div className="relative max-w-4xl max-h-[90vh] p-4">
                 <button
@@ -428,8 +669,8 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
                   <X className="h-4 w-4" />
                 </button>
                 <img 
-                  src={editingPost.generatedContent.image} 
-                  alt="Generated content" 
+                  src={content.image} 
+                  alt="Full size view" 
                   className="max-w-full max-h-full object-contain rounded-lg"
                   onClick={(e) => e.stopPropagation()}
                 />

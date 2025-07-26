@@ -431,6 +431,10 @@ export type Database = {
       }
       posts: {
         Row: {
+          ai_generated_image_1_url: string | null
+          ai_generated_image_2_url: string | null
+          ai_generations_count: number | null
+          ai_image_prompts: Json | null
           created_at: string | null
           generated_caption: string
           generated_hashtags: string[]
@@ -442,11 +446,17 @@ export type Database = {
           posted_at: string | null
           scheduled_date: string | null
           scheduled_time: string | null
+          selected_image_type: string | null
           status: string | null
           updated_at: string | null
+          uploaded_image_url: string | null
           user_id: string
         }
         Insert: {
+          ai_generated_image_1_url?: string | null
+          ai_generated_image_2_url?: string | null
+          ai_generations_count?: number | null
+          ai_image_prompts?: Json | null
           created_at?: string | null
           generated_caption: string
           generated_hashtags: string[]
@@ -458,11 +468,17 @@ export type Database = {
           posted_at?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
+          selected_image_type?: string | null
           status?: string | null
           updated_at?: string | null
+          uploaded_image_url?: string | null
           user_id: string
         }
         Update: {
+          ai_generated_image_1_url?: string | null
+          ai_generated_image_2_url?: string | null
+          ai_generations_count?: number | null
+          ai_image_prompts?: Json | null
           created_at?: string | null
           generated_caption?: string
           generated_hashtags?: string[]
@@ -474,8 +490,10 @@ export type Database = {
           posted_at?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
+          selected_image_type?: string | null
           status?: string | null
           updated_at?: string | null
+          uploaded_image_url?: string | null
           user_id?: string
         }
         Relationships: []
