@@ -650,74 +650,51 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             </div>
 
             {/* AI Image Generation Section */}
-            {canGenerateAI && (
-              <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
-                <Label htmlFor="image-prompt">AI Image Requirements (Optional)</Label>
-                <Textarea
-                  id="image-prompt"
-                  placeholder="Describe the image you want to generate or modifications you'd like to make..."
-                  value={imagePrompt}
-                  onChange={(e) => setImagePrompt(e.target.value)}
-                  rows={2}
-                />
+            <div className="space-y-3 p-4 border rounded-lg bg-gray-50">
+              <Label htmlFor="image-prompt">AI Image Requirements (Optional)</Label>
+              <Textarea
+                id="image-prompt"
+                placeholder="Describe the image you want to generate..."
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                rows={2}
+              />
+              
+              <div className="flex flex-wrap gap-2">
+                {/* Generate AI Image Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateAIImage(false)}
+                  disabled={isGeneratingImage || !canGenerateAI}
+                >
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  {isGeneratingImage ? 'Generating...' : 'Generate AI Image'}
+                </Button>
                 
-                <div className="flex flex-wrap gap-2">
-                  {/* Generate New AI Image Button */}
+                {/* AI + Original Image Button (only when uploaded image exists and can still generate) */}
+                {content?.uploadedImage && canGenerateAI && (
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => generateAIImage(false)}
+                    onClick={() => generateAIImage(true)}
                     disabled={isGeneratingImage}
                   >
-                    <Wand2 className="h-4 w-4 mr-2" />
-                    {isGeneratingImage ? 'Generating...' : 
-                     (content?.aiImage1 ? 'Generate New AI Image' : 'Generate AI Image')}
+                    <Layers className="h-4 w-4 mr-2" />
+                    {isGeneratingImage ? 'Generating...' : 'AI + Original Image'}
                   </Button>
-                  
-                   {/* Modify First AI Image Button */}
-                   {content?.aiImage1 && (
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={modifyAIImage}
-                       disabled={isGeneratingImage || !imagePrompt.trim()}
-                       title={!imagePrompt.trim() ? "Enter requirements to modify the first AI image" : ""}
-                     >
-                       <Edit className="h-4 w-4 mr-2" />
-                       {isGeneratingImage ? 'Modifying...' : 'Modify AI Image 1'}
-                     </Button>
-                   )}
-                  
-                  {/* AI + Original Image Button (only when uploaded image exists and no AI images yet, and can still generate) */}
-                  {content?.uploadedImage && !content?.aiImage1 && canGenerateAI && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => generateAIImage(true)}
-                      disabled={isGeneratingImage}
-                    >
-                      <Layers className="h-4 w-4 mr-2" />
-                      {isGeneratingImage ? 'Generating...' : 'AI + Original Image'}
-                    </Button>
-                  )}
-                </div>
-                
-                <p className="text-xs text-gray-500">
-                  AI generations used: {content?.aiGenerationsCount || 0}/2
-                  {content?.aiImage1 && imagePrompt.trim() && (
-                    <span className="block mt-1 text-blue-600">
-                      Tip: "Modify AI Image 1" will edit your first AI image based on your requirements above.
-                    </span>
-                  )}
-                </p>
+                )}
               </div>
-            )}
-
-            {!canGenerateAI && (
-              <p className="text-sm text-gray-500 p-3 bg-gray-50 rounded-lg">
-                Maximum AI image generations reached (2/2). You can still upload images or select from existing ones.
+              
+              <p className="text-xs text-gray-500">
+                AI generations used: {content?.aiGenerationsCount || 0}/2
+                {!canGenerateAI && (
+                  <span className="block mt-1 text-red-600">
+                    Maximum AI image generations reached. You can still upload new images.
+                  </span>
+                )}
               </p>
-            )}
+            </div>
           </div>
 
           <div className="flex justify-end space-x-2">
