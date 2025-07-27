@@ -54,11 +54,28 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
     aiImage1?: string;
     aiImage2?: string;
   } | null>(null);
+  const [originalImageState, setOriginalImageState] = useState<{
+    uploadedImage?: string;
+    aiImage1?: string;
+    aiImage2?: string;
+    selectedImageType?: 'none' | 'uploaded' | 'ai_1' | 'ai_2';
+    aiGenerationsCount?: number;
+  } | null>(null);
 
   // Initialize image management state from existing post data
   useEffect(() => {
-    if (editingPost?.generatedContent) {
+    if (editingPost?.generatedContent && isOpen) {
       const content = editingPost.generatedContent;
+      
+      // Store original state when dialog opens
+      setOriginalImageState({
+        uploadedImage: content.uploadedImage,
+        aiImage1: content.aiImage1,
+        aiImage2: content.aiImage2,
+        selectedImageType: content.selectedImageType,
+        aiGenerationsCount: content.aiGenerationsCount
+      });
+      
       // Initialize the new structure from existing data if needed
       if (!content.selectedImageType && content.image) {
         onPostChange({
@@ -73,7 +90,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         });
       }
     }
-  }, [editingPost?.id]);
+  }, [editingPost?.id, isOpen]);
 
   const handleSave = async () => {
     if (!editingPost?.id) return;
@@ -146,7 +163,13 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
     if (!file) return;
 
     try {
-      const fileName = `${Date.now()}_${file.name}`;
+      // Include user ID in the file path for proper access control
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      if (!userId) {
+        throw new Error('User not authenticated');
+      }
+      
+      const fileName = `${userId}/${Date.now()}_${file.name}`;
       const { data, error } = await supabase.storage
         .from('media')
         .upload(fileName, file);
@@ -698,7 +721,27 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={onClose}>
+            <Button variant="outline" onClick={() => {
+              // Restore original image state on cancel
+              if (originalImageState && editingPost) {
+                onPostChange({
+                  ...editingPost,
+                  generatedContent: {
+                    ...editingPost.generatedContent!,
+                    uploadedImage: originalImageState.uploadedImage,
+                    aiImage1: originalImageState.aiImage1,
+                    aiImage2: originalImageState.aiImage2,
+                    selectedImageType: originalImageState.selectedImageType || 'none',
+                    aiGenerationsCount: originalImageState.aiGenerationsCount || 0,
+                    image: originalImageState.selectedImageType === 'uploaded' ? originalImageState.uploadedImage : 
+                           originalImageState.selectedImageType === 'ai_1' ? originalImageState.aiImage1 :
+                           originalImageState.selectedImageType === 'ai_2' ? originalImageState.aiImage2 : ''
+                  }
+                });
+              }
+              setSelectedImageBackup(null);
+              onClose();
+            }}>
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
