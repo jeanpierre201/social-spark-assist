@@ -688,8 +688,8 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
                      </Button>
                    )}
                   
-                  {/* AI + Original Image Button (only when uploaded image exists and no AI images yet) */}
-                  {content?.uploadedImage && !content?.aiImage1 && (
+                  {/* AI + Original Image Button (only when uploaded image exists and no AI images yet, and can still generate) */}
+                  {content?.uploadedImage && !content?.aiImage1 && canGenerateAI && (
                     <Button
                       variant="outline"
                       size="sm"
