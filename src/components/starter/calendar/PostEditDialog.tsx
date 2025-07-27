@@ -105,6 +105,23 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
     
     try {
       const content = editingPost.generatedContent;
+      
+      // Determine the media_url based on selected image type
+      let mediaUrl = null;
+      switch (content?.selectedImageType) {
+        case 'uploaded':
+          mediaUrl = content.uploadedImage;
+          break;
+        case 'ai_1':
+          mediaUrl = content.aiImage1;
+          break;
+        case 'ai_2':
+          mediaUrl = content.aiImage2;
+          break;
+        default:
+          mediaUrl = null;
+      }
+
       await updatePostMutation.mutateAsync({
         id: editingPost.id,
         industry: editingPost.industry,
@@ -168,7 +185,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file || !editingPost?.id) return;
 
     try {
       // Include user ID in the file path for proper access control
@@ -188,6 +205,16 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         .from('media')
         .getPublicUrl(fileName);
 
+      // Update uploaded_image_url and selected_image_type in the database immediately
+      await updatePostMutation.mutateAsync({
+        id: editingPost.id,
+        content: editingPost.generatedContent?.caption || '',
+        hashtags: editingPost.generatedContent?.hashtags || [],
+        uploaded_image_url: publicUrl,
+        selected_image_type: 'uploaded'
+      });
+
+      // Update the local state
       const content = editingPost?.generatedContent;
       onPostChange({
         ...editingPost!,
@@ -735,12 +762,8 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
 
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => {
-              console.log('Cancel clicked. Original state:', originalImageState);
-              console.log('Current content:', editingPost?.generatedContent);
-              
-              // Restore original image state on cancel
+              // Restore original image state on cancel without saving to DB
               if (originalImageState && editingPost) {
-                console.log('Restoring original state...');
                 onPostChange({
                   ...editingPost,
                   generatedContent: {
