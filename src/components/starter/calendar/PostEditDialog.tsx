@@ -67,6 +67,14 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
     if (editingPost?.generatedContent && isOpen) {
       const content = editingPost.generatedContent;
       
+      console.log('Storing original image state:', {
+        uploadedImage: content.uploadedImage,
+        aiImage1: content.aiImage1,
+        aiImage2: content.aiImage2,
+        selectedImageType: content.selectedImageType,
+        aiGenerationsCount: content.aiGenerationsCount
+      });
+      
       // Store original state when dialog opens
       setOriginalImageState({
         uploadedImage: content.uploadedImage,
@@ -191,6 +199,9 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         }
       });
 
+      // Reset the input value to allow uploading the same file again
+      event.target.value = '';
+
       toast({
         title: "Success",
         description: "Image uploaded successfully!",
@@ -202,6 +213,8 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         description: "Failed to upload image",
         variant: "destructive",
       });
+      // Reset the input value even on error
+      event.target.value = '';
     }
   };
 
@@ -722,8 +735,12 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
 
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => {
+              console.log('Cancel clicked. Original state:', originalImageState);
+              console.log('Current content:', editingPost?.generatedContent);
+              
               // Restore original image state on cancel
               if (originalImageState && editingPost) {
+                console.log('Restoring original state...');
                 onPostChange({
                   ...editingPost,
                   generatedContent: {
