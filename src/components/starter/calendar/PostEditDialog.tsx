@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -464,11 +464,14 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
   const canGenerateAI = (content?.aiGenerationsCount || 0) < 2;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit Post</DialogTitle>
-        </DialogHeader>
+        <Dialog open={isOpen} onOpenChange={onClose}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby="edit-post-description">
+            <DialogHeader>
+              <DialogTitle>Edit Post</DialogTitle>
+              <DialogDescription id="edit-post-description">
+                Edit your social media post content and schedule
+              </DialogDescription>
+            </DialogHeader>
         
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
