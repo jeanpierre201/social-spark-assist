@@ -67,7 +67,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
     if (editingPost?.generatedContent && isOpen) {
       const content = editingPost.generatedContent;
       
-      console.log('Storing original image state:', {
+      console.log('Dialog opened - storing original image state:', {
         uploadedImage: content.uploadedImage,
         aiImage1: content.aiImage1,
         aiImage2: content.aiImage2,
@@ -187,6 +187,8 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
     const file = event.target.files?.[0];
     if (!file || !editingPost?.id) return;
 
+    console.log('Starting image upload...', { file: file.name, postId: editingPost.id });
+
     try {
       // Include user ID in the file path for proper access control
       const userId = (await supabase.auth.getUser()).data.user?.id;
@@ -194,37 +196,53 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         throw new Error('User not authenticated');
       }
       
+      console.log('User authenticated:', userId);
+      
       const fileName = `${userId}/${Date.now()}_${file.name}`;
       const { data, error } = await supabase.storage
         .from('media')
         .upload(fileName, file);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Storage upload error:', error);
+        throw error;
+      }
+
+      console.log('Storage upload successful:', data);
 
       const { data: { publicUrl } } = supabase.storage
         .from('media')
         .getPublicUrl(fileName);
 
-      // Update uploaded_image_url and selected_image_type in the database immediately
+      console.log('Public URL generated:', publicUrl);
+
+      // Update the local state first
+      const content = editingPost?.generatedContent;
+      const newContent = {
+        ...content!,
+        uploadedImage: publicUrl,
+        selectedImageType: 'uploaded' as const,
+        image: publicUrl
+      };
+
+      console.log('Updating local state with:', newContent);
+
+      onPostChange({
+        ...editingPost!,
+        generatedContent: newContent
+      });
+
+      // Then update the database
+      console.log('Updating database...');
       await updatePostMutation.mutateAsync({
         id: editingPost.id,
-        content: editingPost.generatedContent?.caption || '',
-        hashtags: editingPost.generatedContent?.hashtags || [],
+        content: newContent.caption || '',
+        hashtags: newContent.hashtags || [],
         uploaded_image_url: publicUrl,
         selected_image_type: 'uploaded'
       });
 
-      // Update the local state
-      const content = editingPost?.generatedContent;
-      onPostChange({
-        ...editingPost!,
-        generatedContent: {
-          ...content!,
-          uploadedImage: publicUrl,
-          selectedImageType: 'uploaded',
-          image: publicUrl
-        }
-      });
+      console.log('Database update successful');
 
       // Reset the input value to allow uploading the same file again
       event.target.value = '';
@@ -237,7 +255,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
       console.error('Error uploading image:', error);
       toast({
         title: "Error",
-        description: "Failed to upload image",
+        description: `Failed to upload image: ${error.message}`,
         variant: "destructive",
       });
       // Reset the input value even on error
@@ -762,21 +780,29 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
 
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => {
+              console.log('Cancel clicked - restoring original state');
+              console.log('Original state:', originalImageState);
+              console.log('Current content before restore:', editingPost?.generatedContent);
+              
               // Restore original image state on cancel without saving to DB
               if (originalImageState && editingPost) {
+                const restoredContent = {
+                  ...editingPost.generatedContent!,
+                  uploadedImage: originalImageState.uploadedImage,
+                  aiImage1: originalImageState.aiImage1,
+                  aiImage2: originalImageState.aiImage2,
+                  selectedImageType: originalImageState.selectedImageType || 'none',
+                  aiGenerationsCount: originalImageState.aiGenerationsCount || 0,
+                  image: originalImageState.selectedImageType === 'uploaded' ? originalImageState.uploadedImage : 
+                         originalImageState.selectedImageType === 'ai_1' ? originalImageState.aiImage1 :
+                         originalImageState.selectedImageType === 'ai_2' ? originalImageState.aiImage2 : ''
+                };
+                
+                console.log('Restoring content to:', restoredContent);
+                
                 onPostChange({
                   ...editingPost,
-                  generatedContent: {
-                    ...editingPost.generatedContent!,
-                    uploadedImage: originalImageState.uploadedImage,
-                    aiImage1: originalImageState.aiImage1,
-                    aiImage2: originalImageState.aiImage2,
-                    selectedImageType: originalImageState.selectedImageType || 'none',
-                    aiGenerationsCount: originalImageState.aiGenerationsCount || 0,
-                    image: originalImageState.selectedImageType === 'uploaded' ? originalImageState.uploadedImage : 
-                           originalImageState.selectedImageType === 'ai_1' ? originalImageState.aiImage1 :
-                           originalImageState.selectedImageType === 'ai_2' ? originalImageState.aiImage2 : ''
-                  }
+                  generatedContent: restoredContent
                 });
               }
               setSelectedImageBackup(null);
@@ -791,7 +817,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             </Button>
           </div>
 
-          {/* Full Image View Modal */}
+          {/* Full Image View Modal - Single Close Button */}
           {showFullImage && content?.image && (
             <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowFullImage(false)}>
               <div className="relative max-w-4xl max-h-[90vh] p-4">
@@ -800,7 +826,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
                     e.stopPropagation();
                     setShowFullImage(false);
                   }}
-                  className="absolute -top-2 -right-2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100"
+                  className="absolute -top-2 -right-2 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 z-10"
                 >
                   <X className="h-4 w-4" />
                 </button>
