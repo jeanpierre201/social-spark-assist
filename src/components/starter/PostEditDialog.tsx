@@ -319,7 +319,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       setFormData(prev => ({ 
         ...prev, 
         media_url: imageUrl,
-        selected_image_type: imageType
+        selected_image_type: imageType,
+        // Also update the specific field to maintain consistency
+        ...(imageType === 'uploaded' && { uploaded_image_url: imageUrl }),
+        ...(imageType === 'ai1' && { ai_generated_image_1_url: imageUrl }),
+        ...(imageType === 'ai2' && { ai_generated_image_2_url: imageUrl })
       }));
     }
   };
@@ -569,7 +573,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => document.getElementById('image-upload')?.click()}
+                        onClick={() => document.getElementById('edit-dialog-file-input')?.click()}
                         disabled={imageUploading}
                       >
                         {imageUploading ? (
@@ -656,7 +660,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => document.getElementById('image-upload')?.click()}
+                      onClick={() => document.getElementById('edit-dialog-file-input')?.click()}
                       disabled={imageUploading}
                     >
                       {imageUploading ? (
@@ -690,7 +694,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => document.getElementById('image-upload')?.click()}
+                    onClick={() => document.getElementById('edit-dialog-file-input')?.click()}
                     disabled={imageUploading}
                   >
                     {imageUploading ? (
