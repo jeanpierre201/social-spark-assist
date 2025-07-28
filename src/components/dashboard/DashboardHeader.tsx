@@ -67,14 +67,14 @@ const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => 
         </div>
         <div className="flex items-center gap-3">
           <Avatar 
-            className="h-8 w-8 cursor-pointer hover:opacity-80 transition-opacity"
+            className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate('/profile')}
           >
             <AvatarImage 
               src={profileData?.avatar_url || ''} 
               alt="Profile picture" 
             />
-            <AvatarFallback className="text-sm">
+            <AvatarFallback className="bg-blue-600 text-white font-bold text-lg border-2 border-blue-500">
               {profileData?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
             </AvatarFallback>
           </Avatar>
