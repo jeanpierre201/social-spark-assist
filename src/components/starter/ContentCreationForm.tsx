@@ -681,18 +681,24 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           <h4 className="text-sm font-medium mb-3">Media (Optional)</h4>
           <div className="space-y-3">
             <div>
-            <Label htmlFor="main-form-file-input" className="text-sm">Upload Image</Label>
+              <Label htmlFor="main-form-file-input" className="text-sm">Upload Image</Label>
               <input
                 id="main-form-file-input"
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
+                disabled={generateWithImages}
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               />
+              {uploadedImage && !generateWithImages && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {uploadedImage.name}
+                </p>
+              )}
             </div>
             
             {uploadedImageUrl && (
-              <div className="relative">
+              <div className={`relative ${generateWithImages ? 'opacity-50' : ''}`}>
                 <img 
                   src={uploadedImageUrl} 
                   alt="Uploaded preview" 
@@ -705,11 +711,17 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                     setUploadedImage(null);
                     setUploadedImageUrl('');
                   }}
+                  disabled={generateWithImages}
                   className="absolute top-1 right-1 bg-white/80 hover:bg-white"
                 >
                   ×
                 </Button>
               </div>
+            )}
+            {generateWithImages && uploadedImageUrl && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Upload disabled - only AI images will be used when AI generation is enabled
+              </p>
             )}
 
             <div className="space-y-3">
@@ -720,13 +732,13 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                   onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
                 />
                 <Label htmlFor="generate-images" className="text-sm">
-                  Generate AI images {uploadedImage && '(will incorporate uploaded image)'}
+                  Generate AI image
                 </Label>
               </div>
               
               {generateWithImages && (
                 <div className="ml-6 space-y-2">
-                  <Label htmlFor="image-prompt" className="text-sm">Custom Image Description (Optional)</Label>
+                  <Label htmlFor="image-prompt" className="text-sm">Image Description (Optional)</Label>
                   <Textarea
                     id="image-prompt"
                     placeholder="Describe how you want your image to look... e.g., 'Modern office setting with laptop, professional lighting, blue color scheme'"
@@ -737,10 +749,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                     className="text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {uploadedImage 
-                      ? "Your uploaded private image (logo, icon, etc.) will be incorporated into the AI-generated image for enhanced brand consistency."
-                      : "💡 Pro tip: Upload a private image above (logo, brand elements, or personal photo) to enhance your AI-generated content. The AI will incorporate your image into the generated visual for better brand alignment."
-                    }
+                    💡 DALL-E 3 creates images from text descriptions only. Describe visual elements like colors, style, objects, and composition for best results.
                   </p>
                 </div>
               )}
