@@ -77,9 +77,9 @@ serve(async (req) => {
 
     console.log('Sanitized inputs:', { prompt, size, quality, style });
 
-    console.log('Making OpenAI DALL-E 3 API call...');
+    console.log('Making OpenAI DALL-E API call...');
 
-    // Call OpenAI DALL-E 3 API
+    // Call OpenAI DALL-E API
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -92,7 +92,8 @@ serve(async (req) => {
         n: 1,
         size: size,
         quality: quality,
-        style: style
+        style: style,
+        response_format: 'b64_json'
       }),
     });
 
@@ -106,13 +107,8 @@ serve(async (req) => {
     console.log('OpenAI response received');
     
     const imageData = data.data[0];
-    const imageUrl = imageData.url;
+    const base64Image = imageData.b64_json;
     const revisedPrompt = imageData.revised_prompt;
-
-    // Download the image and convert to base64
-    const imageResponse = await fetch(imageUrl);
-    const imageBuffer = await imageResponse.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
 
     console.log('Image generated successfully');
 
