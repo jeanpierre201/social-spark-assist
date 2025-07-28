@@ -131,7 +131,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
             imagePrompt = customImagePrompt.trim();
             
             // Only add context if the custom prompt doesn't seem complete
-            if (!customImagePrompt.toLowerCase().includes(industry.toLowerCase())) {
+            if (!customImagePrompt.toLowerCase().includes(industry.toLowerCase()) && industry.trim()) {
               imagePrompt += `. Context: ${industry.trim()} industry, Goal: ${goal.trim()}`;
             }
           } else {
@@ -142,6 +142,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
             }
           }
           
+          // Only add uploaded image instruction if there's actually an uploaded image
           if (selectedImage && imageUrl) {
             imagePrompt += ". Please incorporate elements from the existing uploaded image (like logos, branding, etc.) into the new AI-generated image";
           }
