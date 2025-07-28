@@ -80,13 +80,6 @@ const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => 
           </Avatar>
           
           <Button
-            onClick={() => navigate('/profile')}
-            variant="outline"
-            className="flex items-center space-x-2"
-          >
-            <span>Profile</span>
-          </Button>
-          <Button
             onClick={() => navigate('/')}
             variant="outline"
             className="flex items-center space-x-2"
