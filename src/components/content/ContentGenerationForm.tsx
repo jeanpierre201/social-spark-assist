@@ -124,12 +124,15 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       let generatedImageUrl = imageUrl; // Use uploaded image if available
       if (generateWithImages) {
         try {
-          let imagePrompt = customImagePrompt.trim() || `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
-          if (!customImagePrompt.trim() && nicheInfo.trim()) {
+          let imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+          if (nicheInfo.trim()) {
             imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
           }
-          if (selectedImage) {
-            imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
+          if (customImagePrompt.trim()) {
+            imagePrompt += `. User requirements: ${customImagePrompt.trim()}`;
+          }
+          if (selectedImage && imageUrl) {
+            imagePrompt += ". Please incorporate elements from the existing uploaded image (like logos, branding, etc.) into the new AI-generated image";
           }
 
           const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {

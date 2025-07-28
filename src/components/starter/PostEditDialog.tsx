@@ -54,7 +54,6 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const [generatingWithUpload, setGeneratingWithUpload] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const [aiImagePrompt, setAiImagePrompt] = useState('');
-  const [modifyAI1Mode, setModifyAI1Mode] = useState(false);
   const [originalPost, setOriginalPost] = useState<Post | null>(null);
   const [availableImages, setAvailableImages] = useState({
     uploaded: '',
@@ -285,35 +284,13 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     const hasAI1 = availableImages.ai1 || formData.ai_generated_image_1_url;
     const hasAI2 = availableImages.ai2 || formData.ai_generated_image_2_url;
     
-    // If in modify mode, we use AI1 as base and store as AI2
-    if (modifyAI1Mode) {
-      if (!hasAI1) {
-        toast({
-          title: "No AI image to modify",
-          description: "Please generate an AI image first before modifying",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      if (!aiImagePrompt.trim()) {
-        toast({
-          title: "Modification requirements needed",
-          description: "Please describe what you want to modify about the AI image",
-          variant: "destructive",
-        });
-        return;
-      }
-    } else {
-      // Normal generation mode
-      if (hasAI1 && hasAI2) {
-        toast({
-          title: "Maximum AI images reached",
-          description: "You can generate up to 2 AI images per post",
-          variant: "destructive",
-        });
-        return;
-      }
+    if (hasAI1 && hasAI2) {
+      toast({
+        title: "Maximum AI images reached",
+        description: "You can generate up to 2 AI images per post",
+        variant: "destructive",
+      });
+      return;
     }
 
     if (includeExistingImage) {
@@ -406,16 +383,13 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         });
       } else {
         toast({
-          description: modifyAI1Mode ? "AI image modified and saved successfully!" : "AI image generated and saved successfully!",
+          description: "AI image generated and saved successfully!",
         });
         onPostUpdated(); // Refresh the parent component
       }
 
-      // Reset modify mode if it was used
-      if (modifyAI1Mode) {
-        setModifyAI1Mode(false);
-        setAiImagePrompt('');
-      }
+      // Clear the AI image prompt after successful generation
+      setAiImagePrompt('');
     } catch (error: any) {
       console.error("Error generating image:", error);
       toast({
