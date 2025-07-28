@@ -319,9 +319,6 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         }
       }
 
-      if (includeExistingImage && availableImages.uploaded) {
-        prompt += '. Please incorporate elements from the existing uploaded image (like logos, branding, etc.) into the new AI-generated image.';
-      }
 
       // Use the regular generate-image function for new images
       const response = await supabase.functions.invoke('generate-image', {
@@ -720,42 +717,25 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                         {availableImages.uploaded ? 'Replace Upload' : 'Upload Image'}
                       </Button>
                       
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleGenerateAIImage(false)}
-                        disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
-                        className="flex-1"
-                      >
-                      {generatingImage ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 mr-2" />
-                      )}
-                      {availableImages.ai1 && availableImages.ai2 
-                        ? 'Max AI Images' 
-                        : availableImages.ai1 
-                          ? 'Generate new AI Image' 
-                          : 'Generate AI Image'}
-                      </Button>
-                      
-                      {availableImages.uploaded && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleGenerateAIImage(true)}
-                          disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
-                          className="flex-1"
-                        >
-                          {generatingWithUpload ? (
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          ) : (
-                            <Palette className="h-4 w-4 mr-2" />
-                          )}
-                          {availableImages.ai1 && availableImages.ai2 ? 'Max AI Images' : 'AI + Upload'}
-                        </Button>
-                      )}
-                    </div>
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => handleGenerateAIImage(false)}
+                         disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
+                         className="flex-1"
+                       >
+                       {generatingImage ? (
+                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                       ) : (
+                         <Sparkles className="h-4 w-4 mr-2" />
+                       )}
+                       {availableImages.ai1 && availableImages.ai2 
+                         ? 'Max AI Images' 
+                         : availableImages.ai1 
+                           ? 'Generate new AI Image' 
+                           : 'Generate AI Image'}
+                       </Button>
+                     </div>
                   </div>
                 )}
               </div>
@@ -827,21 +807,6 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                            ? 'Generate new AI Image' 
                            : 'Generate AI'}
                      </Button>
-                     {availableImages.uploaded && (
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         onClick={() => handleGenerateAIImage(true)}
-                         disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
-                       >
-                         {generatingWithUpload ? (
-                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                         ) : (
-                           <Palette className="h-4 w-4 mr-2" />
-                         )}
-                         {availableImages.ai1 && availableImages.ai2 ? 'Max AI Images' : 'AI + Upload'}
-                       </Button>
-                     )}
                   </div>
                 </div>
               </div>
@@ -878,21 +843,6 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                       ? 'Generate new AI Image' 
                       : 'Generate AI Image'}
                   </Button>
-                  {availableImages.uploaded && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleGenerateAIImage(true)}
-                      disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
-                    >
-                      {generatingWithUpload ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Palette className="h-4 w-4 mr-2" />
-                      )}
-                      {availableImages.ai1 && availableImages.ai2 ? 'Max AI Images' : 'AI + Upload'}
-                    </Button>
-                  )}
                 </div>
               </div>
             ) : null}
@@ -911,9 +861,9 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   rows={2}
                   className="text-sm"
                 />
-                <p className="text-xs text-muted-foreground mt-1">
-                  If you have an uploaded image, you can use the "AI + Upload" button to incorporate elements like logos or branding into the AI-generated image.
-                </p>
+                 <p className="text-xs text-muted-foreground mt-1">
+                   💡 Pro tip: Describe any specific visual elements (colors, style, branding) in your requirements for better AI image results.
+                 </p>
               </div>
             )}
 

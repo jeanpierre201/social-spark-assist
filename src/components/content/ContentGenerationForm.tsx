@@ -142,10 +142,6 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
             }
           }
           
-          // Only add uploaded image instruction if there's actually an uploaded image
-          if (selectedImage && imageUrl) {
-            imagePrompt += ". Please incorporate elements from the existing uploaded image (like logos, branding, etc.) into the new AI-generated image";
-          }
 
           const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {
             body: {
@@ -402,12 +398,22 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
               </div>
               <div>
                 <Label>Image Upload</Label>
-                <Input type="file" accept="image/*" onChange={handleImageUpload} />
+                <Input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleImageUpload}
+                  disabled={generateWithImages}
+                />
                 {isImageUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
                 {imageUrl && (
                   <div className="mt-2">
                     <img src={imageUrl} alt="Uploaded" className="max-h-32 rounded-md" />
                   </div>
+                )}
+                {generateWithImages && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Upload disabled - only AI images will be used when AI generation is enabled
+                  </p>
                 )}
               </div>
             </div>
@@ -437,10 +443,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                     className="text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    {selectedImage 
-                      ? "Your uploaded private image (logo, icon, etc.) will be incorporated into the AI-generated image for enhanced brand consistency."
-                      : "💡 Pro tip: Upload a private image above (logo, brand elements, or personal photo) to enhance your AI-generated content. The AI will incorporate your image into the generated visual for better brand alignment."
-                    }
+                    💡 Pro tip: Describe any specific visual elements (colors, style, branding) in your custom description for better AI image results.
                   </p>
                 </div>
               )}
