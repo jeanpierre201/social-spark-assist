@@ -72,6 +72,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
     // Create a preview URL
     const previewUrl = URL.createObjectURL(file);
     setUploadedImageUrl(previewUrl);
+
+    // Clear the file input to prevent conflicts
+    event.target.value = '';
   };
 
   const uploadImageToStorage = async (file: File): Promise<string | null> => {
@@ -302,7 +305,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setPosts(prev => [...prev, newPost]);
       setMonthlyPosts(prev => prev + 1);
 
-      // Clear form
+      // Clear form and reset all state
       setIndustry('');
       setGoal('');
       setNicheInfo('');
@@ -313,6 +316,15 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setIncludeEmojis(true);
       setSelectedSocialPlatforms([]);
       setCustomImagePrompt('');
+      setGenerateWithImages(false);
+
+      // Clear any file inputs to prevent cross-form contamination
+      const fileInputs = document.querySelectorAll('input[type="file"]');
+      fileInputs.forEach((input: any) => {
+        if (input.id !== 'edit-dialog-file-input') { // Don't clear edit dialog input
+          input.value = '';
+        }
+      });
 
       toast({
         title: "Content Generated!",

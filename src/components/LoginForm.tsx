@@ -21,10 +21,26 @@ const LoginForm = () => {
     setLoading(true);
     setError('');
 
+    // Basic validation
+    if (!email.trim() || !password.trim()) {
+      setError('Please enter both email and password');
+      setLoading(false);
+      return;
+    }
+
     const { error: loginError } = await login(email, password);
     
     if (loginError) {
-      setError(loginError);
+      // Map common Supabase errors to user-friendly messages
+      if (loginError.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please check your credentials and try again.');
+      } else if (loginError.includes('Email not confirmed')) {
+        setError('Please check your email and click the confirmation link before signing in.');
+      } else if (loginError.includes('Too many requests')) {
+        setError('Too many login attempts. Please wait a moment and try again.');
+      } else {
+        setError(loginError);
+      }
     } else {
       navigate('/dashboard');
     }

@@ -707,7 +707,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
             {!isReadOnly && (
               <input
-                id="image-upload"
+                id="edit-dialog-file-input"
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
