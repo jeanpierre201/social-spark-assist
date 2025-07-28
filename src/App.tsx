@@ -12,6 +12,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import Index from "./pages/Index";
 import DashboardPage from "./pages/DashboardPage";
+import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
@@ -70,6 +71,11 @@ const App = () => (
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <ProfilePage />
                     </ProtectedRoute>
                   } />
                   <Route path="/content-generator" element={

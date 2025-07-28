@@ -148,37 +148,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header without Admin Dashboard Link */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                Dashboard
-              </h1>
-              <p className="text-muted-foreground flex items-center gap-2">
-                Welcome back, {user?.email}
-                {isProUser && (
-                  <span className="bg-purple-100 text-purple-800 rounded-full px-2 py-1 text-xs font-medium">
-                    Pro Plan (100 posts/month)
-                  </span>
-                )}
-                {isStarterUser && (
-                  <span className="bg-blue-100 text-blue-800 rounded-full px-2 py-1 text-xs font-medium">
-                    Starter Plan (10 posts/month)
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/')}
-                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Home
-              </button>
-            </div>
-          </div>
-        </div>
+        {/* Header */}
+        <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} />
 
         {/* Navigation Tabs for Pro Users Only */}
         <NavigationTabs 

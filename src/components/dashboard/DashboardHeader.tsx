@@ -12,7 +12,7 @@ interface DashboardHeaderProps {
 
 const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <div className="mb-8">
@@ -39,11 +39,28 @@ const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => 
         </div>
         <div className="flex items-center gap-3">
           <Button
+            onClick={() => navigate('/profile')}
+            variant="outline"
+            className="flex items-center space-x-2"
+          >
+            <span>Profile</span>
+          </Button>
+          <Button
             onClick={() => navigate('/')}
             variant="outline"
             className="flex items-center space-x-2"
           >
             <span>Home</span>
+          </Button>
+          <Button
+            onClick={async () => {
+              await logout();
+              navigate('/');
+            }}
+            variant="destructive"
+            className="flex items-center space-x-2"
+          >
+            <span>Logout</span>
           </Button>
         </div>
       </div>
