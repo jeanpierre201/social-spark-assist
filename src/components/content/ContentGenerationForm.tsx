@@ -227,7 +227,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         niche_info: nicheInfo.trim() || null,
         scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
         scheduled_time: scheduledTime || null,
-        media_url: imageUrl,
+        media_url: generatedImageUrl,
         status: postStatus,
       };
 
