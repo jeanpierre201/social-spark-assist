@@ -300,14 +300,23 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     }
 
     try {
-      let prompt = `Create a professional image for: ${post.goal}. Industry: ${post.industry}. Content: ${formData.caption}. Hashtags: ${formData.hashtags}`;
+      let prompt = '';
       
-      if (post.niche_info) {
-        prompt += `. Additional context: ${post.niche_info}`;
-      }
-      
+      // If user provided a custom prompt, use it as the primary prompt
       if (aiImagePrompt.trim()) {
-        prompt += `. User requirements: ${aiImagePrompt}`;
+        prompt = aiImagePrompt.trim();
+        
+        // Only add context if the custom prompt doesn't seem complete
+        if (!aiImagePrompt.toLowerCase().includes(post.industry.toLowerCase())) {
+          prompt += `. Context: ${post.industry} industry, Goal: ${post.goal}`;
+        }
+      } else {
+        // Default prompt if no custom prompt provided
+        prompt = `Create a professional image for: ${post.goal}. Industry: ${post.industry}. Content: ${formData.caption}. Hashtags: ${formData.hashtags}`;
+        
+        if (post.niche_info) {
+          prompt += `. Additional context: ${post.niche_info}`;
+        }
       }
 
       if (includeExistingImage && availableImages.uploaded) {

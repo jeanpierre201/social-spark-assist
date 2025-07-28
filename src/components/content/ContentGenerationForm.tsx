@@ -124,13 +124,24 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       let generatedImageUrl = imageUrl; // Use uploaded image if available
       if (generateWithImages) {
         try {
-          let imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
-          if (nicheInfo.trim()) {
-            imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
-          }
+          let imagePrompt = '';
+          
+          // If user provided a custom prompt, use it as the primary prompt
           if (customImagePrompt.trim()) {
-            imagePrompt += `. User requirements: ${customImagePrompt.trim()}`;
+            imagePrompt = customImagePrompt.trim();
+            
+            // Only add context if the custom prompt doesn't seem complete
+            if (!customImagePrompt.toLowerCase().includes(industry.toLowerCase())) {
+              imagePrompt += `. Context: ${industry.trim()} industry, Goal: ${goal.trim()}`;
+            }
+          } else {
+            // Default prompt if no custom prompt provided
+            imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+            if (nicheInfo.trim()) {
+              imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
+            }
           }
+          
           if (selectedImage && imageUrl) {
             imagePrompt += ". Please incorporate elements from the existing uploaded image (like logos, branding, etc.) into the new AI-generated image";
           }

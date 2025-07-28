@@ -278,7 +278,20 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
 
     setIsGeneratingImage(true);
     try {
-      const prompt = imagePrompt || `Create a professional image for ${editingPost?.industry} industry. Goal: ${editingPost?.goal}. Caption: ${editingPost?.generatedContent?.caption}`;
+      let prompt = '';
+      
+      // If user provided a custom prompt, use it as the primary prompt  
+      if (imagePrompt.trim()) {
+        prompt = imagePrompt.trim();
+        
+        // Only add context if the custom prompt doesn't seem complete
+        if (editingPost?.industry && !imagePrompt.toLowerCase().includes(editingPost.industry.toLowerCase())) {
+          prompt += `. Context: ${editingPost.industry} industry, Goal: ${editingPost.goal}`;
+        }
+      } else {
+        // Default prompt if no custom prompt provided
+        prompt = `Create a professional image for ${editingPost?.industry} industry. Goal: ${editingPost?.goal}. Caption: ${editingPost?.generatedContent?.caption}`;
+      }
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
