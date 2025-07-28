@@ -77,7 +77,7 @@ serve(async (req) => {
 
     console.log('Sanitized inputs:', { prompt, size, quality, style });
 
-    console.log('Making OpenAI DALL-E API call...');
+    console.log('Making OpenAI DALL-E 3 API call...');
 
     // Call OpenAI DALL-E 3 API
     const response = await fetch('https://api.openai.com/v1/images/generations', {
