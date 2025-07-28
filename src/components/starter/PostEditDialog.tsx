@@ -336,7 +336,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         ...prev, 
         media_url: persistentUrl,
         [aiField]: persistentUrl,
-        selected_image_type: useAI1 ? 'ai1' : 'ai2'
+        selected_image_type: 'ai_generated'  // Use valid database value
       }));
       
       // Update available images with persistent URL
@@ -359,11 +359,22 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
   const handleSelectImage = (imageType: 'uploaded' | 'ai1' | 'ai2') => {
     const imageUrl = availableImages[imageType];
+    
+    // Map the internal image types to valid database values
+    let validImageType = 'none';
+    if (imageType === 'uploaded' && imageUrl) {
+      validImageType = 'uploaded';
+    } else if ((imageType === 'ai1' || imageType === 'ai2') && imageUrl) {
+      validImageType = 'ai_generated';
+    }
+
+    console.log('Selecting image:', { imageType, imageUrl, validImageType });
+
     if (imageUrl) {
       setFormData(prev => ({ 
         ...prev, 
         media_url: imageUrl,
-        selected_image_type: imageType,
+        selected_image_type: validImageType,
         // Also update the specific field to maintain consistency
         ...(imageType === 'uploaded' && { uploaded_image_url: imageUrl }),
         ...(imageType === 'ai1' && { ai_generated_image_1_url: imageUrl }),
