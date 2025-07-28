@@ -331,12 +331,13 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         throw new Error("Failed to upload AI image to storage");
       }
 
-      // Update form data with persistent URL
+      // Update form data with persistent URL and specific type
+      const specificType = useAI1 ? 'ai_generated_1' : 'ai_generated_2';
       setFormData(prev => ({ 
         ...prev, 
         media_url: persistentUrl,
         [aiField]: persistentUrl,
-        selected_image_type: 'ai_generated'  // Use valid database value
+        selected_image_type: specificType
       }));
       
       // Update available images with persistent URL
@@ -360,12 +361,14 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const handleSelectImage = (imageType: 'uploaded' | 'ai1' | 'ai2') => {
     const imageUrl = availableImages[imageType];
     
-    // Map to database values
+    // Map to specific database values for better analytics
     let validImageType = 'none';
     if (imageType === 'uploaded' && imageUrl) {
       validImageType = 'uploaded';
-    } else if ((imageType === 'ai1' || imageType === 'ai2') && imageUrl) {
-      validImageType = 'ai_generated';
+    } else if (imageType === 'ai1' && imageUrl) {
+      validImageType = 'ai_generated_1';
+    } else if (imageType === 'ai2' && imageUrl) {
+      validImageType = 'ai_generated_2';
     }
 
     console.log('Selecting image:', { imageType, imageUrl, validImageType });
@@ -375,8 +378,6 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         ...prev, 
         media_url: imageUrl,
         selected_image_type: validImageType,
-        // Store which specific AI image for UI consistency
-        internal_selected_type: imageType,
         // Also update the specific field to maintain consistency
         ...(imageType === 'uploaded' && { uploaded_image_url: imageUrl }),
         ...(imageType === 'ai1' && { ai_generated_image_1_url: imageUrl }),
@@ -385,10 +386,16 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     }
   };
 
-  // Helper function to determine current selection from URLs
+  // Helper function to determine current selection from URLs and database value
   const getCurrentImageType = (): 'uploaded' | 'ai1' | 'ai2' | 'none' => {
     if (!formData.media_url) return 'none';
     
+    // First try to match by stored type for accuracy
+    if (formData.selected_image_type === 'uploaded') return 'uploaded';
+    if (formData.selected_image_type === 'ai_generated_1') return 'ai1';
+    if (formData.selected_image_type === 'ai_generated_2') return 'ai2';
+    
+    // Fallback to URL matching for backward compatibility
     if (formData.media_url === availableImages.uploaded) return 'uploaded';
     if (formData.media_url === availableImages.ai1) return 'ai1';
     if (formData.media_url === availableImages.ai2) return 'ai2';
