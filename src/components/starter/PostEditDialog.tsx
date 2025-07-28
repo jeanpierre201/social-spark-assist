@@ -341,9 +341,23 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         prompt += '. Please incorporate elements from the existing uploaded image (like logos, branding, etc.) into the new AI-generated image.';
       }
 
-      const response = await supabase.functions.invoke('generate-image', {
-        body: { prompt }
-      });
+      let response;
+      if (modifyAI1Mode && availableImages.ai1) {
+        // Use the modify-image function for true image modification
+        response = await supabase.functions.invoke('modify-image', {
+          body: { 
+            prompt: aiImagePrompt.trim(),
+            imageUrl: availableImages.ai1,
+            size: '1024x1024',
+            quality: 'standard'
+          }
+        });
+      } else {
+        // Use the regular generate-image function for new images
+        response = await supabase.functions.invoke('generate-image', {
+          body: { prompt }
+        });
+      }
 
       if (response.error) throw response.error;
 
