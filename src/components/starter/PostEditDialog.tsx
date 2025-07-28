@@ -330,41 +330,24 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       }
       
       if (aiImagePrompt.trim()) {
-        if (modifyAI1Mode) {
-          prompt += `. Modify the existing AI image 1 based on these requirements: ${aiImagePrompt}`;
-        } else {
-          prompt += `. User requirements: ${aiImagePrompt}`;
-        }
+        prompt += `. User requirements: ${aiImagePrompt}`;
       }
 
       if (includeExistingImage && availableImages.uploaded) {
         prompt += '. Please incorporate elements from the existing uploaded image (like logos, branding, etc.) into the new AI-generated image.';
       }
 
-      let response;
-      if (modifyAI1Mode && availableImages.ai1) {
-        // Use the modify-image function for true image modification
-        response = await supabase.functions.invoke('modify-image', {
-          body: { 
-            prompt: aiImagePrompt.trim(),
-            imageUrl: availableImages.ai1,
-            size: '1024x1024',
-            quality: 'standard'
-          }
-        });
-      } else {
-        // Use the regular generate-image function for new images
-        response = await supabase.functions.invoke('generate-image', {
-          body: { prompt }
-        });
-      }
+      // Use the regular generate-image function for new images
+      const response = await supabase.functions.invoke('generate-image', {
+        body: { prompt }
+      });
 
       if (response.error) throw response.error;
 
       const { image } = response.data;
       
       // Determine which AI slot to use
-      const useAI1 = modifyAI1Mode ? false : !hasAI1; // If modifying, always use AI2 slot
+      const useAI1 = !hasAI1; // Use AI1 first, then AI2
       const aiSlot = useAI1 ? 'ai1' : 'ai2';
       const aiField = useAI1 ? 'ai_generated_image_1_url' : 'ai_generated_image_2_url';
       

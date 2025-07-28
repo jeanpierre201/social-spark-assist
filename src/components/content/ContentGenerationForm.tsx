@@ -160,7 +160,8 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
             const blob = new Blob([byteArray], { type: 'image/png' });
 
             const timestamp = new Date().getTime();
-            const storagePath = `ai-images/${user.id}/${timestamp}-generated.png`;
+            const fileName = Math.random().toString(36).substring(2, 15);
+            const storagePath = `${user.id}/${fileName}.png`;
 
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('media')
