@@ -396,7 +396,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                   </SelectContent>
                 </Select>
               </div>
-              <div>
+                <div>
                 <Label>Image Upload</Label>
                 <Input 
                   type="file" 
@@ -405,8 +405,13 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                   disabled={generateWithImages}
                 />
                 {isImageUploading && <p className="text-muted-foreground text-sm">Uploading...</p>}
+                {selectedImage && !generateWithImages && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {selectedImage.name}
+                  </p>
+                )}
                 {imageUrl && (
-                  <div className="mt-2">
+                  <div className={`mt-2 ${generateWithImages ? 'opacity-50' : ''}`}>
                     <img src={imageUrl} alt="Uploaded" className="max-h-32 rounded-md" />
                   </div>
                 )}
@@ -426,13 +431,13 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                   onCheckedChange={(checked) => setGenerateWithImages(checked as boolean)}
                 />
                 <Label htmlFor="generate-images" className="text-sm">
-                  Generate AI images {selectedImage && '(will incorporate uploaded image)'}
+                  Generate AI image
                 </Label>
               </div>
               
               {generateWithImages && (
                 <div className="ml-6 space-y-2">
-                  <Label htmlFor="image-prompt" className="text-sm">Custom Image Description (Optional)</Label>
+                  <Label htmlFor="image-prompt" className="text-sm">Image Description (Optional)</Label>
                   <Textarea
                     id="image-prompt"
                     placeholder="Describe how you want your image to look... e.g., 'Modern office setting with laptop, professional lighting, blue color scheme'"
@@ -443,7 +448,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                     className="text-sm"
                   />
                   <p className="text-xs text-muted-foreground">
-                    💡 Pro tip: Describe any specific visual elements (colors, style, branding) in your custom description for better AI image results.
+                    💡 DALL-E 3 creates images from text descriptions only. Describe visual elements like colors, style, objects, and composition for best results.
                   </p>
                 </div>
               )}

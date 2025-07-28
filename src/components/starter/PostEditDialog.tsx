@@ -851,18 +851,18 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
             {!isReadOnly && !(availableImages.ai1 && availableImages.ai2) && (
               <div className="mt-4">
                 <Label htmlFor="ai-prompt" className="text-sm font-medium mb-2 block">
-                  AI Image Requirements (Optional)
+                  Image Description (Optional)
                 </Label>
                 <Textarea
                   id="ai-prompt"
                   value={aiImagePrompt}
                   onChange={(e) => setAiImagePrompt(e.target.value)}
-                  placeholder="Describe specific requirements for the AI image (e.g., 'include company logo', 'modern minimalist style', 'bright colors')"
+                  placeholder="Describe how you want your image to look... e.g., 'Modern office setting with laptop, professional lighting, blue color scheme'"
                   rows={2}
                   className="text-sm"
                 />
                  <p className="text-xs text-muted-foreground mt-1">
-                   💡 Pro tip: Describe any specific visual elements (colors, style, branding) in your requirements for better AI image results.
+                   💡 DALL-E 3 creates images from text descriptions only. Describe visual elements like colors, style, objects, and composition for best results.
                  </p>
               </div>
             )}
