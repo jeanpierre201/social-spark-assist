@@ -360,7 +360,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const handleSelectImage = (imageType: 'uploaded' | 'ai1' | 'ai2') => {
     const imageUrl = availableImages[imageType];
     
-    // Map the internal image types to valid database values
+    // Map to database values
     let validImageType = 'none';
     if (imageType === 'uploaded' && imageUrl) {
       validImageType = 'uploaded';
@@ -375,12 +375,25 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         ...prev, 
         media_url: imageUrl,
         selected_image_type: validImageType,
+        // Store which specific AI image for UI consistency
+        internal_selected_type: imageType,
         // Also update the specific field to maintain consistency
         ...(imageType === 'uploaded' && { uploaded_image_url: imageUrl }),
         ...(imageType === 'ai1' && { ai_generated_image_1_url: imageUrl }),
         ...(imageType === 'ai2' && { ai_generated_image_2_url: imageUrl })
       }));
     }
+  };
+
+  // Helper function to determine current selection from URLs
+  const getCurrentImageType = (): 'uploaded' | 'ai1' | 'ai2' | 'none' => {
+    if (!formData.media_url) return 'none';
+    
+    if (formData.media_url === availableImages.uploaded) return 'uploaded';
+    if (formData.media_url === availableImages.ai1) return 'ai1';
+    if (formData.media_url === availableImages.ai2) return 'ai2';
+    
+    return 'none';
   };
 
   const handleRemoveImage = () => {
@@ -592,35 +605,35 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   <div className="space-y-3">
                     {/* Image selection buttons */}
                     {(availableImages.uploaded || availableImages.ai1 || availableImages.ai2) && (
-                      <div className="flex flex-wrap gap-2">
-                        {availableImages.uploaded && (
-                          <Button
-                            variant={formData.selected_image_type === 'uploaded' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => handleSelectImage('uploaded')}
-                          >
-                            Use Uploaded
-                          </Button>
-                        )}
-                        {availableImages.ai1 && (
-                          <Button
-                            variant={formData.selected_image_type === 'ai1' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => handleSelectImage('ai1')}
-                          >
-                            Use AI Image 1
-                          </Button>
-                        )}
-                        {availableImages.ai2 && (
-                          <Button
-                            variant={formData.selected_image_type === 'ai2' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => handleSelectImage('ai2')}
-                          >
-                            Use AI Image 2
-                          </Button>
-                        )}
-                      </div>
+                       <div className="flex flex-wrap gap-2">
+                         {availableImages.uploaded && (
+                           <Button
+                             variant={getCurrentImageType() === 'uploaded' ? 'default' : 'outline'}
+                             size="sm"
+                             onClick={() => handleSelectImage('uploaded')}
+                           >
+                             Use Uploaded
+                           </Button>
+                         )}
+                         {availableImages.ai1 && (
+                           <Button
+                             variant={getCurrentImageType() === 'ai1' ? 'default' : 'outline'}
+                             size="sm"
+                             onClick={() => handleSelectImage('ai1')}
+                           >
+                             Use AI Image 1
+                           </Button>
+                         )}
+                         {availableImages.ai2 && (
+                           <Button
+                             variant={getCurrentImageType() === 'ai2' ? 'default' : 'outline'}
+                             size="sm"
+                             onClick={() => handleSelectImage('ai2')}
+                           >
+                             Use AI Image 2
+                           </Button>
+                         )}
+                       </div>
                     )}
                     
                     {/* Action buttons */}
