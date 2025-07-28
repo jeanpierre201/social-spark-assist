@@ -139,7 +139,20 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file || !user) return;
+    if (!file) return;
+
+    // Authentication guard - check if user is properly authenticated
+    if (!user || !user.id) {
+      console.error('Upload failed: User not authenticated or missing ID', { user: user?.id });
+      toast({
+        title: "Authentication required",
+        description: "Please ensure you are logged in to upload images",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Starting image upload for user:', user.id);
 
     // Check file type
     if (!file.type.startsWith('image/')) {
@@ -165,7 +178,9 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
     try {
       const timestamp = new Date().getTime();
-      const storagePath = `post-images/${user.id}/${timestamp}-${file.name}`;
+      const storagePath = `${user.id}/${timestamp}-${file.name}`;
+      
+      console.log('Uploading to storage path:', storagePath);
 
       const { data, error } = await supabase.storage
         .from('media')
@@ -174,11 +189,16 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
           upsert: false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase storage error:', error);
+        throw error;
+      }
 
       const { data: publicUrlData } = supabase.storage
         .from('media')
         .getPublicUrl(data.path);
+
+      console.log('Upload successful, public URL:', publicUrlData.publicUrl);
 
       // Update both media_url and uploaded_image_url for this specific post
       setFormData(prev => ({ 
@@ -199,9 +219,21 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       });
     } catch (error: any) {
       console.error("Error uploading image to post:", error);
+      
+      // Specific error handling for RLS policy violations
+      let errorMessage = "Failed to upload image";
+      if (error.message?.includes('row-level security') || error.message?.includes('policy')) {
+        errorMessage = "Upload permission denied. Please try logging out and back in.";
+        console.error('RLS Policy violation detected for user:', user.id);
+      } else if (error.message?.includes('storage')) {
+        errorMessage = "Storage upload failed. Please check your connection and try again.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Upload failed",
-        description: error.message || "Failed to upload image",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -211,23 +243,35 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
   const uploadImageToStorage = async (file: File): Promise<string | null> => {
     try {
+      // Authentication guard
+      if (!user || !user.id) {
+        console.error('Upload failed: User not authenticated in uploadImageToStorage');
+        throw new Error('User authentication required for upload');
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${user?.id}/${fileName}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      console.log('Uploading to storage path in uploadImageToStorage:', filePath);
 
       const { error: uploadError } = await supabase.storage
         .from('media')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error in uploadImageToStorage:', uploadError);
+        throw uploadError;
+      }
 
       const { data } = supabase.storage
         .from('media')
         .getPublicUrl(filePath);
 
+      console.log('Upload successful in uploadImageToStorage:', data.publicUrl);
       return data.publicUrl;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error('Error uploading image in uploadImageToStorage:', error);
       return null;
     }
   };
