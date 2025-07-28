@@ -379,27 +379,31 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
       // Update form data with persistent URL and specific type
       const specificType = useAI1 ? 'ai_generated_1' : 'ai_generated_2';
-      setFormData(prev => ({ 
-        ...prev, 
+      
+      // Create the updated form data
+      const updatedFormData = { 
+        ...formData, 
         media_url: persistentUrl,
         [aiField]: persistentUrl,
         selected_image_type: specificType
-      }));
+      };
+      
+      setFormData(updatedFormData);
       
       // Update available images with persistent URL
       setAvailableImages(prev => ({ ...prev, [aiSlot]: persistentUrl }));
 
       // Immediately save to database
       const updates = {
-        generated_caption: formData.caption,
-        generated_hashtags: formData.hashtags.split(' ').filter(tag => tag.trim()),
-        scheduled_date: formData.scheduled_date || null,
-        scheduled_time: formData.scheduled_time || null,
-        status: formData.status,
+        generated_caption: updatedFormData.caption,
+        generated_hashtags: updatedFormData.hashtags.split(' ').filter(tag => tag.trim()),
+        scheduled_date: updatedFormData.scheduled_date || null,
+        scheduled_time: updatedFormData.scheduled_time || null,
+        status: updatedFormData.status,
         media_url: persistentUrl,
-        uploaded_image_url: formData.uploaded_image_url || null,
-        ai_generated_image_1_url: useAI1 ? persistentUrl : (formData.ai_generated_image_1_url || null),
-        ai_generated_image_2_url: useAI1 ? (formData.ai_generated_image_2_url || null) : persistentUrl,
+        uploaded_image_url: updatedFormData.uploaded_image_url || null,
+        ai_generated_image_1_url: useAI1 ? persistentUrl : (updatedFormData.ai_generated_image_1_url || null),
+        ai_generated_image_2_url: useAI1 ? (updatedFormData.ai_generated_image_2_url || null) : persistentUrl,
         selected_image_type: specificType,
         updated_at: new Date().toISOString()
       };
