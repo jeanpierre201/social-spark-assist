@@ -54,6 +54,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const [generatingWithUpload, setGeneratingWithUpload] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const [aiImagePrompt, setAiImagePrompt] = useState('');
+  const [modifyAI1Mode, setModifyAI1Mode] = useState(false);
   const [originalPost, setOriginalPost] = useState<Post | null>(null);
   const [availableImages, setAvailableImages] = useState({
     uploaded: '',
@@ -284,13 +285,35 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     const hasAI1 = availableImages.ai1 || formData.ai_generated_image_1_url;
     const hasAI2 = availableImages.ai2 || formData.ai_generated_image_2_url;
     
-    if (hasAI1 && hasAI2) {
-      toast({
-        title: "Maximum AI images reached",
-        description: "You can generate up to 2 AI images per post",
-        variant: "destructive",
-      });
-      return;
+    // If in modify mode, we use AI1 as base and store as AI2
+    if (modifyAI1Mode) {
+      if (!hasAI1) {
+        toast({
+          title: "No AI image to modify",
+          description: "Please generate an AI image first before modifying",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!aiImagePrompt.trim()) {
+        toast({
+          title: "Modification requirements needed",
+          description: "Please describe what you want to modify about the AI image",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      // Normal generation mode
+      if (hasAI1 && hasAI2) {
+        toast({
+          title: "Maximum AI images reached",
+          description: "You can generate up to 2 AI images per post",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     if (includeExistingImage) {
@@ -307,7 +330,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       }
       
       if (aiImagePrompt.trim()) {
-        prompt += `. User requirements: ${aiImagePrompt}`;
+        if (modifyAI1Mode) {
+          prompt += `. Modify the existing AI image 1 based on these requirements: ${aiImagePrompt}`;
+        } else {
+          prompt += `. User requirements: ${aiImagePrompt}`;
+        }
       }
 
       if (includeExistingImage && availableImages.uploaded) {
@@ -323,7 +350,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       const { image } = response.data;
       
       // Determine which AI slot to use
-      const useAI1 = !hasAI1;
+      const useAI1 = modifyAI1Mode ? false : !hasAI1; // If modifying, always use AI2 slot
       const aiSlot = useAI1 ? 'ai1' : 'ai2';
       const aiField = useAI1 ? 'ai_generated_image_1_url' : 'ai_generated_image_2_url';
       
@@ -348,9 +375,46 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       // Update available images with persistent URL
       setAvailableImages(prev => ({ ...prev, [aiSlot]: persistentUrl }));
 
-      toast({
-        description: "AI image generated successfully!",
-      });
+      // Immediately save to database
+      const updates = {
+        generated_caption: formData.caption,
+        generated_hashtags: formData.hashtags.split(' ').filter(tag => tag.trim()),
+        scheduled_date: formData.scheduled_date || null,
+        scheduled_time: formData.scheduled_time || null,
+        status: formData.status,
+        media_url: persistentUrl,
+        uploaded_image_url: formData.uploaded_image_url || null,
+        ai_generated_image_1_url: useAI1 ? persistentUrl : (formData.ai_generated_image_1_url || null),
+        ai_generated_image_2_url: useAI1 ? (formData.ai_generated_image_2_url || null) : persistentUrl,
+        selected_image_type: specificType,
+        updated_at: new Date().toISOString()
+      };
+
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update(updates)
+        .eq('id', post.id);
+
+      if (updateError) {
+        console.error('Error updating post with AI image:', updateError);
+        // Still show success for image generation but mention save issue
+        toast({
+          title: "AI image generated",
+          description: "Image created but auto-save failed. Please save manually.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          description: modifyAI1Mode ? "AI image modified and saved successfully!" : "AI image generated and saved successfully!",
+        });
+        onPostUpdated(); // Refresh the parent component
+      }
+
+      // Reset modify mode if it was used
+      if (modifyAI1Mode) {
+        setModifyAI1Mode(false);
+        setAiImagePrompt('');
+      }
     } catch (error: any) {
       console.error("Error generating image:", error);
       toast({
@@ -413,7 +477,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   };
 
   const handleRemoveImage = () => {
-    setFormData(prev => ({ ...prev, media_url: '', selected_image_type: 'none' }));
+    // Only allow removing uploaded images, not AI-generated ones
+    const currentType = getCurrentImageType();
+    if (currentType === 'uploaded') {
+      setFormData(prev => ({ ...prev, media_url: '', selected_image_type: 'none' }));
+    }
   };
 
   const handleCancel = () => {
@@ -605,51 +673,51 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => setShowImageLightbox(true)}
                   />
-                  {!isReadOnly && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRemoveImage}
-                      className="absolute top-2 right-2 bg-white/90 hover:bg-white"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
+                   {!isReadOnly && getCurrentImageType() === 'uploaded' && (
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={handleRemoveImage}
+                       className="absolute top-2 right-2 bg-white/90 hover:bg-white"
+                     >
+                       <X className="h-4 w-4" />
+                     </Button>
+                   )}
                 </div>
                 
                 {!isReadOnly && (
                   <div className="space-y-3">
-                    {/* Image selection buttons */}
-                    {(availableImages.uploaded || availableImages.ai1 || availableImages.ai2) && (
-                       <div className="flex flex-wrap gap-2">
-                         {availableImages.uploaded && (
-                           <Button
-                             variant={getCurrentImageType() === 'uploaded' ? 'default' : 'outline'}
-                             size="sm"
-                             onClick={() => handleSelectImage('uploaded')}
-                           >
-                             Use Uploaded
-                           </Button>
-                         )}
-                         {availableImages.ai1 && (
-                           <Button
-                             variant={getCurrentImageType() === 'ai1' ? 'default' : 'outline'}
-                             size="sm"
-                             onClick={() => handleSelectImage('ai1')}
-                           >
-                             Use AI Image 1
-                           </Button>
-                         )}
-                         {availableImages.ai2 && (
-                           <Button
-                             variant={getCurrentImageType() === 'ai2' ? 'default' : 'outline'}
-                             size="sm"
-                             onClick={() => handleSelectImage('ai2')}
-                           >
-                             Use AI Image 2
-                           </Button>
-                         )}
-                       </div>
+                 {/* Image selection buttons */}
+                     {(availableImages.uploaded || availableImages.ai1 || availableImages.ai2) && (
+                        <div className="flex flex-wrap gap-2">
+                          {availableImages.uploaded && (
+                            <Button
+                              variant={getCurrentImageType() === 'uploaded' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handleSelectImage('uploaded')}
+                            >
+                              Use Uploaded
+                            </Button>
+                          )}
+                          {availableImages.ai1 && (
+                            <Button
+                              variant={getCurrentImageType() === 'ai1' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handleSelectImage('ai1')}
+                            >
+                              Use AI Image 1
+                            </Button>
+                          )}
+                          {availableImages.ai2 && (
+                            <Button
+                              variant={getCurrentImageType() === 'ai2' ? 'default' : 'outline'}
+                              size="sm"
+                              onClick={() => handleSelectImage('ai2')}
+                            >
+                              Use AI Image 2
+                            </Button>
+                          )}
+                        </div>
                     )}
                     
                     {/* Action buttons */}
@@ -672,7 +740,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                         variant="outline"
                         size="sm"
                         onClick={() => handleGenerateAIImage(false)}
-                        disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
+                        disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2) || (modifyAI1Mode && !aiImagePrompt.trim())}
                         className="flex-1"
                       >
                         {generatingImage ? (
@@ -680,7 +748,13 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                         ) : (
                           <Sparkles className="h-4 w-4 mr-2" />
                         )}
-                        {availableImages.ai1 && availableImages.ai2 ? 'Max AI Images' : 'Generate AI Image'}
+                        {availableImages.ai1 && availableImages.ai2 
+                          ? 'Max AI Images' 
+                          : modifyAI1Mode 
+                            ? 'Modify AI Image' 
+                            : availableImages.ai1 
+                              ? 'Generate new AI Image' 
+                              : 'Generate AI Image'}
                       </Button>
                       
                       {availableImages.uploaded && (
@@ -758,14 +832,20 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                       variant="outline"
                       size="sm"
                       onClick={() => handleGenerateAIImage(false)}
-                      disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
+                      disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2) || (modifyAI1Mode && !aiImagePrompt.trim())}
                     >
                       {generatingImage ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
                         <Sparkles className="h-4 w-4 mr-2" />
                       )}
-                      {availableImages.ai1 && availableImages.ai2 ? 'Max AI Images' : 'Generate AI'}
+                      {availableImages.ai1 && availableImages.ai2 
+                        ? 'Max AI Images' 
+                        : modifyAI1Mode 
+                          ? 'Modify AI Image' 
+                          : availableImages.ai1 
+                            ? 'Generate new AI Image' 
+                            : 'Generate AI'}
                     </Button>
                   </div>
                 </div>
@@ -792,14 +872,18 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     variant="outline"
                     size="sm"
                     onClick={() => handleGenerateAIImage(false)}
-                    disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
+                    disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2) || (modifyAI1Mode && !aiImagePrompt.trim())}
                   >
                     {generatingImage ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Sparkles className="h-4 w-4 mr-2" />
                     )}
-                    Generate AI Image
+                    {modifyAI1Mode 
+                      ? 'Modify AI Image' 
+                      : availableImages.ai1 
+                        ? 'Generate new AI Image' 
+                        : 'Generate AI Image'}
                   </Button>
                 </div>
               </div>
@@ -808,19 +892,36 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
             {/* AI Image Prompt Text Area */}
             {!isReadOnly && !(availableImages.ai1 && availableImages.ai2) && (
               <div className="mt-4">
+                {availableImages.ai1 && (
+                  <div className="mb-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="modify-ai1"
+                        checked={modifyAI1Mode}
+                        onCheckedChange={(checked) => setModifyAI1Mode(checked as boolean)}
+                      />
+                      <Label htmlFor="modify-ai1" className="text-sm">
+                        Modify AI Image 1
+                      </Label>
+                    </div>
+                  </div>
+                )}
                 <Label htmlFor="ai-prompt" className="text-sm font-medium mb-2 block">
-                  AI Image Requirements (Optional)
+                  AI Image Requirements {modifyAI1Mode ? '' : '(Optional)'}
                 </Label>
                 <Textarea
                   id="ai-prompt"
                   value={aiImagePrompt}
                   onChange={(e) => setAiImagePrompt(e.target.value)}
-                  placeholder="Describe specific requirements for the AI image (e.g., 'include company logo', 'modern minimalist style', 'bright colors')"
+                  placeholder={modifyAI1Mode ? "Describe how you want to modify AI Image 1 (e.g., 'make it brighter', 'add more contrast', 'change the background color')" : "Describe specific requirements for the AI image (e.g., 'include company logo', 'modern minimalist style', 'bright colors')"}
                   rows={2}
                   className="text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  If you have an uploaded image, you can use the "AI + Original Image" button to incorporate elements like logos or branding into the AI-generated image.
+                  {modifyAI1Mode 
+                    ? "When modifying, the original AI Image 1 will be used as a base, and the modified version will be saved as AI Image 2."
+                    : "If you have an uploaded image, you can use the \"AI + Original Image\" button to incorporate elements like logos or branding into the AI-generated image."
+                  }
                 </p>
               </div>
             )}
