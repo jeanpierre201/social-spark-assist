@@ -51,6 +51,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [generatingWithUpload, setGeneratingWithUpload] = useState(false);
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const [aiImagePrompt, setAiImagePrompt] = useState('');
   const [originalPost, setOriginalPost] = useState<Post | null>(null);
@@ -292,7 +293,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       return;
     }
 
-    setGeneratingImage(true);
+    if (includeExistingImage) {
+      setGeneratingWithUpload(true);
+    } else {
+      setGeneratingImage(true);
+    }
 
     try {
       let prompt = `Create a professional image for: ${post.goal}. Industry: ${post.industry}. Content: ${formData.caption}. Hashtags: ${formData.hashtags}`;
@@ -354,7 +359,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         variant: "destructive",
       });
     } finally {
-      setGeneratingImage(false);
+      if (includeExistingImage) {
+        setGeneratingWithUpload(false);
+      } else {
+        setGeneratingImage(false);
+      }
     }
   };
 
@@ -663,7 +672,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                         variant="outline"
                         size="sm"
                         onClick={() => handleGenerateAIImage(false)}
-                        disabled={generatingImage || Boolean(availableImages.ai1 && availableImages.ai2)}
+                        disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
                         className="flex-1"
                       >
                         {generatingImage ? (
@@ -679,10 +688,10 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                           variant="outline"
                           size="sm"
                           onClick={() => handleGenerateAIImage(true)}
-                          disabled={generatingImage || Boolean(availableImages.ai1 && availableImages.ai2)}
+                          disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
                           className="flex-1"
                         >
-                          {generatingImage ? (
+                          {generatingWithUpload ? (
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           ) : (
                             <Palette className="h-4 w-4 mr-2" />
@@ -749,7 +758,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                       variant="outline"
                       size="sm"
                       onClick={() => handleGenerateAIImage(false)}
-                      disabled={generatingImage || Boolean(availableImages.ai1 && availableImages.ai2)}
+                      disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
                     >
                       {generatingImage ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -783,7 +792,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     variant="outline"
                     size="sm"
                     onClick={() => handleGenerateAIImage(false)}
-                    disabled={generatingImage || Boolean(availableImages.ai1 && availableImages.ai2)}
+                    disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
                   >
                     {generatingImage ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -840,14 +849,6 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     alt="Full size post image" 
                     className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
                   />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowImageLightbox(false)}
-                    className="absolute top-2 right-2 bg-white/90 hover:bg-white"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
