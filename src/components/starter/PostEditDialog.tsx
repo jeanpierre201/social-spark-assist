@@ -758,21 +758,19 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                         variant="outline"
                         size="sm"
                         onClick={() => handleGenerateAIImage(false)}
-                        disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2) || (modifyAI1Mode && !aiImagePrompt.trim())}
+                        disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
                         className="flex-1"
                       >
-                        {generatingImage ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-4 w-4 mr-2" />
-                        )}
-                        {availableImages.ai1 && availableImages.ai2 
-                          ? 'Max AI Images' 
-                          : modifyAI1Mode 
-                            ? 'Modify AI Image' 
-                            : availableImages.ai1 
-                              ? 'Generate new AI Image' 
-                              : 'Generate AI Image'}
+                      {generatingImage ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      {availableImages.ai1 && availableImages.ai2 
+                        ? 'Max AI Images' 
+                        : availableImages.ai1 
+                          ? 'Generate new AI Image' 
+                          : 'Generate AI Image'}
                       </Button>
                       
                       {availableImages.uploaded && (
@@ -846,25 +844,38 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                       )}
                       {availableImages.uploaded ? 'Replace Upload' : 'Upload New'}
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleGenerateAIImage(false)}
-                      disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2) || (modifyAI1Mode && !aiImagePrompt.trim())}
-                    >
-                      {generatingImage ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Sparkles className="h-4 w-4 mr-2" />
-                      )}
-                      {availableImages.ai1 && availableImages.ai2 
-                        ? 'Max AI Images' 
-                        : modifyAI1Mode 
-                          ? 'Modify AI Image' 
-                          : availableImages.ai1 
-                            ? 'Generate new AI Image' 
-                            : 'Generate AI'}
-                    </Button>
+                     <Button
+                       variant="outline"
+                       size="sm"
+                       onClick={() => handleGenerateAIImage(false)}
+                       disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
+                     >
+                       {generatingImage ? (
+                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                       ) : (
+                         <Sparkles className="h-4 w-4 mr-2" />
+                       )}
+                       {availableImages.ai1 && availableImages.ai2 
+                         ? 'Max AI Images' 
+                         : availableImages.ai1 
+                           ? 'Generate new AI Image' 
+                           : 'Generate AI'}
+                     </Button>
+                     {availableImages.uploaded && (
+                       <Button
+                         variant="outline"
+                         size="sm"
+                         onClick={() => handleGenerateAIImage(true)}
+                         disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
+                       >
+                         {generatingWithUpload ? (
+                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                         ) : (
+                           <Palette className="h-4 w-4 mr-2" />
+                         )}
+                         {availableImages.ai1 && availableImages.ai2 ? 'Max AI Images' : 'AI + Upload'}
+                       </Button>
+                     )}
                   </div>
                 </div>
               </div>
@@ -890,19 +901,32 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     variant="outline"
                     size="sm"
                     onClick={() => handleGenerateAIImage(false)}
-                    disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2) || (modifyAI1Mode && !aiImagePrompt.trim())}
+                    disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
                   >
                     {generatingImage ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Sparkles className="h-4 w-4 mr-2" />
                     )}
-                    {modifyAI1Mode 
-                      ? 'Modify AI Image' 
-                      : availableImages.ai1 
-                        ? 'Generate new AI Image' 
-                        : 'Generate AI Image'}
+                    {availableImages.ai1 
+                      ? 'Generate new AI Image' 
+                      : 'Generate AI Image'}
                   </Button>
+                  {availableImages.uploaded && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleGenerateAIImage(true)}
+                      disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
+                    >
+                      {generatingWithUpload ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Palette className="h-4 w-4 mr-2" />
+                      )}
+                      {availableImages.ai1 && availableImages.ai2 ? 'Max AI Images' : 'AI + Upload'}
+                    </Button>
+                  )}
                 </div>
               </div>
             ) : null}
@@ -910,36 +934,19 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
             {/* AI Image Prompt Text Area */}
             {!isReadOnly && !(availableImages.ai1 && availableImages.ai2) && (
               <div className="mt-4">
-                {availableImages.ai1 && (
-                  <div className="mb-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="modify-ai1"
-                        checked={modifyAI1Mode}
-                        onCheckedChange={(checked) => setModifyAI1Mode(checked as boolean)}
-                      />
-                      <Label htmlFor="modify-ai1" className="text-sm">
-                        Modify AI Image 1
-                      </Label>
-                    </div>
-                  </div>
-                )}
                 <Label htmlFor="ai-prompt" className="text-sm font-medium mb-2 block">
-                  AI Image Requirements {modifyAI1Mode ? '' : '(Optional)'}
+                  AI Image Requirements (Optional)
                 </Label>
                 <Textarea
                   id="ai-prompt"
                   value={aiImagePrompt}
                   onChange={(e) => setAiImagePrompt(e.target.value)}
-                  placeholder={modifyAI1Mode ? "Describe how you want to modify AI Image 1 (e.g., 'make it brighter', 'add more contrast', 'change the background color')" : "Describe specific requirements for the AI image (e.g., 'include company logo', 'modern minimalist style', 'bright colors')"}
+                  placeholder="Describe specific requirements for the AI image (e.g., 'include company logo', 'modern minimalist style', 'bright colors')"
                   rows={2}
                   className="text-sm"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  {modifyAI1Mode 
-                    ? "When modifying, the original AI Image 1 will be used as a base, and the modified version will be saved as AI Image 2."
-                    : "If you have an uploaded image, you can use the \"AI + Original Image\" button to incorporate elements like logos or branding into the AI-generated image."
-                  }
+                  If you have an uploaded image, you can use the "AI + Upload" button to incorporate elements like logos or branding into the AI-generated image.
                 </p>
               </div>
             )}
