@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { ArrowLeft, Upload, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Upload, Eye, EyeOff, Trash2 } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -186,6 +186,31 @@ const ProfilePage = () => {
     }
   };
 
+  const handleRemoveAvatar = async () => {
+    if (!user || !profile) return;
+
+    setUploading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: null })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error removing avatar:', error);
+        toast.error('Failed to remove profile picture');
+      } else {
+        toast.success('Profile picture removed successfully');
+        setProfile(prev => prev ? { ...prev, avatar_url: null } : null);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Failed to remove profile picture');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -232,20 +257,34 @@ const ProfilePage = () => {
               </Avatar>
               
               <div className="flex flex-col items-center space-y-2">
-                <Label htmlFor="avatar-upload" className="cursor-pointer">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={uploading}
-                    className="flex items-center gap-2"
-                    asChild
-                  >
-                    <span>
-                      <Upload className="h-4 w-4" />
-                      {uploading ? 'Uploading...' : 'Upload Photo'}
-                    </span>
-                  </Button>
-                </Label>
+                <div className="flex gap-2">
+                  <Label htmlFor="avatar-upload" className="cursor-pointer">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploading}
+                      className="flex items-center gap-2"
+                      asChild
+                    >
+                      <span>
+                        <Upload className="h-4 w-4" />
+                        {uploading ? 'Uploading...' : 'Upload Photo'}
+                      </span>
+                    </Button>
+                  </Label>
+                  {profile?.avatar_url && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      disabled={uploading}
+                      onClick={handleRemoveAvatar}
+                      className="flex items-center gap-2 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
                 <input
                   id="avatar-upload"
                   type="file"
