@@ -79,7 +79,7 @@ serve(async (req) => {
 
     console.log('Making OpenAI DALL-E API call...');
 
-    // Call OpenAI DALL-E API
+    // Call OpenAI GPT-Image-1 API for better text and logo integration
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -87,13 +87,13 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'dall-e-3',
+        model: 'gpt-image-1',
         prompt: prompt,
         n: 1,
-        size: size,
-        quality: quality,
-        style: style,
-        response_format: 'b64_json'
+        size: size === '1024x1024' ? 'auto' : size,
+        quality: quality === 'standard' ? 'auto' : quality,
+        output_format: 'png',
+        background: 'auto'
       }),
     });
 
