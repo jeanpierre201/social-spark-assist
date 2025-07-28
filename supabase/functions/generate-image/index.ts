@@ -106,9 +106,21 @@ serve(async (req) => {
     const data = await response.json();
     console.log('OpenAI response received');
     
+    // GPT-Image-1 returns data differently than DALL-E 3
     const imageData = data.data[0];
-    const base64Image = imageData.b64_json;
-    const revisedPrompt = imageData.revised_prompt;
+    let base64Image: string;
+    let revisedPrompt: string | undefined;
+
+    // GPT-Image-1 always returns base64 directly in b64_json field
+    if (imageData.b64_json) {
+      base64Image = imageData.b64_json;
+      revisedPrompt = imageData.revised_prompt;
+    } else if (imageData.url) {
+      // Fallback for URL format (shouldn't happen with GPT-Image-1)
+      throw new Error('Unexpected URL response format from GPT-Image-1');
+    } else {
+      throw new Error('No image data received from OpenAI API');
+    }
 
     console.log('Image generated successfully');
 
