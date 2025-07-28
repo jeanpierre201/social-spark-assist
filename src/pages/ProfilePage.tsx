@@ -149,11 +149,12 @@ const ProfilePage = () => {
     setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/avatars/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('media')
-        .upload(`avatars/${fileName}`, file);
+        .upload(filePath, file);
 
       if (uploadError) {
         console.error('Error uploading file:', uploadError);
@@ -163,7 +164,7 @@ const ProfilePage = () => {
 
       const { data: { publicUrl } } = supabase.storage
         .from('media')
-        .getPublicUrl(`avatars/${fileName}`);
+        .getPublicUrl(filePath);
 
       const { error: updateError } = await supabase
         .from('profiles')
