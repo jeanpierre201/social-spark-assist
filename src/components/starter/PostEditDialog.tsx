@@ -165,7 +165,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
     try {
       const timestamp = new Date().getTime();
-      const storagePath = `images/${user.id}/${timestamp}-${file.name}`;
+      const storagePath = `post-images/${user.id}/${timestamp}-${file.name}`;
 
       const { data, error } = await supabase.storage
         .from('media')
@@ -180,7 +180,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         .from('media')
         .getPublicUrl(data.path);
 
-      // Update both media_url and uploaded_image_url
+      // Update both media_url and uploaded_image_url for this specific post
       setFormData(prev => ({ 
         ...prev, 
         media_url: publicUrlData.publicUrl,
@@ -188,14 +188,17 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         selected_image_type: 'uploaded'
       }));
       
-      // Update available images
+      // Update available images for this specific post
       setAvailableImages(prev => ({ ...prev, uploaded: publicUrlData.publicUrl }));
+
+      // Clear the file input to prevent issues
+      event.target.value = '';
 
       toast({
         description: "Image uploaded successfully!",
       });
     } catch (error: any) {
-      console.error("Error uploading image:", error);
+      console.error("Error uploading image to post:", error);
       toast({
         title: "Upload failed",
         description: error.message || "Failed to upload image",
