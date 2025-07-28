@@ -209,6 +209,29 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     }
   };
 
+  const uploadImageToStorage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${user?.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('media')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('media')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      return null;
+    }
+  };
+
   const handleGenerateAIImage = async (includeExistingImage = false) => {
     if (!user || !post) return;
 
@@ -255,16 +278,25 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       const aiSlot = useAI1 ? 'ai1' : 'ai2';
       const aiField = useAI1 ? 'ai_generated_image_1_url' : 'ai_generated_image_2_url';
       
-      // Update form data with new AI image
+      // Convert base64 to blob and upload to storage for persistence
+      const blob = await fetch(image).then(r => r.blob());
+      const file = new File([blob], `ai-generated-${Date.now()}.png`, { type: 'image/png' });
+      const persistentUrl = await uploadImageToStorage(file);
+      
+      if (!persistentUrl) {
+        throw new Error("Failed to upload AI image to storage");
+      }
+
+      // Update form data with persistent URL
       setFormData(prev => ({ 
         ...prev, 
-        media_url: image,
-        [aiField]: image,
+        media_url: persistentUrl,
+        [aiField]: persistentUrl,
         selected_image_type: useAI1 ? 'ai1' : 'ai2'
       }));
       
-      // Update available images
-      setAvailableImages(prev => ({ ...prev, [aiSlot]: image }));
+      // Update available images with persistent URL
+      setAvailableImages(prev => ({ ...prev, [aiSlot]: persistentUrl }));
 
       toast({
         description: "AI image generated successfully!",

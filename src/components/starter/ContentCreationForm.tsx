@@ -67,14 +67,40 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setUploadedImage(file);
-    
-    // Create a preview URL
-    const previewUrl = URL.createObjectURL(file);
-    setUploadedImageUrl(previewUrl);
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to upload images",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Clear the file input to prevent conflicts
-    event.target.value = '';
+    try {
+      // Upload directly to Supabase Storage instead of using blob URLs
+      const uploadedUrl = await uploadImageToStorage(file);
+      
+      if (uploadedUrl) {
+        setUploadedImage(file);
+        setUploadedImageUrl(uploadedUrl); // Store actual URL, not blob
+        
+        toast({
+          description: "Image uploaded successfully!",
+        });
+      } else {
+        throw new Error("Failed to upload image");
+      }
+    } catch (error: any) {
+      console.error("Error uploading image:", error);
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      // Clear the file input to prevent conflicts
+      event.target.value = '';
+    }
   };
 
   const uploadImageToStorage = async (file: File): Promise<string | null> => {
@@ -655,13 +681,13 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           <h4 className="text-sm font-medium mb-3">Media (Optional)</h4>
           <div className="space-y-3">
             <div>
-              <Label htmlFor="image-upload" className="text-sm">Upload Image</Label>
-              <Input
-                id="image-upload"
+            <Label htmlFor="main-form-file-input" className="text-sm">Upload Image</Label>
+              <input
+                id="main-form-file-input"
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
-                className="text-sm"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
             
