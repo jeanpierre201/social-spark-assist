@@ -414,7 +414,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       const planType = monthlyPosts >= 100 ? "Pro" : "Starter";
       toast({
         title: "Monthly Limit Reached",
-        description: `You've already used all ${maxPosts} posts for this month (${planType} plan)`,
+        description: `You've already used all ${maxPosts} posts for this 30 days (${planType} plan)`,
         variant: "destructive",
       });
       return;
@@ -788,7 +788,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             className="w-full"
           >
             <Wand2 className="h-4 w-4 mr-2" />
-            Generate 10 Contents
+            Generate Remaining Posts
           </Button>
         </div>
       </CardContent>
