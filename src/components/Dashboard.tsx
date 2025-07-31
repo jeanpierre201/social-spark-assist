@@ -2,20 +2,10 @@ import React, { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
-import { useUserRole } from '@/hooks/useUserRole';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import ProAnalytics from './ProAnalytics';
-import TeamCollaboration from './TeamCollaboration';
-import SocialMediaSettings from './SocialMediaSettings';
-import NavigationTabs from './content/NavigationTabs';
 import { usePostsManager } from '@/hooks/usePostsManager';
-import UsageIndicators from './starter/UsageIndicators';
-import ContentGenerationForm from './content/ContentGenerationForm';
-import PostsDisplay from './content/PostsDisplay';
-import ProContentCreationForm from './dashboard/ProContentCreationForm';
-import ProPostsSection from './dashboard/ProPostsSection';
 import DashboardHeader from './dashboard/DashboardHeader';
 import QuickStats from './dashboard/QuickStats';
 import ActionCards from './dashboard/ActionCards';
@@ -26,18 +16,7 @@ const Dashboard = () => {
   const { subscribed, subscriptionTier, loading } = useSubscription();
   const { accounts, metrics } = useSocialAccounts();
   const navigate = useNavigate();
-  const location = useLocation();
   const queryClient = useQueryClient();
-  // Get tab from URL or default to 'overview'
-  const getInitialTab = () => {
-    const hash = location.hash.replace('#', '');
-    return ['overview', 'content-generator', 'analytics', 'team', 'social-accounts'].includes(hash) 
-      ? hash 
-      : 'overview';
-  };
-  
-  const [activeTab, setActiveTab] = useState(getInitialTab());
-  const socialAccountsRef = useRef<HTMLDivElement>(null);
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
@@ -56,9 +35,8 @@ const Dashboard = () => {
 
   // Fetch subscription start date for Pro users
   const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
-  const [daysRemaining, setDaysRemaining] = useState(30);
+  const [daysRemaining, setDaysRemaining] = useState<number>(30);
 
-  // Get subscription start date
   React.useEffect(() => {
     const fetchSubscriptionData = async () => {
       if (!user || !isProUser) return;
@@ -95,99 +73,6 @@ const Dashboard = () => {
     fetchSubscriptionData();
   }, [user, isProUser]);
 
-  // Update tab when hash changes
-  React.useEffect(() => {
-    const handleHashChange = () => {
-      setActiveTab(getInitialTab());
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [location.hash]);
-
-  // Update URL hash when tab changes
-  React.useEffect(() => {
-    if (activeTab !== 'overview') {
-      window.location.hash = activeTab;
-    } else {
-      window.location.hash = '';
-    }
-  }, [activeTab]);
-
-  // Check if we're coming from content generator
-  const isFromContentGenerator = location.pathname === '/dashboard' && location.state?.fromContentGenerator;
-
-  console.log('Dashboard: Current subscription info', { subscribed, subscriptionTier, isProUser, isStarterUser });
-
-  const handleContentGeneration = () => {
-    console.log('Navigating to content generator for user:', { subscriptionTier, subscribed });
-    if (isProUser) {
-      navigate('/content-generator');
-    } else if (isStarterUser) {
-      navigate('/content-generator-starter');
-    } else {
-      navigate('/content-generator');
-    }
-  };
-
-  const handleViewAllPosts = () => {
-    if (isProUser) {
-      navigate('/content-generator', { state: { scrollToPosts: true } });
-    } else if (isStarterUser) {
-      navigate('/content-generator-starter', { state: { scrollToPosts: true } });
-    } else {
-      navigate('/content-generator', { state: { scrollToPosts: true } });
-    }
-  };
-
-  const handleCalendarView = () => {
-    if (isProUser) {
-      navigate('/content-generator', { state: { scrollToPosts: true, viewMode: 'calendar' } });
-    } else if (isStarterUser) {
-      navigate('/content-generator-starter', { state: { scrollToPosts: true, viewMode: 'calendar' } });
-    } else {
-      navigate('/content-generator', { state: { scrollToPosts: true, viewMode: 'calendar' } });
-    }
-  };
-
-  const handleConnectAccounts = () => {
-    if (isProUser) {
-      setActiveTab('social');
-    } else {
-      setActiveTab('social');
-      // Scroll to social accounts section after a brief delay to ensure it's rendered
-      setTimeout(() => {
-        socialAccountsRef.current?.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start' 
-        });
-      }, 100);
-    }
-  };
-
-  // Content Generator handlers
-  const handleEditPost = (post: any) => {
-    // This could be expanded to open an edit modal or form
-    console.log('Edit post:', post);
-  };
-
-  const handleUpdatePost = async (post: any, newContent: string) => {
-    updatePostMutation.mutate({ 
-      id: post.id, 
-      content: newContent,
-      scheduled_date: post.scheduled_date,
-      scheduled_time: post.scheduled_time
-    });
-  };
-
-  const handleDeletePost = async (id: string) => {
-    deletePostMutation.mutate(id);
-  };
-
-  const handlePostCreated = (newPost: any) => {
-    createPostMutation.mutate(newPost);
-  };
-
   // Calculate real metrics - only show for subscribed users
   const totalFollowers = subscribed ? metrics.reduce((sum, metric) => sum + (metric.followers_count || 0), 0) : 0;
   const totalPosts = subscribed ? posts.length : 0;
@@ -204,9 +89,6 @@ const Dashboard = () => {
   }) : [];
   const totalScheduledPosts = scheduledPosts.length;
 
-  // Determine if we should show the Content Generator tab in NavigationTabs
-  const shouldShowContentGeneratorTab = !isFromContentGenerator;
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -219,99 +101,77 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} />
 
-        {/* Navigation Tabs for Pro Users Only */}
-        <NavigationTabs 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
-          isProUser={isProUser}
-          showContentGenerator={shouldShowContentGeneratorTab}
-        />
-
-        {/* Tab Content for Pro Users */}
-        {isProUser && activeTab === 'content-generator' && (
-          <>
-            {/* Usage Indicators */}
-            <UsageIndicators 
-              monthlyPosts={currentMonthPosts} 
-              daysRemaining={daysRemaining}
-              maxPosts={100}
-              isProPlan={isProUser}
-              subscriptionStartDate={subscriptionStartDate}
-            />
-
-            {/* Content Generation Form */}
-            <div className="mb-6">
-              <ProContentCreationForm
-                monthlyPosts={currentMonthPosts}
-                setMonthlyPosts={(value) => {
-                  // This is handled by the hook, so we don't need to update here
-                }}
-                canCreatePosts={isProUser}
-                setPosts={(value) => {
-                  // This is handled by the hook, so we don't need to update here
-                }}
-                onPostCreated={() => {
-                  // Refresh the posts query when a new post is created
-                  queryClient.invalidateQueries({ queryKey: ['posts', user?.id] });
-                }}
-              />
+        {/* Navigation tabs for Pro users only */}
+        {isProUser && (
+          <div className="mb-6">
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                <button
+                  className="border-purple-500 text-purple-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/content')}
+                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                >
+                  Content Generator
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/analytics')}
+                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                >
+                  Advanced Analytics
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/team')}
+                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                >
+                  Team Collaboration
+                </button>
+                <button
+                  onClick={() => navigate('/dashboard/social')}
+                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
+                >
+                  Social Accounts
+                </button>
+              </nav>
             </div>
-
-            {/* Display Generated Posts - Pro Version */}
-            <ProPostsSection
-              onEditPost={handleEditPost}
-              onUpdatePost={handleUpdatePost}
-              onDeletePost={handleDeletePost}
-            />
-          </>
+          </div>
         )}
-        {isProUser && activeTab === 'analytics' && <ProAnalytics />}
-        {isProUser && activeTab === 'team' && <TeamCollaboration />}
-        {isProUser && activeTab === 'social-accounts' && <SocialMediaSettings />}
-        
-        {/* Overview Tab or Default View */}
-        {(!isProUser || activeTab === 'overview') && (
-          <>
-            {/* Quick Stats - Only show for subscribed users */}
-            <QuickStats 
-              isProUser={isProUser}
-              isStarterUser={isStarterUser}
-              subscribed={subscribed}
-              totalPosts={totalPosts}
-              currentMonthPosts={currentMonthPosts}
-              avgEngagementRate={avgEngagementRate}
-              totalScheduledPosts={totalScheduledPosts}
-              totalFollowers={totalFollowers}
-            />
 
-            {/* Action Cards */}
-            <ActionCards 
-              isProUser={isProUser}
-              isStarterUser={isStarterUser}
-              hasAnyPlan={hasAnyPlan}
-              onContentGeneration={handleContentGeneration}
-              onViewAllPosts={handleViewAllPosts}
-              onCalendarView={handleCalendarView}
-              onConnectAccounts={handleConnectAccounts}
-              onSetActiveTab={setActiveTab}
-            />
+        {/* Overview Content */}
+        <div className="space-y-6">
+          <QuickStats 
+            totalFollowers={totalFollowers}
+            totalPosts={totalPosts}
+            avgEngagementRate={avgEngagementRate}
+            totalScheduledPosts={totalScheduledPosts}
+            isProUser={isProUser}
+            isStarterUser={isStarterUser}
+            subscribed={subscribed}
+            currentMonthPosts={currentMonthPosts}
+          />
+          
+          <ActionCards 
+            isProUser={isProUser}
+            isStarterUser={isStarterUser}
+            hasAnyPlan={hasAnyPlan}
+            onContentGeneration={() => navigate('/dashboard/content')}
+            onViewAllPosts={() => navigate('/dashboard/content')}
+            onCalendarView={() => navigate('/dashboard/content')}
+            onConnectAccounts={() => navigate('/dashboard/social')}
+            onSetActiveTab={() => {}}
+          />
 
-            {/* Show Social Accounts tab for Starter users */}
-            {isStarterUser && activeTab === 'social' && (
-              <div className="mt-8" ref={socialAccountsRef}>
-                <SocialMediaSettings />
-              </div>
-            )}
-
-            {/* Upgrade Prompts for non-subscribed users only */}
-            {!subscribed && <UpgradePrompt />}
-          </>
-        )}
+          {!hasAnyPlan && (
+            <UpgradePrompt />
+          )}
+        </div>
       </div>
     </div>
   );

@@ -12,6 +12,10 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 import Index from "./pages/Index";
 import DashboardPage from "./pages/DashboardPage";
+import DashboardContentPage from "./pages/DashboardContentPage";
+import DashboardAnalyticsPage from "./pages/DashboardAnalyticsPage";
+import DashboardTeamPage from "./pages/DashboardTeamPage";
+import DashboardSocialPage from "./pages/DashboardSocialPage";
 import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -71,6 +75,26 @@ const App = () => (
                   <Route path="/dashboard" element={
                     <ProtectedRoute>
                       <DashboardPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/content" element={
+                    <ProtectedRoute>
+                      <DashboardContentPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/analytics" element={
+                    <ProtectedRoute>
+                      <DashboardAnalyticsPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/team" element={
+                    <ProtectedRoute>
+                      <DashboardTeamPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/social" element={
+                    <ProtectedRoute>
+                      <DashboardSocialPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/profile" element={
