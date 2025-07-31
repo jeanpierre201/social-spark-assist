@@ -46,6 +46,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating10, setIsGenerating10] = useState(false);
   const [generateWithImages, setGenerateWithImages] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<File | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
@@ -414,7 +415,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
       return;
     }
 
-    setIsGenerating(true);
+    setIsGenerating10(true);
 
     try {
       const variations = [
@@ -452,11 +453,71 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
         if (error) throw error;
 
+        let imageUrl = baseImageUrl;
+        let isImageGenerated = false;
+
+        // Generate AI image if requested for each post
+        if (generateWithImages) {
+          try {
+            let imagePrompt = customImagePrompt.trim() || `Create a professional image for ${industry.trim()} industry. Goal: ${currentGoal}`;
+            if (!customImagePrompt.trim() && nicheInfo.trim()) {
+              imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
+            }
+            if (uploadedImage) {
+              imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
+            }
+
+            const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {
+              body: {
+                prompt: imagePrompt,
+                size: '1024x1024',
+                quality: 'standard',
+                style: 'vivid'
+              }
+            });
+
+            if (imageError) {
+              console.error('Error generating image:', imageError);
+            } else if (imageData?.image) {
+              // Convert base64 to blob and upload to storage
+              const base64Data = imageData.image.split(',')[1];
+              const byteCharacters = atob(base64Data);
+              const byteNumbers = new Array(byteCharacters.length);
+              for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              }
+              const byteArray = new Uint8Array(byteNumbers);
+              const blob = new Blob([byteArray], { type: 'image/png' });
+
+              const timestamp = new Date().getTime();
+              const storagePath = `ai-images/${user.id}/${timestamp}-generated-${i}.png`;
+
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('media')
+                .upload(storagePath, blob, {
+                  cacheControl: '3600',
+                  upsert: false
+                });
+
+              if (!uploadError) {
+                const { data: publicUrlData } = supabase.storage
+                  .from('media')
+                  .getPublicUrl(uploadData.path);
+                
+                imageUrl = publicUrlData.publicUrl;
+                isImageGenerated = true;
+              }
+            }
+          } catch (imageError) {
+            console.error('AI image generation error:', imageError);
+          }
+        }
+
         const generatedContent: GeneratedContent = {
           caption: data.caption,
           hashtags: data.hashtags,
-          image: baseImageUrl,
-          isGenerated: false
+          image: imageUrl,
+          isGenerated: isImageGenerated
         };
 
         // Determine post status based on scheduling and social media selection
@@ -477,7 +538,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             scheduled_time: scheduledTime || null,
             generated_caption: generatedContent.caption,
             generated_hashtags: generatedContent.hashtags,
-            media_url: baseImageUrl || null,
+            media_url: imageUrl || null,
             status: postStatus
           });
 
@@ -504,26 +565,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         setMonthlyPosts(prev => prev + 1);
       }
 
-      // Clear form and reset all state
-      setIndustry('');
-      setGoal('');
-      setNicheInfo('');
-      setScheduledDate('');
-      setScheduledTime('');
-      setUploadedImage(null);
-      setUploadedImageUrl('');
-      setIncludeEmojis(true);
-      setSelectedSocialPlatforms([]);
-      setCustomImagePrompt('');
-      setGenerateWithImages(false);
-
-      // Clear any file inputs
-      const fileInputs = document.querySelectorAll('input[type="file"]');
-      fileInputs.forEach((input: any) => {
-        if (input.id !== 'edit-dialog-file-input') {
-          input.value = '';
-        }
-      });
+      // Don't clear form after generating multiple posts
 
       toast({
         title: `Generated ${Math.min(remainingPosts, 10)} Posts!`,
@@ -540,7 +582,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         variant: "destructive",
       });
     } finally {
-      setIsGenerating(false);
+      setIsGenerating10(false);
     }
   };
 
@@ -767,7 +809,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         <div className="flex flex-col gap-3 pt-4 border-t">
           <Button 
             onClick={handleGenerateSingle}
-            disabled={!industry.trim() || !goal.trim() || isGenerating}
+            disabled={!industry.trim() || !goal.trim() || isGenerating || isGenerating10}
             className="w-full"
           >
             {isGenerating ? (
@@ -786,11 +828,11 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           {remainingPosts > 1 && (
             <Button 
               onClick={handleGenerate10Posts}
-              disabled={!industry.trim() || !goal.trim() || isGenerating}
+              disabled={!industry.trim() || !goal.trim() || isGenerating || isGenerating10}
               variant="outline"
               className="w-full"
             >
-              {isGenerating ? (
+              {isGenerating10 ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Generating...
