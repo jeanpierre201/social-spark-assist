@@ -45,8 +45,8 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
           </CardTitle>
           <CardDescription>
             {isProPlan 
-              ? `You've used ${monthlyPosts} out of ${maxPosts} posts this 30 days (Pro Plan)`
-              : `You've used ${monthlyPosts} out of ${maxPosts} posts this 30 days (Starter Plan)`
+              ? `You've used ${monthlyPosts} out of ${maxPosts} posts this month (Pro Plan)`
+              : `You've used ${monthlyPosts} out of ${maxPosts} posts this month (Starter Plan)`
             }
           </CardDescription>
         </CardHeader>
@@ -70,8 +70,8 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             />
             <div className="text-xs text-muted-foreground">
               {isAtLimit 
-                ? "You've reached your limit. Posts will reset in 30 days." 
-                : `${maxPosts - monthlyPosts} posts remaining this 30 days`
+                ? "You've reached your monthly limit. Posts will reset next month." 
+                : `${maxPosts - monthlyPosts} posts remaining this month`
               }
             </div>
           </div>
@@ -85,7 +85,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             Reset Timeline
           </CardTitle>
           <CardDescription>
-            Your post limit will reset {daysRemaining} days from now
+            Your monthly post limit will reset {daysRemaining} days from now
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,16 +98,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
               <span className="text-muted-foreground">Reset date</span>
               <span className="font-medium">
                 {(() => {
-                  if (!subscriptionStartDate) {
-                    // For Pro users without subscription start date, calculate from current date
-                    const resetDate = new Date();
-                    resetDate.setDate(resetDate.getDate() + daysRemaining);
-                    return resetDate.toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    });
-                  }
+                  if (!subscriptionStartDate) return 'N/A';
                   const startDate = new Date(subscriptionStartDate);
                   const resetDate = new Date(startDate);
                   resetDate.setDate(resetDate.getDate() + 30);
