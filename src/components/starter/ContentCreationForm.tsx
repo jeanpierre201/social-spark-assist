@@ -145,7 +145,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       return;
     }
 
-    // Check monthly usage limit using the new tracking system
+    // Check monthly usage limit using the new tracking system (only for Starter users)
     const { data: monthlyUsage, error: usageError } = await supabase
       .rpc('get_monthly_usage_count', { user_uuid: user.id });
 
@@ -160,8 +160,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
     }
 
     const currentMonthlyUsage = monthlyUsage || 0;
-
-    if (currentMonthlyUsage >= 10) {
+    
+    // For starter users, check the 10 post limit
+    if (currentMonthlyUsage >= 10 && monthlyPosts < 100) {
       toast({
         title: "Monthly Limit Reached",
         description: "You've reached your Starter plan limit of 10 posts per month.",
@@ -406,12 +407,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
     }
 
     const currentMonthlyUsage = monthlyUsage || 0;
-    const remainingPosts = 10 - currentMonthlyUsage;
+    const maxPosts = monthlyPosts >= 100 ? 100 : 10; // Pro users get 100, Starter gets 10
+    const remainingPosts = maxPosts - currentMonthlyUsage;
 
     if (remainingPosts <= 0) {
+      const planType = monthlyPosts >= 100 ? "Pro" : "Starter";
       toast({
         title: "Monthly Limit Reached",
-        description: "You've already used all 10 posts for this month",
+        description: `You've already used all ${maxPosts} posts for this month (${planType} plan)`,
         variant: "destructive",
       });
       return;
@@ -450,7 +453,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         }
       }
 
-      for (let i = 0; i < Math.min(remainingPosts, 10); i++) {
+      const maxGenerate = monthlyPosts >= 100 ? Math.min(remainingPosts, 10) : Math.min(remainingPosts, 10);
+      for (let i = 0; i < maxGenerate; i++) {
         const currentGoal = i === 0 ? goal.trim() : `${goal.trim()} - ${variations[i % variations.length]}`;
         
         const { data, error } = await supabase.functions.invoke('generate-content', {
@@ -531,7 +535,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
 
       toast({
         title: "Batch Generation Complete!",
-        description: `Generated ${Math.min(remainingPosts, 10)} posts successfully`,
+        description: `Generated ${maxGenerate} posts successfully`,
       });
 
       // Notify parent component to refresh
@@ -761,7 +765,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         <div className="space-y-2">
           <Button
             onClick={handleGenerateSingle}
-            disabled={isGenerating || monthlyPosts >= 10 || !industry.trim() || !goal.trim() || !canCreatePosts}
+            disabled={isGenerating || !industry.trim() || !goal.trim() || !canCreatePosts}
             className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
           >
             {isGenerating ? (
@@ -772,19 +776,19 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             ) : (
               <>
                 <Plus className="h-4 w-4 mr-2" />
-                Generate Single Post
+                Generate Content
               </>
             )}
           </Button>
 
           <Button
             onClick={handleGenerateAll10}
-            disabled={isGenerating || monthlyPosts >= 10 || !industry.trim() || !goal.trim() || !canCreatePosts}
+            disabled={isGenerating || !industry.trim() || !goal.trim() || !canCreatePosts}
             variant="outline"
             className="w-full"
           >
             <Wand2 className="h-4 w-4 mr-2" />
-            Generate Remaining Posts ({10 - monthlyPosts} left)
+            Generate 10 Contents
           </Button>
         </div>
       </CardContent>

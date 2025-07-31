@@ -1,55 +1,118 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePostsManager } from '@/hooks/usePostsManager';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Loader2, List, Calendar as CalendarIcon } from 'lucide-react';
 import UsageIndicators from './starter/UsageIndicators';
 import ProAnalytics from './ProAnalytics';
 import TeamCollaboration from './TeamCollaboration';
 import SocialMediaSettings from './SocialMediaSettings';
 import ContentGeneratorHeader from './content/ContentGeneratorHeader';
 import NavigationTabs from './content/NavigationTabs';
-import ContentGenerationForm from './content/ContentGenerationForm';
-import PostsDisplay from './content/PostsDisplay';
+import ContentCreationForm from './starter/ContentCreationForm';
+import PostsList from './starter/PostsList';
+import PostEditDialog from './starter/PostEditDialog';
+import CalendarView from './starter/CalendarView';
+
+interface PostData {
+  id?: string;
+  industry: string;
+  goal: string;
+  nicheInfo: string;
+  scheduledDate?: string;
+  scheduledTime?: string;
+  generatedContent?: {
+    caption: string;
+    hashtags: string[];
+    image?: string;
+  };
+  generated_caption?: string;
+  generated_hashtags?: string[];
+  media_url?: string;
+  created_at?: string;
+}
+
+type ViewMode = 'list' | 'calendar';
 
 const ContentGenerator = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('content');
-  const [prompt, setPrompt] = useState('');
-  const [selectedPlatform, setSelectedPlatform] = useState('twitter');
-  const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
-  const [scheduledTime, setScheduledTime] = useState('');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [posts, setPosts] = useState<PostData[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<any>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [postsRefreshTrigger, setPostsRefreshTrigger] = useState(0);
 
   const {
-    posts,
     currentMonthPosts,
     isProUser,
     isStarterUser,
     isFreeUser,
-    createPostMutation,
-    updatePostMutation,
-    deletePostMutation
   } = usePostsManager();
 
+  // Load existing posts from database
+  useEffect(() => {
+    const loadPosts = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoadingPosts(true);
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Transform database posts to match our PostData interface
+        const transformedPosts = data?.map(post => ({
+          id: post.id,
+          industry: post.industry,
+          goal: post.goal,
+          nicheInfo: post.niche_info || '',
+          scheduledDate: post.scheduled_date,
+          scheduledTime: post.scheduled_time,
+          generatedContent: {
+            caption: post.generated_caption,
+            hashtags: post.generated_hashtags || [],
+            image: post.media_url,
+          },
+          created_at: post.created_at
+        })) || [];
+
+        setPosts(transformedPosts);
+      } catch (error) {
+        console.error('Error loading posts:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your posts",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoadingPosts(false);
+      }
+    };
+
+    loadPosts();
+  }, [user, toast, postsRefreshTrigger]);
+
   const handleEditPost = (post: any) => {
-    setPrompt(post.content);
-    setSelectedPlatform(post.platform);
-    setScheduledDate(post.scheduled_date ? new Date(post.scheduled_date) : null);
-    setScheduledTime(post.scheduled_time || '');
+    setSelectedPost(post);
+    setShowEditDialog(true);
   };
 
-  const handleUpdatePost = async (post: any, newContent: string) => {
-    updatePostMutation.mutate({ 
-      id: post.id, 
-      content: newContent,
-      scheduled_date: post.scheduled_date,
-      scheduled_time: post.scheduled_time
-    });
+  const handlePostUpdated = () => {
+    setPostsRefreshTrigger(prev => prev + 1);
   };
 
-  const handleDeletePost = async (id: string) => {
-    deletePostMutation.mutate(id);
-  };
-
-  const handlePostCreated = (newPost: any) => {
-    createPostMutation.mutate(newPost);
+  const handlePostCreated = () => {
+    setPostsRefreshTrigger(prev => prev + 1);
   };
 
   return (
@@ -80,23 +143,60 @@ const ContentGenerator = () => {
               subscriptionStartDate={null}
             />
 
-            {/* Content Generation Form */}
-            <div className="mb-6">
-              <ContentGenerationForm
-                currentMonthPosts={currentMonthPosts}
-                isProUser={isProUser}
-                isStarterUser={isStarterUser}
-                isFreeUser={isFreeUser}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Content Generation Form */}
+              <ContentCreationForm 
+                monthlyPosts={currentMonthPosts}
+                setMonthlyPosts={() => {}} // Pro users don't need to track monthly posts the same way
+                canCreatePosts={true} // Pro users can always create posts
+                setPosts={setPosts}
                 onPostCreated={handlePostCreated}
               />
-            </div>
+              
+              <div className="space-y-4" data-posts-section>
+                {/* View Toggle */}
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xl font-semibold">Your Posts</h2>
+                  <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
+                    <Button
+                      variant={viewMode === 'list' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('list')}
+                      className="flex items-center space-x-1"
+                    >
+                      <List className="h-4 w-4" />
+                      <span>List</span>
+                    </Button>
+                    <Button
+                      variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('calendar')}
+                      className="flex items-center space-x-1"
+                    >
+                      <CalendarIcon className="h-4 w-4" />
+                      <span>Calendar</span>
+                    </Button>
+                  </div>
+                </div>
 
-            {/* Display Generated Posts */}
-            <PostsDisplay
-              posts={posts}
-              onEditPost={handleEditPost}
-              onUpdatePost={handleUpdatePost}
-              onDeletePost={handleDeletePost}
+                {/* Posts Display */}
+                {isLoadingPosts ? (
+                  <div className="flex items-center justify-center h-64">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                  </div>
+                ) : viewMode === 'list' ? (
+                  <PostsList onEditPost={handleEditPost} refreshTrigger={postsRefreshTrigger} />
+                ) : (
+                  <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
+                )}
+              </div>
+            </div>
+            
+            <PostEditDialog
+              post={selectedPost}
+              open={showEditDialog}
+              onOpenChange={setShowEditDialog}
+              onPostUpdated={handlePostUpdated}
             />
           </>
         )}
