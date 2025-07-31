@@ -360,7 +360,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
     }
   };
 
-  const handleGenerateRemaining = async () => {
+  const handleGenerate10Posts = async () => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -394,7 +394,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
     }
 
     const currentMonthlyUsage = monthlyUsage || 0;
-    const remainingPosts = 100 - currentMonthlyUsage;
+    const remainingPosts = Math.min(10, 100 - currentMonthlyUsage);
 
     if (remainingPosts <= 0) {
       toast({
@@ -438,7 +438,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         }
       }
 
-      for (let i = 0; i < Math.min(remainingPosts, 10); i++) {
+      for (let i = 0; i < remainingPosts; i++) {
         const currentGoal = i === 0 ? goal.trim() : `${goal.trim()} - ${variations[i % variations.length]}`;
         
         const { data, error } = await supabase.functions.invoke('generate-content', {
@@ -621,8 +621,24 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
               </p>
             )}
             {uploadedImageUrl && (
-              <div className={`mt-2 ${generateWithImages ? 'opacity-50' : ''}`}>
-                <img src={uploadedImageUrl} alt="Uploaded" className="max-h-32 rounded-md" />
+              <div className={`mt-2 relative inline-block ${generateWithImages ? 'opacity-50' : ''}`}>
+                <img 
+                  src={uploadedImageUrl} 
+                  alt="Uploaded preview" 
+                  className="w-16 h-16 object-cover rounded border border-gray-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUploadedImage(null);
+                    setUploadedImageUrl('');
+                    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+                    if (fileInput) fileInput.value = '';
+                  }}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600"
+                >
+                  ×
+                </button>
               </div>
             )}
             {generateWithImages && (
@@ -769,7 +785,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
           {remainingPosts > 1 && (
             <Button 
-              onClick={handleGenerateRemaining}
+              onClick={handleGenerate10Posts}
               disabled={!industry.trim() || !goal.trim() || isGenerating}
               variant="outline"
               className="w-full"
@@ -780,10 +796,17 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
                   Generating...
                 </>
               ) : (
-                <>
-                  <Wand2 className="mr-2 h-4 w-4" />
-                  Generate Remaining {Math.min(remainingPosts, 10)} Posts
-                </>
+                remainingPosts >= 10 ? (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Generate 10 Posts
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="mr-2 h-4 w-4" />
+                    Generate Remaining Posts ({remainingPosts} left)
+                  </>
+                )
               )}
             </Button>
           )}

@@ -28,7 +28,15 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('overview');
+  // Get tab from URL or default to 'overview'
+  const getInitialTab = () => {
+    const hash = location.hash.replace('#', '');
+    return ['overview', 'content-generator', 'analytics', 'team', 'social-accounts'].includes(hash) 
+      ? hash 
+      : 'overview';
+  };
+  
+  const [activeTab, setActiveTab] = useState(getInitialTab());
   const socialAccountsRef = useRef<HTMLDivElement>(null);
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
@@ -86,6 +94,25 @@ const Dashboard = () => {
 
     fetchSubscriptionData();
   }, [user, isProUser]);
+
+  // Update tab when hash changes
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      setActiveTab(getInitialTab());
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [location.hash]);
+
+  // Update URL hash when tab changes
+  React.useEffect(() => {
+    if (activeTab !== 'overview') {
+      window.location.hash = activeTab;
+    } else {
+      window.location.hash = '';
+    }
+  }, [activeTab]);
 
   // Check if we're coming from content generator
   const isFromContentGenerator = location.pathname === '/dashboard' && location.state?.fromContentGenerator;
@@ -206,7 +233,7 @@ const Dashboard = () => {
         />
 
         {/* Tab Content for Pro Users */}
-        {isProUser && activeTab === 'content' && (
+        {isProUser && activeTab === 'content-generator' && (
           <>
             {/* Usage Indicators */}
             <UsageIndicators 
@@ -245,7 +272,7 @@ const Dashboard = () => {
         )}
         {isProUser && activeTab === 'analytics' && <ProAnalytics />}
         {isProUser && activeTab === 'team' && <TeamCollaboration />}
-        {isProUser && activeTab === 'social' && <SocialMediaSettings />}
+        {isProUser && activeTab === 'social-accounts' && <SocialMediaSettings />}
         
         {/* Overview Tab or Default View */}
         {(!isProUser || activeTab === 'overview') && (
