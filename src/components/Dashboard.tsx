@@ -15,6 +15,7 @@ import UsageIndicators from './starter/UsageIndicators';
 import ContentGenerationForm from './content/ContentGenerationForm';
 import PostsDisplay from './content/PostsDisplay';
 import ProContentCreationForm from './dashboard/ProContentCreationForm';
+import ProPostsSection from './dashboard/ProPostsSection';
 import DashboardHeader from './dashboard/DashboardHeader';
 import QuickStats from './dashboard/QuickStats';
 import ActionCards from './dashboard/ActionCards';
@@ -234,9 +235,8 @@ const Dashboard = () => {
               />
             </div>
 
-            {/* Display Generated Posts */}
-            <PostsDisplay
-              posts={posts}
+            {/* Display Generated Posts - Pro Version */}
+            <ProPostsSection
               onEditPost={handleEditPost}
               onUpdatePost={handleUpdatePost}
               onDeletePost={handleDeletePost}
