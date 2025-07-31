@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, isSameDay } from 'date-fns';
 import CalendarDisplay from '@/components/starter/calendar/CalendarDisplay';
 import PostsList from '@/components/starter/calendar/PostsList';
-import PostEditDialog from '@/components/starter/calendar/PostEditDialog';
+import PostEditDialog from '@/components/starter/PostEditDialog';
 
 interface Post {
   id: string;
@@ -22,8 +22,13 @@ interface Post {
   generated_caption: string;
   generated_hashtags: string[];
   media_url: string | null;
+  uploaded_image_url: string | null;
+  ai_generated_image_1_url: string | null;
+  ai_generated_image_2_url: string | null;
+  selected_image_type: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
+  social_platforms: string[];
   status: 'draft' | 'scheduled' | 'published' | 'archived';
   created_at: string;
   posted_at: string | null;
@@ -66,7 +71,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<PostData | null>(null);
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const postsPerPage = 10;
 
   useEffect(() => {
@@ -106,12 +111,33 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
 
       if (error) throw error;
 
-      const postsData = (data || []) as Post[];
-      setPosts(postsData);
+      const postsData = (data || []) as any[];
+      // Transform to match our Post interface
+      const typedPosts: Post[] = postsData.map(post => ({
+        id: post.id,
+        industry: post.industry,
+        goal: post.goal,
+        niche_info: post.niche_info,
+        generated_caption: post.generated_caption,
+        generated_hashtags: post.generated_hashtags || [],
+        media_url: post.media_url,
+        uploaded_image_url: post.uploaded_image_url || null,
+        ai_generated_image_1_url: post.ai_generated_image_1_url || null,
+        ai_generated_image_2_url: post.ai_generated_image_2_url || null,
+        selected_image_type: post.selected_image_type || null,
+        scheduled_date: post.scheduled_date,
+        scheduled_time: post.scheduled_time,
+        social_platforms: post.social_platforms || [],
+        status: post.status,
+        created_at: post.created_at,
+        posted_at: post.posted_at
+      }));
+      
+      setPosts(typedPosts);
       setTotalPages(Math.ceil((count || 0) / postsPerPage));
 
       // Transform posts for calendar view
-      const transformed = postsData.map(post => ({
+      const transformed = typedPosts.map(post => ({
         id: post.id,
         industry: post.industry,
         goal: post.goal,
@@ -206,8 +232,12 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
   };
 
   const handlePostClick = (post: PostData) => {
-    setEditingPost({ ...post });
-    setIsEditDialogOpen(true);
+    // Find the original post to get all fields
+    const originalPost = posts.find(p => p.id === post.id);
+    if (originalPost) {
+      setEditingPost(originalPost);
+      setIsEditDialogOpen(true);
+    }
   };
 
   const handleCalendarDelete = (post: PostData) => {
@@ -218,80 +248,14 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
   };
 
   const handleListPostEdit = (post: Post) => {
-    const transformedPost: PostData = {
-      id: post.id,
-      industry: post.industry,
-      goal: post.goal,
-      nicheInfo: post.niche_info || '',
-      scheduledDate: post.scheduled_date,
-      scheduledTime: post.scheduled_time,
-      generatedContent: {
-        caption: post.generated_caption,
-        hashtags: post.generated_hashtags || [],
-        image: post.media_url,
-      },
-      created_at: post.created_at
-    };
-    setEditingPost({ ...transformedPost });
+    setEditingPost(post);
     setIsEditDialogOpen(true);
   };
 
-  const handleSavePost = async () => {
-    if (!editingPost || !editingPost.id) return;
-
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .update({
-          industry: editingPost.industry,
-          goal: editingPost.goal,
-          niche_info: editingPost.nicheInfo,
-          scheduled_date: editingPost.scheduledDate,
-          scheduled_time: editingPost.scheduledTime,
-          generated_caption: editingPost.generatedContent?.caption,
-          generated_hashtags: editingPost.generatedContent?.hashtags,
-          media_url: editingPost.generatedContent?.image
-        })
-        .eq('id', editingPost.id);
-
-      if (error) throw error;
-
-      // Update local state
-      setTransformedPosts(transformedPosts.map(post => 
-        post.id === editingPost.id ? editingPost : post
-      ));
-
-      // Also update the original posts array
-      const updatedPost = {
-        ...posts.find(p => p.id === editingPost.id)!,
-        industry: editingPost.industry,
-        goal: editingPost.goal,
-        niche_info: editingPost.nicheInfo,
-        scheduled_date: editingPost.scheduledDate,
-        scheduled_time: editingPost.scheduledTime,
-        generated_caption: editingPost.generatedContent?.caption || '',
-        generated_hashtags: editingPost.generatedContent?.hashtags || [],
-        media_url: editingPost.generatedContent?.image
-      };
-      
-      onUpdatePost(updatedPost, editingPost.generatedContent?.caption || '');
-
-      toast({
-        title: "Success",
-        description: "Post updated successfully",
-      });
-
-      setIsEditDialogOpen(false);
-      setEditingPost(null);
-      fetchPosts();
-    } catch (error) {
-      console.error('Error updating post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update post",
-        variant: "destructive",
-      });
-    }
+  const handlePostUpdated = () => {
+    fetchPosts();
+    setIsEditDialogOpen(false);
+    setEditingPost(null);
   };
 
   if (loading) {
@@ -545,13 +509,12 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
           </AlertDialogContent>
         </AlertDialog>
 
-        {/* Calendar Edit Dialog */}
+        {/* Edit Dialog - Using Starter Plan Dialog */}
         <PostEditDialog
-          isOpen={isEditDialogOpen}
-          onClose={() => setIsEditDialogOpen(false)}
-          editingPost={editingPost}
-          onPostChange={setEditingPost}
-          onSave={handleSavePost}
+          post={editingPost}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onPostUpdated={handlePostUpdated}
         />
       </CardContent>
     </Card>
