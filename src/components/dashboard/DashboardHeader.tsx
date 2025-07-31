@@ -49,8 +49,8 @@ const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => 
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Dashboard
           </h1>
-          <p className="text-muted-foreground flex items-center gap-2">
-            Welcome back, {user?.email}
+          <div className="text-muted-foreground flex items-center gap-2">
+            <span>Welcome back, {user?.email}</span>
             {isProUser && (
               <Badge className="bg-purple-100 text-purple-800">
                 <Crown className="h-3 w-3 mr-1 text-purple-600" />
@@ -63,7 +63,7 @@ const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => 
                 Starter Plan (10 posts/month)
               </Badge>
             )}
-          </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Avatar 
