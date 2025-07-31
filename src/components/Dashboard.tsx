@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import ProAnalytics from './ProAnalytics';
 import TeamCollaboration from './TeamCollaboration';
 import SocialMediaSettings from './SocialMediaSettings';
@@ -12,6 +14,7 @@ import { usePostsManager } from '@/hooks/usePostsManager';
 import UsageIndicators from './starter/UsageIndicators';
 import ContentGenerationForm from './content/ContentGenerationForm';
 import PostsDisplay from './content/PostsDisplay';
+import ProContentCreationForm from './dashboard/ProContentCreationForm';
 import DashboardHeader from './dashboard/DashboardHeader';
 import QuickStats from './dashboard/QuickStats';
 import ActionCards from './dashboard/ActionCards';
@@ -23,8 +26,13 @@ const Dashboard = () => {
   const { accounts, metrics } = useSocialAccounts();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('overview');
   const socialAccountsRef = useRef<HTMLDivElement>(null);
+
+  const isProUser = subscribed && subscriptionTier === 'Pro';
+  const isStarterUser = subscribed && subscriptionTier === 'Starter';
+  const hasAnyPlan = subscribed && (subscriptionTier === 'Pro' || subscriptionTier === 'Starter');
 
   // Add posts manager for content generation
   const {
@@ -37,9 +45,46 @@ const Dashboard = () => {
     isFreeUser
   } = usePostsManager();
 
-  const isProUser = subscribed && subscriptionTier === 'Pro';
-  const isStarterUser = subscribed && subscriptionTier === 'Starter';
-  const hasAnyPlan = subscribed && (subscriptionTier === 'Pro' || subscriptionTier === 'Starter');
+  // Fetch subscription start date for Pro users
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
+  const [daysRemaining, setDaysRemaining] = useState(30);
+
+  // Get subscription start date
+  React.useEffect(() => {
+    const fetchSubscriptionData = async () => {
+      if (!user || !isProUser) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('subscribers')
+          .select('created_at, updated_at')
+          .eq('user_id', user.id)
+          .eq('subscribed', true)
+          .eq('subscription_tier', 'Pro')
+          .single();
+
+        if (error) {
+          console.error('Error fetching subscription data:', error);
+          return;
+        }
+
+        if (data) {
+          const startDate = new Date(data.created_at);
+          setSubscriptionStartDate(data.created_at);
+          
+          // Calculate days remaining (30 days from subscription start)
+          const now = new Date();
+          const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+          const remaining = Math.max(0, 30 - daysSinceStart);
+          setDaysRemaining(remaining);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription data:', error);
+      }
+    };
+
+    fetchSubscriptionData();
+  }, [user, isProUser]);
 
   // Check if we're coming from content generator
   const isFromContentGenerator = location.pathname === '/dashboard' && location.state?.fromContentGenerator;
@@ -165,20 +210,27 @@ const Dashboard = () => {
             {/* Usage Indicators */}
             <UsageIndicators 
               monthlyPosts={currentMonthPosts} 
-              daysRemaining={30}
-              maxPosts={postLimit}
+              daysRemaining={daysRemaining}
+              maxPosts={100}
               isProPlan={isProUser}
-              subscriptionStartDate={null}
+              subscriptionStartDate={subscriptionStartDate}
             />
 
             {/* Content Generation Form */}
             <div className="mb-6">
-              <ContentGenerationForm
-                currentMonthPosts={currentMonthPosts}
-                isProUser={isProUser}
-                isStarterUser={isStarterUser}
-                isFreeUser={isFreeUser}
-                onPostCreated={handlePostCreated}
+              <ProContentCreationForm
+                monthlyPosts={currentMonthPosts}
+                setMonthlyPosts={(value) => {
+                  // This is handled by the hook, so we don't need to update here
+                }}
+                canCreatePosts={isProUser}
+                setPosts={(value) => {
+                  // This is handled by the hook, so we don't need to update here
+                }}
+                onPostCreated={() => {
+                  // Refresh the posts query when a new post is created
+                  queryClient.invalidateQueries({ queryKey: ['posts', user?.id] });
+                }}
               />
             </div>
 

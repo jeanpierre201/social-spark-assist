@@ -45,8 +45,8 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
           </CardTitle>
           <CardDescription>
             {isProPlan 
-              ? `You've used ${monthlyPosts} out of ${maxPosts} posts this month (Pro Plan)`
-              : `You've used ${monthlyPosts} out of ${maxPosts} posts this month (Starter Plan)`
+              ? `You've used ${monthlyPosts} out of ${maxPosts} posts this 30 days (Pro Plan)`
+              : `You've used ${monthlyPosts} out of ${maxPosts} posts this 30 days (Starter Plan)`
             }
           </CardDescription>
         </CardHeader>
@@ -70,8 +70,8 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             />
             <div className="text-xs text-muted-foreground">
               {isAtLimit 
-                ? "You've reached your monthly limit. Posts will reset next month." 
-                : `${maxPosts - monthlyPosts} posts remaining this month`
+                ? "You've reached your monthly limit. Posts will reset in 30 days from subscription start/upgrade." 
+                : `${maxPosts - monthlyPosts} posts remaining this 30 days`
               }
             </div>
           </div>
@@ -85,7 +85,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             Reset Timeline
           </CardTitle>
           <CardDescription>
-            Your monthly post limit will reset {daysRemaining} days from now
+            Your post limit will reset {daysRemaining} days from now (30 days from subscription start/upgrade)
           </CardDescription>
         </CardHeader>
         <CardContent>
