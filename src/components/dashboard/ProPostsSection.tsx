@@ -217,6 +217,25 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
     }
   };
 
+  const handleListPostEdit = (post: Post) => {
+    const transformedPost: PostData = {
+      id: post.id,
+      industry: post.industry,
+      goal: post.goal,
+      nicheInfo: post.niche_info || '',
+      scheduledDate: post.scheduled_date,
+      scheduledTime: post.scheduled_time,
+      generatedContent: {
+        caption: post.generated_caption,
+        hashtags: post.generated_hashtags || [],
+        image: post.media_url,
+      },
+      created_at: post.created_at
+    };
+    setEditingPost({ ...transformedPost });
+    setIsEditDialogOpen(true);
+  };
+
   const handleSavePost = async () => {
     if (!editingPost || !editingPost.id) return;
 
@@ -413,7 +432,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onEditPost(post)}
+                          onClick={() => handleListPostEdit(post)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -421,7 +440,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => onEditPost(post)}
+                          onClick={() => handleListPostEdit(post)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
