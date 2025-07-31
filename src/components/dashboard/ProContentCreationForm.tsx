@@ -159,10 +159,10 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
     const currentMonthlyUsage = monthlyUsage || 0;
 
-    if (currentMonthlyUsage >= 100) {
+    if (currentMonthlyUsage >= 50) {
       toast({
         title: "Monthly Limit Reached",
-        description: "You've reached your Pro plan limit of 100 posts per month.",
+        description: "You've reached your Pro plan limit of 50 posts per month.",
         variant: "destructive",
       });
       return;
@@ -395,12 +395,12 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
     }
 
     const currentMonthlyUsage = monthlyUsage || 0;
-    const remainingPosts = Math.min(10, 100 - currentMonthlyUsage);
+    const remainingPosts = Math.min(10, 50 - currentMonthlyUsage);
 
     if (remainingPosts <= 0) {
       toast({
         title: "Monthly Limit Reached",
-        description: "You've already used all 100 posts for this month",
+        description: "You've already used all 50 posts for this month",
         variant: "destructive",
       });
       return;
@@ -483,8 +483,8 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
               const base64Data = imageData.image.split(',')[1];
               const byteCharacters = atob(base64Data);
               const byteNumbers = new Array(byteCharacters.length);
-              for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
+              for (let j = 0; j < byteCharacters.length; j++) {
+                byteNumbers[j] = byteCharacters.charCodeAt(j);
               }
               const byteArray = new Uint8Array(byteNumbers);
               const blob = new Blob([byteArray], { type: 'image/png' });
@@ -587,7 +587,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
   };
 
   const connectedPlatforms = accounts.filter(account => account.is_active);
-  const remainingPosts = Math.max(0, 100 - monthlyPosts);
+  const remainingPosts = Math.max(0, 50 - monthlyPosts);
 
   return (
     <Card>
