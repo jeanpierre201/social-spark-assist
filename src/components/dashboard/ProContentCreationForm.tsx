@@ -136,8 +136,8 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
     if (!canCreatePosts) {
       toast({
-        title: "Subscription Required",
-        description: "Post creation requires an active Pro subscription.",
+        title: "Creation Period Expired",
+        description: "Your 30-day creation period has expired. Contact support or upgrade to continue creating posts.",
         variant: "destructive",
       });
       return;
@@ -373,8 +373,8 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
     if (!canCreatePosts) {
       toast({
-        title: "Subscription Required",
-        description: "Post creation requires an active Pro subscription.",
+        title: "Creation Period Expired",
+        description: "Your 30-day creation period has expired. Contact support or upgrade to continue creating posts.",
         variant: "destructive",
       });
       return;

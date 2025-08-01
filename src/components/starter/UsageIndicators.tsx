@@ -16,6 +16,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
   const usagePercentage = maxPosts > 0 ? Math.min((monthlyPosts / maxPosts) * 100, 100) : 0;
   const isNearLimit = usagePercentage >= 80;
   const isAtLimit = monthlyPosts >= maxPosts;
+  const isPeriodExpired = daysRemaining === 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -28,15 +29,21 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
               ) : (
                 <Zap className="h-5 w-5 mr-2 text-blue-600" />
               )}
-              Monthly Usage
+              30 Days Usage
             </div>
-            {isAtLimit && (
+            {isPeriodExpired && (
+              <Badge variant="destructive" className="flex items-center">
+                <AlertTriangle className="h-3 w-3 mr-1" />
+                Period Expired
+              </Badge>
+            )}
+            {isAtLimit && !isPeriodExpired && (
               <Badge variant="destructive" className="flex items-center">
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 Limit Reached
               </Badge>
             )}
-            {isNearLimit && !isAtLimit && (
+            {isNearLimit && !isAtLimit && !isPeriodExpired && (
               <Badge variant="outline" className="text-orange-600 border-orange-200">
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 Near Limit
@@ -44,9 +51,11 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             )}
           </CardTitle>
           <CardDescription>
-            {isProPlan 
-              ? `You've used ${monthlyPosts} out of ${maxPosts} posts this 30 days (Pro Plan)`
-              : `You've used ${monthlyPosts} out of ${maxPosts} posts this 30 days (Starter Plan)`
+            {isPeriodExpired 
+              ? `Creation period expired. You used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period.`
+              : isProPlan 
+                ? `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Pro Plan)`
+                : `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Starter Plan)`
             }
           </CardDescription>
         </CardHeader>
@@ -59,40 +68,49 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             <Progress 
               value={usagePercentage} 
               className={`h-3 ${
-                isAtLimit 
-                  ? '[&>div]:bg-red-500' 
-                  : isNearLimit 
-                    ? '[&>div]:bg-orange-500' 
-                    : isProPlan 
-                      ? '[&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-blue-500' 
-                      : '[&>div]:bg-blue-500'
+                isPeriodExpired
+                  ? '[&>div]:bg-gray-500' 
+                  : isAtLimit 
+                    ? '[&>div]:bg-red-500' 
+                    : isNearLimit 
+                      ? '[&>div]:bg-orange-500' 
+                      : isProPlan 
+                        ? '[&>div]:bg-gradient-to-r [&>div]:from-purple-500 [&>div]:to-blue-500' 
+                        : '[&>div]:bg-blue-500'
               }`}
             />
             <div className="text-xs text-muted-foreground">
-              {isAtLimit 
-                ? "You've reached your monthly limit. Posts will reset in 30 days from subscription start/upgrade." 
-                : `${maxPosts - monthlyPosts} posts remaining this 30 days`
+              {isPeriodExpired
+                ? "Creation period has expired. Upgrade or extend subscription to create new posts."
+                : isAtLimit 
+                  ? "You've reached your limit for this 30-day period." 
+                  : `${maxPosts - monthlyPosts} posts remaining in your 30-day period`
               }
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="border-gray-200">
+      <Card className={`${isPeriodExpired ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-lg">
-            <Calendar className="h-5 w-5 mr-2 text-gray-600" />
+          <CardTitle className={`flex items-center text-lg ${isPeriodExpired ? 'text-red-700' : ''}`}>
+            <Calendar className={`h-5 w-5 mr-2 ${isPeriodExpired ? 'text-red-600' : 'text-gray-600'}`} />
             Reset Timeline
           </CardTitle>
-          <CardDescription>
-            Your post limit will reset {daysRemaining} days from now (30 days from subscription start/upgrade)
+          <CardDescription className={isPeriodExpired ? 'text-red-600' : ''}>
+            {isPeriodExpired 
+              ? "Your 30-day creation period has expired. Contact support or upgrade to continue creating posts."
+              : `Your creation period will reset in ${daysRemaining} days (30 days from subscription start)`
+            }
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Days until reset</span>
-              <span className="font-medium">{daysRemaining} days</span>
+              <span className={isPeriodExpired ? 'text-red-600' : 'text-muted-foreground'}>Days until reset</span>
+              <span className={`font-medium ${isPeriodExpired ? 'text-red-700' : ''}`}>
+                {isPeriodExpired ? 'Expired' : `${daysRemaining} days`}
+              </span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Reset date</span>
@@ -110,8 +128,11 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
                 })()}
               </span>
             </div>
-            <div className="text-xs text-muted-foreground">
-              Posts reset 30 days after subscription start/upgrade
+            <div className={`text-xs ${isPeriodExpired ? 'text-red-600' : 'text-muted-foreground'}`}>
+              {isPeriodExpired 
+                ? "Contact support to extend your creation period or upgrade subscription"
+                : "Creation period resets 30 days after subscription start"
+              }
             </div>
           </div>
         </CardContent>

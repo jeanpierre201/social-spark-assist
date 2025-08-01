@@ -138,8 +138,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
 
     if (!canCreatePosts) {
       toast({
-        title: "Subscription Required",
-        description: "Post creation is only available for 30 days from your subscription start date.",
+        title: "Creation Period Expired",
+        description: "Your 30-day creation period has expired. Contact support or upgrade to continue creating posts.",
         variant: "destructive",
       });
       return;
@@ -384,8 +384,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
 
     if (!canCreatePosts) {
       toast({
-        title: "Subscription Required",
-        description: "Post creation is only available for 30 days from your subscription start date.",
+        title: "Creation Period Expired", 
+        description: "Your 30-day creation period has expired. Contact support or upgrade to continue creating posts.",
         variant: "destructive",
       });
       return;
