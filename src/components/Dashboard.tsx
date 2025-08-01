@@ -161,11 +161,39 @@ const Dashboard = () => {
             isProUser={isProUser}
             isStarterUser={isStarterUser}
             hasAnyPlan={hasAnyPlan}
-            onContentGeneration={() => navigate('/dashboard/content')}
-            onViewAllPosts={() => navigate('/dashboard/content')}
-            onCalendarView={() => navigate('/dashboard/content')}
+            onContentGeneration={() => {
+              if (isProUser) {
+                navigate('/dashboard/content');
+              } else if (isStarterUser) {
+                navigate('/content-generator-starter');
+              } else {
+                navigate('/dashboard/content');
+              }
+            }}
+            onViewAllPosts={() => {
+              if (isProUser) {
+                navigate('/dashboard/content');
+              } else if (isStarterUser) {
+                navigate('/content-generator-starter');
+              } else {
+                navigate('/dashboard/content');
+              }
+            }}
+            onCalendarView={() => {
+              if (isProUser) {
+                navigate('/dashboard/content');
+              } else if (isStarterUser) {
+                navigate('/content-generator-starter');
+              } else {
+                navigate('/dashboard/content');
+              }
+            }}
             onConnectAccounts={() => navigate('/dashboard/social')}
-            onSetActiveTab={() => {}}
+            onSetActiveTab={(tab: string) => {
+              if (tab === 'content') navigate('/dashboard/content');
+              else if (tab === 'analytics') navigate('/dashboard/analytics');
+              else if (tab === 'team') navigate('/dashboard/team');
+            }}
           />
 
           {!hasAnyPlan && (

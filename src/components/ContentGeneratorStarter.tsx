@@ -167,7 +167,7 @@ const ContentGeneratorStarter = () => {
         {/* Header */}
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Starter Content Generator</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Content Generator</h1>
             <p className="text-muted-foreground">Generate up to 10 posts per month with AI assistance</p>
           </div>
           <div className="flex items-center space-x-3">

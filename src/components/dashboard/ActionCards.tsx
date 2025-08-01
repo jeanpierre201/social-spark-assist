@@ -49,13 +49,7 @@ const ActionCards = ({
         </CardHeader>
         <CardContent>
           <Button 
-            onClick={() => {
-              if (isProUser) {
-                onSetActiveTab('content');
-              } else {
-                onContentGeneration();
-              }
-            }}
+            onClick={onContentGeneration}
             className={`w-full ${
               isProUser 
                 ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' 
@@ -142,7 +136,13 @@ const ActionCards = ({
             <Button 
               variant="outline" 
               className="w-full"
-              onClick={onConnectAccounts}
+              onClick={() => {
+                if (isProUser) {
+                  onSetActiveTab('team');
+                } else {
+                  onConnectAccounts();
+                }
+              }}
             >
               {isProUser ? 'Manage Team' : 'Connect Accounts'}
             </Button>
