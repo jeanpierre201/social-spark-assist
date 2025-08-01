@@ -35,6 +35,13 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
     }
   };
 
+  // Calculate posts created in the last period when expired
+  const getLastPeriodPosts = () => {
+    // This should be calculated based on the previous 30-day period
+    // For now, return monthlyPosts as it represents the period usage
+    return monthlyPosts;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
       <Card className={`${isProPlan ? 'border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50' : 'border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50'}`}>
@@ -69,7 +76,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
           </CardTitle>
           <CardDescription>
             {isPeriodExpired 
-              ? `Creation period expired. You used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period.`
+              ? `You used ${getLastPeriodPosts()} out of ${maxPosts} posts in your last 30-day period.`
               : isProPlan 
                 ? `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Pro Plan)`
                 : `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Starter Plan)`
@@ -99,20 +106,34 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             <div className="text-xs text-muted-foreground">
               {isPeriodExpired ? (
                 <span>
-                  <button 
-                    onClick={handleUpgrade}
-                    className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                  >
-                    Upgrade
-                  </button>
-                  {" or "}
-                  <button 
-                    onClick={handleExtend}
-                    className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                  >
-                    extend
-                  </button>
-                  {" subscription to create new posts."}
+                  {isProPlan ? (
+                    <>
+                      <button 
+                        onClick={handleExtend}
+                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                      >
+                        Extend
+                      </button>
+                      {" subscription to create new posts."}
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={handleUpgrade}
+                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                      >
+                        Upgrade
+                      </button>
+                      {" or "}
+                      <button 
+                        onClick={handleExtend}
+                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                      >
+                        extend
+                      </button>
+                      {" subscription to create new posts."}
+                    </>
+                  )}
                 </span>
               ) : isAtLimit 
                 ? "You've reached your limit for this 30-day period." 
@@ -132,7 +153,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
           <CardDescription className={isPeriodExpired ? 'text-red-600' : ''}>
             {isPeriodExpired 
               ? "Your 30-day creation period has expired."
-              : `Your creation period will reset in ${daysRemaining} days (30 days from subscription start)`
+              : `Your post limit will reset in ${daysRemaining} days (30 days from subscription start/upgrade)`
             }
           </CardDescription>
         </CardHeader>
