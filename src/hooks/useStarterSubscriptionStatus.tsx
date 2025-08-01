@@ -62,14 +62,21 @@ export const useStarterSubscriptionStatus = () => {
         setCanCreatePosts(isWithinCreationWindow);
         setDaysRemaining(remainingDays);
 
-        // Check monthly post count only if user can create posts
-        if (isWithinCreationWindow) {
-          const { data, error } = await supabase.rpc('get_monthly_post_count', {
-            user_uuid: user.id
-          });
+        // Check subscription period post count
+        if (subscriptionStart && isWithinCreationWindow) {
+          const startDate = new Date(subscriptionStart);
+          const endDate = new Date();
+          endDate.setDate(startDate.getDate() + 30);
+          
+          const { data: posts, error } = await supabase
+            .from('posts')
+            .select('id')
+            .eq('user_id', user.id)
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString());
           
           if (error) throw error;
-          setMonthlyPosts(data || 0);
+          setMonthlyPosts(posts?.length || 0);
         }
         
       } catch (error) {

@@ -188,7 +188,13 @@ const Dashboard = () => {
                 navigate('/dashboard/content');
               }
             }}
-            onConnectAccounts={() => navigate('/dashboard/social')}
+            onConnectAccounts={() => {
+              if (isProUser) {
+                navigate('/dashboard/social');
+              } else {
+                navigate('/dashboard/social');
+              }
+            }}
             onSetActiveTab={(tab: string) => {
               if (tab === 'content') navigate('/dashboard/content');
               else if (tab === 'analytics') navigate('/dashboard/analytics');

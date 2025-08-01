@@ -5,6 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Zap, Crown, AlertTriangle } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useProUpgrade } from '@/hooks/useProUpgrade';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useState } from 'react';
 
 interface UsageIndicatorsProps {
   monthlyPosts: number;
@@ -17,6 +20,8 @@ interface UsageIndicatorsProps {
 const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = false, subscriptionStartDate }: UsageIndicatorsProps) => {
   const { createCheckout } = useSubscription();
   const { createProCheckout } = useProUpgrade();
+  const { user } = useAuth();
+  const [lastPeriodPosts, setLastPeriodPosts] = useState(0);
   
   const usagePercentage = maxPosts > 0 ? Math.min((monthlyPosts / maxPosts) * 100, 100) : 0;
   const isNearLimit = usagePercentage >= 80;
@@ -35,12 +40,31 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
     }
   };
 
-  // Calculate posts created in the last period when expired
-  const getLastPeriodPosts = () => {
-    // This should be calculated based on the previous 30-day period
-    // For now, return monthlyPosts as it represents the period usage
-    return monthlyPosts;
-  };
+  useEffect(() => {
+    const fetchLastPeriodPosts = async () => {
+      if (subscriptionStartDate && user && isPeriodExpired) {
+        try {
+          const subscriptionStart = new Date(subscriptionStartDate);
+          const previousPeriodStart = new Date(subscriptionStart);
+          previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
+          
+          const { data: posts, error } = await supabase
+            .from('posts')
+            .select('id')
+            .eq('user_id', user.id)
+            .gte('created_at', previousPeriodStart.toISOString())
+            .lt('created_at', subscriptionStart.toISOString());
+          
+          if (error) throw error;
+          setLastPeriodPosts(posts?.length || 0);
+        } catch (error) {
+          console.error('Error fetching last period posts:', error);
+        }
+      }
+    };
+
+    fetchLastPeriodPosts();
+  }, [subscriptionStartDate, user, isPeriodExpired]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -76,7 +100,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
           </CardTitle>
           <CardDescription>
             {isPeriodExpired 
-              ? `You used ${getLastPeriodPosts()} out of ${maxPosts} posts in your last 30-day period.`
+              ? `You used ${lastPeriodPosts} out of ${maxPosts} posts in your last 30-day period.`
               : isProPlan 
                 ? `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Pro Plan)`
                 : `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Starter Plan)`

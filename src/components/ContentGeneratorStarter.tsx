@@ -171,6 +171,14 @@ const ContentGeneratorStarter = () => {
             <p className="text-muted-foreground">Generate up to 10 posts per month with AI assistance</p>
           </div>
           <div className="flex items-center space-x-3">
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Dashboard
+            </Button>
             <Button variant="outline" onClick={handleGoBack} className="flex items-center space-x-2">
               <ArrowLeft className="h-4 w-4" />
               <span>Dashboard</span>
