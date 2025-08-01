@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Zap, Crown, AlertTriangle } from 'lucide-react';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useProUpgrade } from '@/hooks/useProUpgrade';
 
 interface UsageIndicatorsProps {
   monthlyPosts: number;
@@ -13,10 +15,25 @@ interface UsageIndicatorsProps {
 }
 
 const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = false, subscriptionStartDate }: UsageIndicatorsProps) => {
+  const { createCheckout } = useSubscription();
+  const { createProCheckout } = useProUpgrade();
+  
   const usagePercentage = maxPosts > 0 ? Math.min((monthlyPosts / maxPosts) * 100, 100) : 0;
   const isNearLimit = usagePercentage >= 80;
   const isAtLimit = monthlyPosts >= maxPosts;
   const isPeriodExpired = daysRemaining === 0;
+
+  const handleUpgrade = () => {
+    window.location.href = '/upgrade-pro';
+  };
+
+  const handleExtend = () => {
+    if (isProPlan) {
+      createProCheckout();
+    } else {
+      createCheckout();
+    }
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -80,11 +97,26 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
               }`}
             />
             <div className="text-xs text-muted-foreground">
-              {isPeriodExpired
-                ? "Creation period has expired. Upgrade or extend subscription to create new posts."
-                : isAtLimit 
-                  ? "You've reached your limit for this 30-day period." 
-                  : `${maxPosts - monthlyPosts} posts remaining in your 30-day period`
+              {isPeriodExpired ? (
+                <span>
+                  <button 
+                    onClick={handleUpgrade}
+                    className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                  >
+                    Upgrade
+                  </button>
+                  {" or "}
+                  <button 
+                    onClick={handleExtend}
+                    className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                  >
+                    extend
+                  </button>
+                  {" subscription to create new posts."}
+                </span>
+              ) : isAtLimit 
+                ? "You've reached your limit for this 30-day period." 
+                : `${maxPosts - monthlyPosts} posts remaining in your 30-day period`
               }
             </div>
           </div>
@@ -99,7 +131,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
           </CardTitle>
           <CardDescription className={isPeriodExpired ? 'text-red-600' : ''}>
             {isPeriodExpired 
-              ? "Your 30-day creation period has expired. Contact support or upgrade to continue creating posts."
+              ? "Your 30-day creation period has expired."
               : `Your creation period will reset in ${daysRemaining} days (30 days from subscription start)`
             }
           </CardDescription>
@@ -130,7 +162,7 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             </div>
             <div className={`text-xs ${isPeriodExpired ? 'text-red-600' : 'text-muted-foreground'}`}>
               {isPeriodExpired 
-                ? "Contact support to extend your creation period or upgrade subscription"
+                ? "Extend your creation period or upgrade subscription"
                 : "Creation period resets 30 days after subscription start"
               }
             </div>
