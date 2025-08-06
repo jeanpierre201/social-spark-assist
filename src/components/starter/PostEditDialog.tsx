@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
+import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,8 +48,18 @@ interface PostEditDialogProps {
 const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDialogProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { subscriptionEnd } = useSubscription();
+  const { subscriptionEnd, subscriptionTier } = useSubscription();
   const { accounts } = useSocialAccounts();
+  
+  // Get subscription status based on tier
+  const starterStatus = useStarterSubscriptionStatus();
+  const proStatus = useProSubscriptionStatus();
+  
+  const isSubscriptionExpired = subscriptionTier === 'Starter' 
+    ? !starterStatus.canCreatePosts 
+    : subscriptionTier === 'Pro' 
+      ? !proStatus.canCreatePosts 
+      : false;
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
@@ -83,29 +95,24 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     { id: 'snapchat', name: 'Snapchat' }
   ];
 
-  const isEditable = post?.status === 'draft' || post?.status === 'scheduled';
+  const isEditable = (post?.status === 'draft' || post?.status === 'scheduled') && !isSubscriptionExpired;
   const isReadOnly = !isEditable;
 
-  // Calculate the maximum allowed scheduling date
+  // Calculate the maximum allowed scheduling date based on subscription period
   const getMaxScheduleDate = () => {
     if (!post) return format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
     
     const today = new Date();
-    const postCreationDate = new Date(post.created_at);
     
-    // Calculate limits
-    const thirtyDaysFromCreation = new Date(postCreationDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-    const thirtyDaysFromToday = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-    
-    let maxDate = new Date(Math.min(thirtyDaysFromCreation.getTime(), thirtyDaysFromToday.getTime()));
-    
-    // If subscription has an end date, use that as an additional limit
+    // If subscription has an end date, use that as the limit
     if (subscriptionEnd) {
       const subscriptionEndDate = new Date(subscriptionEnd);
-      maxDate = new Date(Math.min(maxDate.getTime(), subscriptionEndDate.getTime()));
+      const maxDate = new Date(Math.min(subscriptionEndDate.getTime(), today.getTime() + 30 * 24 * 60 * 60 * 1000));
+      return format(maxDate, 'yyyy-MM-dd');
     }
     
-    return format(maxDate, 'yyyy-MM-dd');
+    // Default to 30 days from today if no subscription end
+    return format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
   };
 
   useEffect(() => {
@@ -558,9 +565,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
             {isReadOnly ? 'View Post' : 'Edit Post'}
           </DialogTitle>
           <DialogDescription>
-            {isReadOnly 
-              ? 'Published and archived posts are read-only for analytics purposes.'
-              : 'Make changes to your post content and scheduling.'}
+            {isSubscriptionExpired
+              ? 'Your 30-day creation period has expired. This post can no longer be edited or scheduled.'
+              : isReadOnly 
+                ? 'Published and archived posts are read-only for analytics purposes.'
+                : 'Make changes to your post content and scheduling.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -953,6 +962,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   value={formData.scheduled_date}
                   min={format(new Date(), 'yyyy-MM-dd')}
                   max={getMaxScheduleDate()}
+                  disabled={isSubscriptionExpired}
                   onChange={(e) => setFormData(prev => ({ ...prev, scheduled_date: e.target.value }))}
                 />
               </div>
@@ -965,6 +975,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   id="scheduled_time"
                   type="time"
                   value={formData.scheduled_time}
+                  disabled={isSubscriptionExpired}
                   onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
                 />
               </div>
@@ -997,9 +1008,9 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem 
                     value="scheduled"
-                    disabled={!formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0}
+                    disabled={isSubscriptionExpired || !formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0}
                   >
-                    Scheduled {(!formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0) && '(Set date, time & platform first)'}
+                    Scheduled {(isSubscriptionExpired && '(Subscription expired)') || ((!formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0) && '(Set date, time & platform first)')}
                   </SelectItem>
                 </SelectContent>
               </Select>

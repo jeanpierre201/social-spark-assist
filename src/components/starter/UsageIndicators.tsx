@@ -11,13 +11,15 @@ import { useEffect, useState } from 'react';
 
 interface UsageIndicatorsProps {
   monthlyPosts: number;
+  previousPeriodPosts: number;
   daysRemaining: number;
   maxPosts: number;
   isProPlan?: boolean;
   subscriptionStartDate?: string | null;
+  canCreatePosts: boolean;
 }
 
-const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = false, subscriptionStartDate }: UsageIndicatorsProps) => {
+const UsageIndicators = ({ monthlyPosts, previousPeriodPosts, daysRemaining, maxPosts, isProPlan = false, subscriptionStartDate, canCreatePosts }: UsageIndicatorsProps) => {
   const { createCheckout } = useSubscription();
   const { createProCheckout } = useProUpgrade();
   const { user } = useAuth();
@@ -99,8 +101,8 @@ const UsageIndicators = ({ monthlyPosts, daysRemaining, maxPosts, isProPlan = fa
             )}
           </CardTitle>
           <CardDescription>
-            {isPeriodExpired 
-              ? `You used ${lastPeriodPosts} out of ${maxPosts} posts in your last 30-day period.`
+            {!canCreatePosts
+              ? `You used ${previousPeriodPosts} out of ${maxPosts} posts in your last 30-day period.`
               : isProPlan 
                 ? `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Pro Plan)`
                 : `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Starter Plan)`

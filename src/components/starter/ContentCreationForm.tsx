@@ -145,26 +145,11 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       return;
     }
 
-    // Check monthly usage limit using the new tracking system
-    const { data: monthlyUsage, error: usageError } = await supabase
-      .rpc('get_monthly_usage_count', { user_uuid: user.id });
-
-    if (usageError) {
-      console.error('Error checking monthly usage:', usageError);
+    // Check if user has reached the limit using subscription-based counting
+    if (monthlyPosts >= 10) {
       toast({
-        title: "Error checking usage limits",
-        description: "Please try again",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const currentMonthlyUsage = monthlyUsage || 0;
-
-    if (currentMonthlyUsage >= 10) {
-      toast({
-        title: "Monthly Limit Reached",
-        description: "You've reached your Starter plan limit of 10 posts per month.",
+        title: "Period Limit Reached", 
+        description: "You've reached your Starter plan limit of 10 posts for this 30-day period.",
         variant: "destructive",
       });
       return;
@@ -391,27 +376,13 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       return;
     }
 
-    // Check monthly usage limit using the new tracking system
-    const { data: monthlyUsage, error: usageError } = await supabase
-      .rpc('get_monthly_usage_count', { user_uuid: user.id });
-
-    if (usageError) {
-      console.error('Error checking monthly usage:', usageError);
-      toast({
-        title: "Error checking usage limits",
-        description: "Please try again",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const currentMonthlyUsage = monthlyUsage || 0;
-    const remainingPosts = 10 - currentMonthlyUsage;
+    // Check period usage limit using subscription-based counting
+    const remainingPosts = 10 - monthlyPosts;
 
     if (remainingPosts <= 0) {
       toast({
-        title: "Monthly Limit Reached",
-        description: "You've already used all 10 posts for this month",
+        title: "Period Limit Reached",
+        description: "You've reached your Starter plan limit for this 30-day period",
         variant: "destructive",
       });
       return;

@@ -9,6 +9,7 @@ export const useProSubscriptionStatus = () => {
   const { subscribed, subscriptionTier } = useSubscription();
   const { toast } = useToast();
   const [monthlyPosts, setMonthlyPosts] = useState(0);
+  const [previousPeriodPosts, setPreviousPeriodPosts] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
   const [canCreatePosts, setCanCreatePosts] = useState(false);
@@ -61,21 +62,33 @@ export const useProSubscriptionStatus = () => {
         setCanCreatePosts(isWithinCreationWindow);
         setDaysRemaining(remainingDays);
 
-        // Check subscription period post count
-        if (subscriptionStart && isWithinCreationWindow) {
+        // Get current and previous period post counts using database query
+        if (subscriptionStart) {
+          // Get current period posts count (30 days from subscription start)
           const startDate = new Date(subscriptionStart);
-          const endDate = new Date();
-          endDate.setDate(startDate.getDate() + 30);
+          const endDate = new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000);
           
-          const { data: posts, error } = await supabase
+          const { data: currentPosts, error: currentError } = await supabase
             .from('posts')
             .select('id')
             .eq('user_id', user.id)
             .gte('created_at', startDate.toISOString())
             .lte('created_at', endDate.toISOString());
-          
-          if (error) throw error;
-          setMonthlyPosts(posts?.length || 0);
+
+          if (currentError) throw currentError;
+          setMonthlyPosts(currentPosts?.length || 0);
+
+          // Get previous period posts count (30 days before subscription start)
+          const previousStartDate = new Date(startDate.getTime() - 30 * 24 * 60 * 60 * 1000);
+          const { data: previousPosts, error: previousError } = await supabase
+            .from('posts')
+            .select('id')
+            .eq('user_id', user.id)
+            .gte('created_at', previousStartDate.toISOString())
+            .lt('created_at', startDate.toISOString());
+
+          if (previousError) throw previousError;
+          setPreviousPeriodPosts(previousPosts?.length || 0);
         }
         
       } catch (error) {
@@ -96,6 +109,7 @@ export const useProSubscriptionStatus = () => {
   return {
     monthlyPosts,
     setMonthlyPosts,
+    previousPeriodPosts,
     isLoading,
     subscriptionStartDate,
     canCreatePosts,

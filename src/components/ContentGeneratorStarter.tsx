@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon, User } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,6 +52,7 @@ const ContentGeneratorStarter = () => {
   const {
     monthlyPosts,
     setMonthlyPosts,
+    previousPeriodPosts,
     isLoading,
     canCreatePosts,
     daysRemaining,
@@ -179,9 +180,13 @@ const ContentGeneratorStarter = () => {
               <ArrowLeft className="h-4 w-4" />
               Dashboard
             </Button>
-            <Button variant="outline" onClick={handleGoBack} className="flex items-center space-x-2">
-              <ArrowLeft className="h-4 w-4" />
-              <span>Dashboard</span>
+            <Button 
+              variant="outline" 
+              onClick={() => navigate('/profile')}
+              className="flex items-center gap-2"
+            >
+              <User className="h-4 w-4" />
+              Profile
             </Button>
             <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
               <Home className="h-4 w-4" />
@@ -192,10 +197,12 @@ const ContentGeneratorStarter = () => {
 
         <UsageIndicators 
           monthlyPosts={monthlyPosts} 
+          previousPeriodPosts={previousPeriodPosts}
           daysRemaining={daysRemaining} 
           maxPosts={10}
           isProPlan={false}
           subscriptionStartDate={subscriptionStartDate}
+          canCreatePosts={canCreatePosts}
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -239,7 +246,12 @@ const ContentGeneratorStarter = () => {
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
             ) : viewMode === 'list' ? (
-              <PostsList onEditPost={handleEditPost} refreshTrigger={postsRefreshTrigger} />
+              <PostsList 
+                onEditPost={handleEditPost} 
+                refreshTrigger={postsRefreshTrigger}
+                subscriptionStartDate={subscriptionStartDate}
+                canCreatePosts={canCreatePosts}
+              />
             ) : (
               <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
             )}

@@ -188,10 +188,12 @@ const DashboardContentPage = () => {
             
             <UsageIndicators 
               monthlyPosts={currentMonthPosts}
+              previousPeriodPosts={0}
               daysRemaining={30}
               maxPosts={postLimit}
               isProPlan={false}
               subscriptionStartDate={null}
+              canCreatePosts={true}
             />
 
             <NavigationTabs 
@@ -227,10 +229,12 @@ const DashboardContentPage = () => {
           <div className="space-y-6">
             <UsageIndicators 
               monthlyPosts={monthlyPosts}
+              previousPeriodPosts={0}
               daysRemaining={daysRemaining}
               maxPosts={100}
               isProPlan={true}
               subscriptionStartDate={subscriptionStartDate}
+              canCreatePosts={monthlyPosts < 100}
             />
 
             <ProContentCreationForm 
@@ -259,10 +263,12 @@ const DashboardContentPage = () => {
           <div className="space-y-6">
             <UsageIndicators 
               monthlyPosts={currentMonthPosts}
+              previousPeriodPosts={0}
               daysRemaining={30}
               maxPosts={postLimit}
               isProPlan={false}
               subscriptionStartDate={subscriptionStartDate}
+              canCreatePosts={currentMonthPosts < postLimit}
             />
 
             <NavigationTabs 

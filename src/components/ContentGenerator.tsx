@@ -74,10 +74,12 @@ const ContentGenerator = () => {
             {/* Usage Indicators */}
             <UsageIndicators 
               monthlyPosts={currentMonthPosts} 
+              previousPeriodPosts={0}
               daysRemaining={30}
               maxPosts={isProUser ? 100 : isStarterUser ? 10 : 1}
               isProPlan={isProUser}
               subscriptionStartDate={null}
+              canCreatePosts={true}
             />
 
             {/* Content Generation Form */}

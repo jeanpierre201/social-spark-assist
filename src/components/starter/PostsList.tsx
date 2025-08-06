@@ -29,9 +29,11 @@ interface Post {
 interface PostsListProps {
   onEditPost: (post: Post) => void;
   refreshTrigger?: number;
+  subscriptionStartDate?: string | null;
+  canCreatePosts?: boolean;
 }
 
-const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
+const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreatePosts }: PostsListProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -110,11 +112,15 @@ const PostsList = ({ onEditPost, refreshTrigger }: PostsListProps) => {
     return status === 'draft' || status === 'scheduled';
   };
 
-  // Check if post is from previous subscription period
+  // Check if post is from previous subscription period (subscription period context)
   const isFromPreviousPeriod = (createdAt: string) => {
+    if (!subscriptionStartDate) return false;
+    
     const postCreatedDate = new Date(createdAt);
-    const currentMonthStart = startOfMonth(new Date());
-    return isAfter(currentMonthStart, postCreatedDate);
+    const subscriptionStart = new Date(subscriptionStartDate);
+    
+    // If post was created before the current subscription period, it's from previous period
+    return postCreatedDate < subscriptionStart;
   };
 
   // Handle post deletion
