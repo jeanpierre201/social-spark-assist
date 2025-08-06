@@ -102,7 +102,9 @@ const UsageIndicators = ({ monthlyPosts, previousPeriodPosts, daysRemaining, max
           </CardTitle>
           <CardDescription>
             {!canCreatePosts
-              ? `You used ${previousPeriodPosts} out of ${maxPosts} posts in your last 30-day period.`
+              ? isProPlan
+                ? `You used ${previousPeriodPosts} out of ${maxPosts} posts in your last 30-day period (Pro Plan)`
+                : `You used ${previousPeriodPosts} out of ${maxPosts} posts in your last 30-day period (Starter Plan)`
               : isProPlan 
                 ? `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Pro Plan)`
                 : `You've used ${monthlyPosts} out of ${maxPosts} posts in your 30-day period (Starter Plan)`
@@ -113,10 +115,12 @@ const UsageIndicators = ({ monthlyPosts, previousPeriodPosts, daysRemaining, max
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Posts used</span>
-              <span className="font-medium">{monthlyPosts}/{maxPosts}</span>
+              <span className="font-medium">
+                {!canCreatePosts ? `${previousPeriodPosts}/${maxPosts}` : `${monthlyPosts}/${maxPosts}`}
+              </span>
             </div>
             <Progress 
-              value={usagePercentage} 
+              value={!canCreatePosts ? Math.min((previousPeriodPosts / maxPosts) * 100, 100) : usagePercentage} 
               className={`h-3 ${
                 isPeriodExpired
                   ? '[&>div]:bg-gray-500' 
@@ -131,36 +135,36 @@ const UsageIndicators = ({ monthlyPosts, previousPeriodPosts, daysRemaining, max
             />
             <div className="text-xs text-muted-foreground">
               {isPeriodExpired ? (
-                <span>
-                  {isProPlan ? (
-                    <>
-                      <button 
-                        onClick={handleExtend}
-                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                      >
-                        Extend
-                      </button>
-                      {" subscription to create new posts."}
-                    </>
-                  ) : (
-                    <>
-                      <button 
-                        onClick={handleUpgrade}
-                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                      >
-                        Upgrade
-                      </button>
-                      {" or "}
-                      <button 
-                        onClick={handleExtend}
-                        className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
-                      >
-                        extend
-                      </button>
-                      {" subscription to create new posts."}
-                    </>
-                  )}
-                </span>
+                  <span>
+                    {isProPlan ? (
+                      <>
+                        <button 
+                          onClick={handleExtend}
+                          className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                        >
+                          Extend
+                        </button>
+                        {" subscription to create new posts."}
+                      </>
+                    ) : (
+                      <>
+                        <button 
+                          onClick={handleUpgrade}
+                          className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                        >
+                          Upgrade
+                        </button>
+                        {" or "}
+                        <button 
+                          onClick={handleExtend}
+                          className="text-blue-600 hover:text-blue-800 underline cursor-pointer"
+                        >
+                          extend
+                        </button>
+                        {" subscription to create new posts."}
+                      </>
+                    )}
+                  </span>
               ) : isAtLimit 
                 ? "You've reached your limit for this 30-day period." 
                 : `${maxPosts - monthlyPosts} posts remaining in your 30-day period`
@@ -209,7 +213,9 @@ const UsageIndicators = ({ monthlyPosts, previousPeriodPosts, daysRemaining, max
             </div>
             <div className={`text-xs ${isPeriodExpired ? 'text-red-600' : 'text-muted-foreground'}`}>
               {isPeriodExpired 
-                ? "Extend your creation period or upgrade subscription"
+                ? isProPlan 
+                  ? "Extend your creation period"
+                  : "Extend your creation period or upgrade subscription"
                 : "Creation period resets 30 days after subscription start"
               }
             </div>
