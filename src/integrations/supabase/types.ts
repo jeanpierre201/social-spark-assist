@@ -773,6 +773,10 @@ export type Database = {
         Args: { user_uuid: string; extension_days?: number }
         Returns: boolean
       }
+      get_current_period_posts_count: {
+        Args: { user_uuid: string; subscription_start: string }
+        Returns: number
+      }
       get_monthly_post_count: {
         Args: { user_uuid: string }
         Returns: number
@@ -783,6 +787,14 @@ export type Database = {
       }
       get_monthly_usage_count: {
         Args: { user_uuid: string }
+        Returns: number
+      }
+      get_posts_count_in_period: {
+        Args: { user_uuid: string; start_date: string; end_date: string }
+        Returns: number
+      }
+      get_previous_period_posts_count: {
+        Args: { user_uuid: string; subscription_start: string }
         Returns: number
       }
       get_user_latest_metrics: {
