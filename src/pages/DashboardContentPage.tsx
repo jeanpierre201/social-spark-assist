@@ -4,7 +4,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
 import NavigationTabs from '@/components/content/NavigationTabs';
 import { usePostsManager } from '@/hooks/usePostsManager';
 import UsageIndicators from '@/components/starter/UsageIndicators';
@@ -39,69 +39,16 @@ const DashboardContentPage = () => {
     isFreeUser
   } = usePostsManager();
 
-  // Fetch subscription start date for Pro users
-  const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
-  const [daysRemaining, setDaysRemaining] = useState<number>(30);
-  const [monthlyPosts, setMonthlyPosts] = useState(0);
-
-  React.useEffect(() => {
-    const fetchSubscriptionData = async () => {
-      if (!user || !isProUser) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('subscribers')
-          .select('created_at, updated_at')
-          .eq('user_id', user.id)
-          .eq('subscribed', true)
-          .eq('subscription_tier', 'Pro')
-          .single();
-
-        if (error) {
-          console.error('Error fetching subscription data:', error);
-          return;
-        }
-
-        if (data) {
-          const startDate = new Date(data.created_at);
-          setSubscriptionStartDate(data.created_at);
-          
-          // Calculate days remaining (30 days from subscription start)
-          const now = new Date();
-          const daysSinceStart = Math.floor((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-          const remaining = Math.max(0, 30 - daysSinceStart);
-          setDaysRemaining(remaining);
-        }
-      } catch (error) {
-        console.error('Error fetching subscription data:', error);
-      }
-    };
-
-    fetchSubscriptionData();
-  }, [user, isProUser]);
-
-  // Fetch monthly usage for Pro users
-  React.useEffect(() => {
-    const fetchMonthlyUsage = async () => {
-      if (!user || !isProUser) return;
-      
-      try {
-        const { data, error } = await supabase
-          .rpc('get_monthly_usage_count', { user_uuid: user.id });
-
-        if (error) {
-          console.error('Error fetching monthly usage:', error);
-          return;
-        }
-
-        setMonthlyPosts(data || 0);
-      } catch (error) {
-        console.error('Error fetching monthly usage:', error);
-      }
-    };
-
-    fetchMonthlyUsage();
-  }, [user, isProUser]);
+  // Use Pro subscription status hook for proper period validation
+  const {
+    monthlyPosts,
+    setMonthlyPosts,
+    previousPeriodPosts,
+    isLoading: proStatusLoading,
+    subscriptionStartDate,
+    canCreatePosts,
+    daysRemaining
+  } = useProSubscriptionStatus();
 
   const handleEditPost = (post: any) => {
     // This could be expanded to open an edit modal or form
@@ -125,7 +72,7 @@ const DashboardContentPage = () => {
     createPostMutation.mutate(newPost);
   };
 
-  if (loading) {
+  if (loading || (isProUser && proStatusLoading)) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -229,26 +176,21 @@ const DashboardContentPage = () => {
           <div className="space-y-6">
             <UsageIndicators 
               monthlyPosts={monthlyPosts}
-              previousPeriodPosts={0}
+              previousPeriodPosts={previousPeriodPosts}
               daysRemaining={daysRemaining}
               maxPosts={100}
               isProPlan={true}
               subscriptionStartDate={subscriptionStartDate}
-              canCreatePosts={monthlyPosts < 100}
+              canCreatePosts={canCreatePosts}
             />
 
             <ProContentCreationForm 
               monthlyPosts={monthlyPosts}
               setMonthlyPosts={setMonthlyPosts}
-              canCreatePosts={monthlyPosts < 100}
+              canCreatePosts={canCreatePosts}
               setPosts={() => {}}
               onPostCreated={() => {
-                // Refresh usage count
-                const fetchUsage = async () => {
-                  const { data } = await supabase.rpc('get_monthly_usage_count', { user_uuid: user!.id });
-                  setMonthlyPosts(data || 0);
-                };
-                fetchUsage();
+                // The hook will automatically update the monthlyPosts count
               }}
             />
 
