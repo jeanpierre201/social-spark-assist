@@ -143,26 +143,11 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
       return;
     }
 
-    // Check monthly usage limit using the new tracking system
-    const { data: monthlyUsage, error: usageError } = await supabase
-      .rpc('get_monthly_usage_count', { user_uuid: user.id });
-
-    if (usageError) {
-      console.error('Error checking monthly usage:', usageError);
+    // Check if user has reached the Pro plan limit of 100 posts in their 30-day period
+    if (monthlyPosts >= 100) {
       toast({
-        title: "Error checking usage limits",
-        description: "Please try again",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const currentMonthlyUsage = monthlyUsage || 0;
-
-    if (currentMonthlyUsage >= 50) {
-      toast({
-        title: "Monthly Limit Reached",
-        description: "You've reached your Pro plan limit of 50 posts per month.",
+        title: "Period Limit Reached",
+        description: "You've reached your Pro plan limit of 100 posts in your 30-day period.",
         variant: "destructive",
       });
       return;
@@ -310,13 +295,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         generatedContent
       };
 
-      // Increment monthly usage counter
-      const { error: incrementError } = await supabase
-        .rpc('increment_monthly_usage', { user_uuid: user.id });
-
-      if (incrementError) {
-        console.error('Error incrementing usage:', incrementError);
-      }
+      // The monthlyPosts counter is already incremented via setMonthlyPosts below
 
       setPosts(prev => [...prev, newPost]);
       setMonthlyPosts(prev => prev + 1);
@@ -380,27 +359,13 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
       return;
     }
 
-    // Check monthly usage limit using the new tracking system
-    const { data: monthlyUsage, error: usageError } = await supabase
-      .rpc('get_monthly_usage_count', { user_uuid: user.id });
-
-    if (usageError) {
-      console.error('Error checking monthly usage:', usageError);
-      toast({
-        title: "Error checking usage limits",
-        description: "Please try again",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const currentMonthlyUsage = monthlyUsage || 0;
-    const remainingPosts = Math.min(10, 50 - currentMonthlyUsage);
+    // Check if user has reached the Pro plan limit of 100 posts in their 30-day period
+    const remainingPosts = Math.min(10, 100 - monthlyPosts);
 
     if (remainingPosts <= 0) {
       toast({
-        title: "Monthly Limit Reached",
-        description: "You've already used all 50 posts for this month",
+        title: "Period Limit Reached",
+        description: "You've reached your Pro plan limit of 100 posts in your 30-day period.",
         variant: "destructive",
       });
       return;
@@ -544,13 +509,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
         if (dbError) throw dbError;
 
-        // Increment monthly usage counter
-        const { error: incrementError } = await supabase
-          .rpc('increment_monthly_usage', { user_uuid: user.id });
-
-        if (incrementError) {
-          console.error('Error incrementing usage:', incrementError);
-        }
+        // The monthlyPosts counter is already incremented via setMonthlyPosts below
 
         const newPost: PostData = {
           industry: industry.trim(),
@@ -587,7 +546,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
   };
 
   const connectedPlatforms = accounts.filter(account => account.is_active);
-  const remainingPosts = Math.max(0, 50 - monthlyPosts);
+  const remainingPosts = Math.max(0, 100 - monthlyPosts);
 
   return (
     <Card>
