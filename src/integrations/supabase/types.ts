@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -770,11 +770,11 @@ export type Database = {
     }
     Functions: {
       extend_creation_period: {
-        Args: { user_uuid: string; extension_days?: number }
+        Args: { extension_days?: number; user_uuid: string }
         Returns: boolean
       }
       get_current_period_posts_count: {
-        Args: { user_uuid: string; subscription_start: string }
+        Args: { subscription_start: string; user_uuid: string }
         Returns: number
       }
       get_monthly_post_count: {
@@ -790,19 +790,19 @@ export type Database = {
         Returns: number
       }
       get_posts_count_in_period: {
-        Args: { user_uuid: string; start_date: string; end_date: string }
+        Args: { end_date: string; start_date: string; user_uuid: string }
         Returns: number
       }
       get_previous_period_posts_count: {
-        Args: { user_uuid: string; subscription_start: string }
+        Args: { subscription_start: string; user_uuid: string }
         Returns: number
       }
       get_user_latest_metrics: {
         Args: { user_uuid: string }
         Returns: {
-          platform: string
-          followers_count: number
           engagement_rate: number
+          followers_count: number
+          platform: string
           posts_count: number
           scheduled_posts_count: number
         }[]
@@ -812,7 +812,7 @@ export type Database = {
         Returns: string
       }
       has_role: {
-        Args: { _user_id: string; _role: string }
+        Args: { _role: string; _user_id: string }
         Returns: boolean
       }
       increment_monthly_usage: {
