@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSocialTokens } from '@/hooks/useSocialTokens';
 
 interface SocialAccount {
   id: string;
@@ -42,9 +43,10 @@ export const SocialAccountsProvider = ({ children }: { children: React.ReactNode
     if (!user) return;
 
     try {
+      // Fetch only safe, non-sensitive account data
       const { data, error } = await supabase
         .from('social_accounts')
-        .select('id, platform, username, is_active, created_at')
+        .select('id, platform, platform_user_id, username, is_active, created_at, updated_at, token_expires_at')
         .eq('user_id', user.id)
         .eq('is_active', true);
 

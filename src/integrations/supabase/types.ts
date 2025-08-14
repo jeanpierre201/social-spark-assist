@@ -797,6 +797,13 @@ export type Database = {
         Args: { subscription_start: string; user_uuid: string }
         Returns: number
       }
+      get_social_account_tokens: {
+        Args: { account_id: string }
+        Returns: {
+          access_token: string
+          refresh_token: string
+        }[]
+      }
       get_user_latest_metrics: {
         Args: { user_uuid: string }
         Returns: {
@@ -818,6 +825,15 @@ export type Database = {
       increment_monthly_usage: {
         Args: { user_uuid: string }
         Returns: number
+      }
+      update_social_account_tokens: {
+        Args: {
+          account_id: string
+          new_access_token: string
+          new_expires_at?: string
+          new_refresh_token?: string
+        }
+        Returns: boolean
       }
       user_can_access_campaign: {
         Args: { campaign_uuid: string }
