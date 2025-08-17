@@ -626,6 +626,47 @@ export type Database = {
           },
         ]
       }
+      social_tokens_vault: {
+        Row: {
+          created_at: string
+          encrypted_access_token: string | null
+          encrypted_refresh_token: string | null
+          encryption_key_id: string
+          id: string
+          social_account_id: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_access_token?: string | null
+          encrypted_refresh_token?: string | null
+          encryption_key_id?: string
+          id?: string
+          social_account_id: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_access_token?: string | null
+          encrypted_refresh_token?: string | null
+          encryption_key_id?: string
+          id?: string
+          social_account_id?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_tokens_vault_social_account_id_fkey"
+            columns: ["social_account_id"]
+            isOneToOne: false
+            referencedRelation: "social_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscribers: {
         Row: {
           created_at: string
