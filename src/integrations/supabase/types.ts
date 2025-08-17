@@ -845,6 +845,13 @@ export type Database = {
           refresh_token: string
         }[]
       }
+      get_social_account_tokens_encrypted: {
+        Args: { account_id: string }
+        Returns: {
+          access_token: string
+          refresh_token: string
+        }[]
+      }
       get_user_latest_metrics: {
         Args: { user_uuid: string }
         Returns: {
@@ -868,6 +875,15 @@ export type Database = {
         Returns: number
       }
       update_social_account_tokens: {
+        Args: {
+          account_id: string
+          new_access_token: string
+          new_expires_at?: string
+          new_refresh_token?: string
+        }
+        Returns: boolean
+      }
+      update_social_account_tokens_encrypted: {
         Args: {
           account_id: string
           new_access_token: string
