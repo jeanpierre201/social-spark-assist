@@ -23,6 +23,37 @@ serve(async (req) => {
   );
 
   try {
+    // Verify admin access
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Authorization required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError || !userData.user) {
+      return new Response(JSON.stringify({ error: "Invalid authentication" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 401,
+      });
+    }
+
+    // Check if user has admin or developer role
+    const { data: userRole } = await supabaseClient.rpc('get_user_role', {
+      _user_id: userData.user.id
+    });
+
+    if (!userRole || !['admin', 'developer'].includes(userRole)) {
+      return new Response(JSON.stringify({ error: "Admin access required" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 403,
+      });
+    }
+
     logStep("Starting analytics sync");
     const today = new Date().toISOString().split('T')[0];
 

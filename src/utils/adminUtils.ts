@@ -1,87 +1,70 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import type { User } from '@supabase/supabase-js';
 
 /**
- * Assign admin role to a user (must be called by an existing admin)
+ * SECURITY: Updated to use secure edge function for role assignment
+ * This prevents direct database manipulation from the frontend
  */
-export const assignAdminRole = async (userEmail: string, role: 'admin' | 'developer' | 'viewer' = 'admin') => {
+export const assignAdminRole = async (
+  userEmail: string, 
+  role: 'admin' | 'developer' | 'user' | 'viewer' = 'admin'
+) => {
   try {
-    // First, get the user ID from email
-    const { data, error: listError } = await supabase.auth.admin.listUsers();
-    
-    if (listError) {
-      throw new Error(`Failed to list users: ${listError.message}`);
-    }
-
-    const targetUser = data.users.find((user: User) => user.email === userEmail);
-    
-    if (!targetUser) {
-      throw new Error(`User with email ${userEmail} not found`);
-    }
-
-    // Get current user (who must be admin to assign roles)
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    
-    if (!currentUser) {
-      throw new Error('You must be logged in to assign roles');
-    }
-
-    // Insert the role
-    const { error: insertError } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: targetUser.id,
-        role: role,
-        assigned_by: currentUser.id
-      });
-
-    if (insertError) {
-      if (insertError.code === '23505') {
-        throw new Error(`User already has the ${role} role`);
+    const { data, error } = await supabase.functions.invoke('assign-user-role', {
+      body: {
+        targetUserEmail: userEmail,
+        role: role
       }
-      throw new Error(`Failed to assign role: ${insertError.message}`);
+    });
+
+    if (error) {
+      console.error('Error assigning role:', error);
+      return { success: false, error: error.message };
     }
 
-    return { success: true, message: `Successfully assigned ${role} role to ${userEmail}` };
+    return { 
+      success: true, 
+      message: data.message 
+    };
   } catch (error) {
-    console.error('Error assigning admin role:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' };
+    console.error('Error in assignAdminRole:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
   }
 };
 
 /**
- * Remove role from a user (must be called by an existing admin)
+ * Remove user role by setting role to 'viewer' (lowest privilege)
  */
-export const removeUserRole = async (userEmail: string, role: 'admin' | 'developer' | 'viewer') => {
+export const removeUserRole = async (
+  userEmail: string,
+  role: 'admin' | 'developer' | 'user' | 'viewer'
+) => {
   try {
-    // First, get the user ID from email
-    const { data, error: listError } = await supabase.auth.admin.listUsers();
-    
-    if (listError) {
-      throw new Error(`Failed to list users: ${listError.message}`);
+    // Set to viewer role instead of removing (maintains user access)
+    const { data, error } = await supabase.functions.invoke('assign-user-role', {
+      body: {
+        targetUserEmail: userEmail,
+        role: 'viewer'
+      }
+    });
+
+    if (error) {
+      console.error('Error removing role:', error);
+      return { success: false, error: error.message };
     }
 
-    const targetUser = data.users.find((user: User) => user.email === userEmail);
-    
-    if (!targetUser) {
-      throw new Error(`User with email ${userEmail} not found`);
-    }
-
-    // Remove the role
-    const { error: deleteError } = await supabase
-      .from('user_roles')
-      .update({ is_active: false })
-      .eq('user_id', targetUser.id)
-      .eq('role', role);
-
-    if (deleteError) {
-      throw new Error(`Failed to remove role: ${deleteError.message}`);
-    }
-
-    return { success: true, message: `Successfully removed ${role} role from ${userEmail}` };
+    return { 
+      success: true, 
+      message: `Successfully removed ${role} role from ${userEmail}` 
+    };
   } catch (error) {
-    console.error('Error removing user role:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error occurred' };
+    console.error('Error in removeUserRole:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
   }
 };

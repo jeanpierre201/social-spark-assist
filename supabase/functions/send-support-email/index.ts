@@ -11,6 +11,18 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+// HTML escape function to prevent XSS
+const escapeHtml = (text: string): string => {
+  const map: { [key: string]: string } = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  };
+  return text.replace(/[&<>"']/g, (m) => map[m]);
+};
+
 interface SupportEmailRequest {
   name: string;
   email: string;
@@ -80,15 +92,15 @@ const handler = async (req: Request): Promise<Response> => {
       html: `
         <h2>New Support Request</h2>
         <div style="background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 15px 0;">
-          <p><strong>From:</strong> ${name} (${email})</p>
-          <p><strong>User ID:</strong> ${userId}</p>
-          <p><strong>Plan:</strong> ${userTier}</p>
-          <p><strong>Priority:</strong> ${priority.toUpperCase()}</p>
-          <p><strong>Subject:</strong> ${subject}</p>
+          <p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p>
+          <p><strong>User ID:</strong> ${escapeHtml(userId)}</p>
+          <p><strong>Plan:</strong> ${escapeHtml(userTier)}</p>
+          <p><strong>Priority:</strong> ${escapeHtml(priority.toUpperCase())}</p>
+          <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
         </div>
         <h3>Message:</h3>
         <div style="background: #fff; padding: 15px; border-left: 4px solid #2563eb; margin: 15px 0;">
-          ${message.replace(/\n/g, '<br>')}
+          ${escapeHtml(message).replace(/\n/g, '<br>')}
         </div>
         <hr>
         <p><small>This message was sent from the support form on your website.</small></p>
@@ -101,13 +113,13 @@ const handler = async (req: Request): Promise<Response> => {
       to: [email],
       subject: "We received your support request",
       html: `
-        <h1>Thank you for contacting support, ${name}!</h1>
+        <h1>Thank you for contacting support, ${escapeHtml(name)}!</h1>
         <p>We have received your support request and will get back to you within 24 hours.</p>
         
         <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3>Your Request Details:</h3>
-          <p><strong>Subject:</strong> ${subject}</p>
-          <p><strong>Priority:</strong> ${priority.charAt(0).toUpperCase() + priority.slice(1)}</p>
+          <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
+          <p><strong>Priority:</strong> ${escapeHtml(priority.charAt(0).toUpperCase() + priority.slice(1))}</p>
           <p><strong>Submitted:</strong> ${new Date().toLocaleString()}</p>
         </div>
         
@@ -117,10 +129,8 @@ const handler = async (req: Request): Promise<Response> => {
       `,
     });
 
-    console.log("Support emails sent successfully:", {
-      supportEmail: supportEmailResponse,
-      confirmationEmail: confirmationEmailResponse
-    });
+    // Remove sensitive logging - just log success without email content
+    console.log("Support emails sent successfully");
 
     return new Response(JSON.stringify({ 
       success: true,

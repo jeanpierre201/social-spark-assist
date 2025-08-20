@@ -57,7 +57,7 @@ serve(async (req) => {
     }
 
     const user = userData.user;
-    logStep("User authenticated", { userId: user.id, email: user.email });
+    logStep("User authenticated", { userId: user.id });
 
     // First check our local database for subscription info
     const { data: existingSubscriber, error: dbError } = await supabaseClient
