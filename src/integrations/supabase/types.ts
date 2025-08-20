@@ -874,6 +874,18 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: number
       }
+      is_campaign_admin: {
+        Args: { campaign_uuid: string }
+        Returns: boolean
+      }
+      is_campaign_member: {
+        Args: { campaign_uuid: string }
+        Returns: boolean
+      }
+      is_campaign_owner: {
+        Args: { campaign_uuid: string }
+        Returns: boolean
+      }
       update_social_account_tokens: {
         Args: {
           account_id: string
