@@ -810,6 +810,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_user_role: {
+        Args: {
+          assigner_user_id?: string
+          new_role: string
+          target_user_id: string
+        }
+        Returns: boolean
+      }
       extend_creation_period: {
         Args: { extension_days?: number; user_uuid: string }
         Returns: boolean
@@ -837,20 +845,6 @@ export type Database = {
       get_previous_period_posts_count: {
         Args: { subscription_start: string; user_uuid: string }
         Returns: number
-      }
-      get_social_account_tokens: {
-        Args: { account_id: string }
-        Returns: {
-          access_token: string
-          refresh_token: string
-        }[]
-      }
-      get_social_account_tokens_encrypted: {
-        Args: { account_id: string }
-        Returns: {
-          access_token: string
-          refresh_token: string
-        }[]
       }
       get_user_latest_metrics: {
         Args: { user_uuid: string }
@@ -884,24 +878,6 @@ export type Database = {
       }
       is_campaign_owner: {
         Args: { campaign_uuid: string }
-        Returns: boolean
-      }
-      update_social_account_tokens: {
-        Args: {
-          account_id: string
-          new_access_token: string
-          new_expires_at?: string
-          new_refresh_token?: string
-        }
-        Returns: boolean
-      }
-      update_social_account_tokens_encrypted: {
-        Args: {
-          account_id: string
-          new_access_token: string
-          new_expires_at?: string
-          new_refresh_token?: string
-        }
         Returns: boolean
       }
       user_can_access_campaign: {
