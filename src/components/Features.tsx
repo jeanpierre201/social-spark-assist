@@ -71,16 +71,16 @@ const Features = () => {
   ];
 
   return (
-    <section id="features" className="py-20 bg-white">
+    <section id="features" className="py-20 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl font-display font-bold text-foreground mb-4">
             Powerful Features for
-            <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="block bg-gradient-primary bg-clip-text text-transparent">
               Social Media Success
             </span>
           </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto font-sans">
             Everything you need to create, schedule, and manage your social media content with the power of AI
           </p>
         </div>
@@ -89,17 +89,17 @@ const Features = () => {
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <Card key={index} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border border-gray-100">
+              <Card key={index} className="group hover:shadow-glass transition-all duration-300 hover:-translate-y-1 bg-card/50 backdrop-blur-glass border-glass-border">
                 <CardHeader>
-                  <div className={`w-12 h-12 rounded-lg bg-gray-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                    <Icon className={`h-6 w-6 ${feature.color}`} />
+                  <div className="w-12 h-12 rounded-lg bg-accent/30 backdrop-blur-sm flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
+                    <Icon className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle className="text-xl font-semibold text-foreground group-hover:text-purple-600 transition-colors">
+                  <CardTitle className="text-xl font-display font-semibold text-foreground group-hover:text-primary transition-colors">
                     {feature.title}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CardDescription className="text-muted-foreground">
+                  <CardDescription className="text-muted-foreground font-sans">
                     {feature.description}
                   </CardDescription>
                 </CardContent>
