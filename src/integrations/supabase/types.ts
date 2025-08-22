@@ -122,6 +122,36 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          record_id: string | null
+          table_name: string
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          record_id?: string | null
+          table_name: string
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          record_id?: string | null
+          table_name?: string
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       campaign_invitations: {
         Row: {
           accepted_at: string | null
@@ -524,42 +554,36 @@ export type Database = {
       }
       social_accounts: {
         Row: {
-          access_token: string | null
           account_data: Json | null
           created_at: string
           id: string
           is_active: boolean | null
           platform: string
           platform_user_id: string
-          refresh_token: string | null
           token_expires_at: string | null
           updated_at: string
           user_id: string
           username: string | null
         }
         Insert: {
-          access_token?: string | null
           account_data?: Json | null
           created_at?: string
           id?: string
           is_active?: boolean | null
           platform: string
           platform_user_id: string
-          refresh_token?: string | null
           token_expires_at?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
         }
         Update: {
-          access_token?: string | null
           account_data?: Json | null
           created_at?: string
           id?: string
           is_active?: boolean | null
           platform?: string
           platform_user_id?: string
-          refresh_token?: string | null
           token_expires_at?: string | null
           updated_at?: string
           user_id?: string
