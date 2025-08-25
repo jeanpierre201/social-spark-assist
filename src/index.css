@@ -38,8 +38,10 @@
     /* Glass effects */
     --glass-bg: 210 25% 98%;
     --glass-border: 210 30% 85%;
-    --gradient-primary: linear-gradient(135deg, hsl(210 90% 45%), hsl(210 75% 55%));
+    --gradient-primary: linear-gradient(135deg, hsl(210 90% 45%), hsl(220 75% 55%));
     --gradient-accent: linear-gradient(135deg, hsl(210 40% 85%), hsl(210 20% 90%));
+    --gradient-button: linear-gradient(135deg, hsl(210 90% 45%), hsl(240 70% 60%));
+    --gradient-button-hover: linear-gradient(135deg, hsl(210 85% 40%), hsl(240 65% 55%));
     --shadow-glass: 0 8px 32px 0 rgba(59, 130, 246, 0.3);
   }
 
@@ -77,6 +79,8 @@
     --glass-border: 210 20% 22%;
     --gradient-primary: linear-gradient(135deg, hsl(210 85% 55%), hsl(210 70% 60%));
     --gradient-accent: linear-gradient(135deg, hsl(210 30% 22%), hsl(210 20% 15%));
+    --gradient-button: linear-gradient(135deg, hsl(210 85% 55%), hsl(240 65% 65%));
+    --gradient-button-hover: linear-gradient(135deg, hsl(210 80% 50%), hsl(240 60% 60%));
     --shadow-glass: 0 8px 32px 0 rgba(59, 130, 246, 0.4);
   }
 }

@@ -74,6 +74,8 @@ export default {
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',
 				'gradient-accent': 'var(--gradient-accent)',
+				'gradient-button': 'var(--gradient-button)',
+				'gradient-button-hover': 'var(--gradient-button-hover)',
 			},
 			boxShadow: {
 				'glass': 'var(--shadow-glass)',
