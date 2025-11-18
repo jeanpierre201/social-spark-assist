@@ -842,6 +842,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_free_user_old_posts: { Args: never; Returns: undefined }
       extend_creation_period: {
         Args: { extension_days?: number; user_uuid: string }
         Returns: boolean
@@ -880,6 +881,7 @@ export type Database = {
       is_campaign_admin: { Args: { campaign_uuid: string }; Returns: boolean }
       is_campaign_member: { Args: { campaign_uuid: string }; Returns: boolean }
       is_campaign_owner: { Args: { campaign_uuid: string }; Returns: boolean }
+      is_free_user: { Args: { user_uuid: string }; Returns: boolean }
       user_can_access_campaign: {
         Args: { campaign_uuid: string }
         Returns: boolean
