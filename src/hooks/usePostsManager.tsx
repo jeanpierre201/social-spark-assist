@@ -18,15 +18,23 @@ export const usePostsManager = () => {
 
   // Fetch all posts for the current user
   const postsQuery = useQuery({
-    queryKey: ['posts', user?.id],
+    queryKey: ['posts', user?.id, isFreeUser],
     queryFn: async () => {
       if (!user) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('posts')
         .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id);
+      
+      // For free users, only show posts from the last 24 hours
+      if (isFreeUser) {
+        const oneDayAgo = new Date();
+        oneDayAgo.setHours(oneDayAgo.getHours() - 24);
+        query = query.gte('created_at', oneDayAgo.toISOString());
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
       
       if (error) {
         console.error('Error fetching posts:', error);
