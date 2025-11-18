@@ -114,11 +114,28 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
           industry: industry.trim(),
           goal: goal.trim(),
           nicheInfo: nicheInfo.trim(),
-          includeEmojis: includeEmojis
+          includeEmojis: includeEmojis,
+          userId: user.id,
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error generating content:', error);
+        
+        // Check if it's a limit reached error
+        if (data?.limitReached) {
+          toast({
+            title: "Monthly limit reached",
+            description: data.error || "The amount of free calls has been achieved, please wait for the first day of the coming month or upgrade to a Starter plan",
+            variant: "destructive",
+          });
+          navigate('/#pricing');
+          setIsGenerating(false);
+          return;
+        }
+        
+        throw error;
+      }
 
       // Generate AI image if requested
       let generatedImageUrl = imageUrl; // Use uploaded image if available
