@@ -93,14 +93,21 @@ const ContentGenerator = () => {
               />
             </div>
 
-            {/* Display Generated Posts - Only for Starter and Pro plans */}
-            {!isFreeUser && (
-              <PostsDisplay
-                posts={posts}
-                onEditPost={handleEditPost}
-                onUpdatePost={handleUpdatePost}
-                onDeletePost={handleDeletePost}
-              />
+            {/* Display Generated Posts */}
+            <PostsDisplay
+              posts={posts}
+              onEditPost={handleEditPost}
+              onUpdatePost={handleUpdatePost}
+              onDeletePost={handleDeletePost}
+            />
+            
+            {/* Info banner for free users */}
+            {isFreeUser && posts.length > 0 && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <p className="text-sm text-muted-foreground">
+                  ✨ Your generated content is stored for 24 hours. Upgrade to Starter or Pro to keep your posts forever and unlock unlimited storage!
+                </p>
+              </div>
             )}
           </>
         )}
