@@ -161,14 +161,12 @@ const DashboardContentPage = () => {
                 />
               )}
               
-              {activeTab === 'posts' && (
-                <PostsDisplay 
-                  posts={posts}
-                  onEditPost={handleEditPost}
-                  onUpdatePost={handleUpdatePost}
-                  onDeletePost={handleDeletePost}
-                />
-              )}
+              <PostsDisplay 
+                posts={posts}
+                onEditPost={handleEditPost}
+                onUpdatePost={handleUpdatePost}
+                onDeletePost={handleDeletePost}
+              />
             </div>
           </div>
         ) : isProUser ? (
