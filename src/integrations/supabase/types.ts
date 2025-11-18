@@ -850,18 +850,12 @@ export type Database = {
         Args: { subscription_start: string; user_uuid: string }
         Returns: number
       }
-      get_monthly_post_count: {
-        Args: { user_uuid: string }
-        Returns: number
-      }
+      get_monthly_post_count: { Args: { user_uuid: string }; Returns: number }
       get_monthly_post_count_with_limit: {
         Args: { user_uuid: string }
         Returns: number
       }
-      get_monthly_usage_count: {
-        Args: { user_uuid: string }
-        Returns: number
-      }
+      get_monthly_usage_count: { Args: { user_uuid: string }; Returns: number }
       get_posts_count_in_period: {
         Args: { end_date: string; start_date: string; user_uuid: string }
         Returns: number
@@ -880,30 +874,12 @@ export type Database = {
           scheduled_posts_count: number
         }[]
       }
-      get_user_role: {
-        Args: { _user_id: string }
-        Returns: string
-      }
-      has_role: {
-        Args: { _role: string; _user_id: string }
-        Returns: boolean
-      }
-      increment_monthly_usage: {
-        Args: { user_uuid: string }
-        Returns: number
-      }
-      is_campaign_admin: {
-        Args: { campaign_uuid: string }
-        Returns: boolean
-      }
-      is_campaign_member: {
-        Args: { campaign_uuid: string }
-        Returns: boolean
-      }
-      is_campaign_owner: {
-        Args: { campaign_uuid: string }
-        Returns: boolean
-      }
+      get_user_role: { Args: { _user_id: string }; Returns: string }
+      has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
+      increment_monthly_usage: { Args: { user_uuid: string }; Returns: number }
+      is_campaign_admin: { Args: { campaign_uuid: string }; Returns: boolean }
+      is_campaign_member: { Args: { campaign_uuid: string }; Returns: boolean }
+      is_campaign_owner: { Args: { campaign_uuid: string }; Returns: boolean }
       user_can_access_campaign: {
         Args: { campaign_uuid: string }
         Returns: boolean
