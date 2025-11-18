@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Pricing = () => {
   const { user } = useAuth();
-  const { subscribed, subscriptionTier, createCheckout } = useSubscription();
+  const { subscribed, subscriptionTier } = useSubscription();
   const navigate = useNavigate();
 
   const handleGetStartedFree = () => {
@@ -19,7 +19,7 @@ const Pricing = () => {
     }
   };
 
-  const handleStarterPlan = async () => {
+  const handleStarterPlan = () => {
     if (!user) {
       navigate('/login');
       return;
@@ -29,8 +29,8 @@ const Pricing = () => {
     if (subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Pro')) {
       navigate('/dashboard');
     } else {
-      // User needs to upgrade - redirect to Stripe checkout for Starter plan
-      await createCheckout();
+      // Navigate to Starter Plan upgrade page
+      navigate('/upgrade-starter');
     }
   };
 
