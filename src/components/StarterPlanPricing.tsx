@@ -86,7 +86,7 @@ const StarterPlanPricing = () => {
                 {isStarterUser && <Badge variant="secondary" className="bg-blue-100 text-blue-800">Active</Badge>}
               </div>
               <CardDescription className="text-lg">
-                Perfect for getting started with social media
+                Ideal for small businesses and creators
               </CardDescription>
               <div className="text-4xl font-bold text-blue-600">
                 €12<span className="text-lg font-normal text-muted-foreground">/month</span>
