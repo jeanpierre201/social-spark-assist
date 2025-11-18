@@ -11,6 +11,15 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Mail, Send, Lock } from 'lucide-react';
+import { z } from 'zod';
+
+const contactSchema = z.object({
+  name: z.string().trim().min(1, { message: "Name is required" }).max(100, { message: "Name must be less than 100 characters" }),
+  email: z.string().trim().email({ message: "Invalid email address" }).max(255, { message: "Email must be less than 255 characters" }),
+  subject: z.string().trim().min(1, { message: "Subject is required" }).max(200, { message: "Subject must be less than 200 characters" }),
+  priority: z.enum(['low', 'medium', 'high']),
+  message: z.string().trim().min(10, { message: "Message must be at least 10 characters" }).max(2000, { message: "Message must be less than 2000 characters" }),
+});
 
 interface ContactFormData {
   name: string;
@@ -52,12 +61,25 @@ const ContactForm = () => {
       return;
     }
 
+    // Validate form data
+    const validation = contactSchema.safeParse(formData);
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast({
+        title: "Validation Error",
+        description: firstError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
+      const validatedData = validation.data;
       const { error } = await supabase.functions.invoke('send-support-email', {
         body: {
-          ...formData,
+          ...validatedData,
           userTier: subscriptionTier,
           userId: user?.id,
         }
@@ -80,7 +102,6 @@ const ContactForm = () => {
       });
 
     } catch (error) {
-      console.error('Error sending support email:', error);
       toast({
         title: "Error",
         description: "Failed to send support request. Please try again.",
