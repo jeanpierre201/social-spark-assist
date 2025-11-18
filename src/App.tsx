@@ -30,6 +30,7 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DataDeletionPage from "./pages/DataDeletionPage";
 import NotFound from "./pages/NotFound";
 import UpgradeProPage from "./pages/UpgradeProPage";
+import TestUtilityPage from "./pages/TestUtilityPage";
 
 const queryClient = new QueryClient();
 
@@ -110,6 +111,11 @@ const App = () => (
                   <Route path="/content-generator-starter" element={
                     <ProtectedRoute>
                       <ContentGeneratorStarterPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/test-utility" element={
+                    <ProtectedRoute>
+                      <TestUtilityPage />
                     </ProtectedRoute>
                   } />
                   
