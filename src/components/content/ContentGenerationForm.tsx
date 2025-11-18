@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, Link } from 'react-router-dom';
-import { Sparkles, Calendar, Clock } from 'lucide-react';
+import { Sparkles, Calendar, Clock, Copy, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -44,6 +44,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const [includeEmojis, setIncludeEmojis] = useState(true);
   const [selectedSocialPlatforms, setSelectedSocialPlatforms] = useState<string[]>([]);
   const [customImagePrompt, setCustomImagePrompt] = useState('');
+  const [generatedContent, setGeneratedContent] = useState<{caption: string; hashtags: string[]} | null>(null);
 
   const socialPlatforms = [
     { id: 'facebook', name: 'Facebook' },
@@ -245,7 +246,17 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         status: postStatus,
       };
 
-      onPostCreated(newPost);
+      // For free users, store the generated content in state for preview
+      if (isFreeUser) {
+        setGeneratedContent({
+          caption: data.caption,
+          hashtags: data.hashtags
+        });
+      } else {
+        // For paid users, create the post in database
+        onPostCreated(newPost);
+      }
+      
       setIndustry('');
       setGoal('');
       setNicheInfo('');
@@ -577,6 +588,55 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
             </>
           )}
         </Button>
+
+        {/* Free User Content Preview */}
+        {isFreeUser && generatedContent && (
+          <div className="mt-6 p-4 border rounded-lg bg-muted/50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold">Generated Content</h3>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${generatedContent.caption}\n\n${generatedContent.hashtags.map(tag => `#${tag}`).join(' ')}`);
+                    toast({ title: "Copied to clipboard!" });
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const text = `${generatedContent.caption}\n\n${generatedContent.hashtags.map(tag => `#${tag}`).join(' ')}`;
+                    const blob = new Blob([text], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'social-media-post.txt';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast({ title: "Downloaded!" });
+                  }}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm mb-3 whitespace-pre-wrap">{generatedContent.caption}</p>
+            <div className="flex flex-wrap gap-2">
+              {generatedContent.hashtags.map((tag, index) => (
+                <span key={index} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                  #{tag}
+                </span>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-4">
+              ✨ Upgrade to Starter or Pro to save and schedule your posts!
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
