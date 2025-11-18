@@ -107,6 +107,106 @@ const SupportPage = () => {
           })}
         </div>
 
+        {/* FAQ Section */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Book className="h-5 w-5 mr-2 text-blue-600" />
+              Frequently Asked Questions
+            </CardTitle>
+            <CardDescription>
+              Find answers to common questions about our platform
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Account & Billing */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-foreground">Account & Billing</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">How do I upgrade to a paid plan?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Navigate to the pricing section on the homepage or go to Settings → Subscription in your dashboard. 
+                    Choose your desired plan (Starter or Pro) and follow the checkout process.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Can I cancel my subscription anytime?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Yes! You can cancel your subscription at any time from your dashboard. You'll continue to have access 
+                    to premium features until the end of your billing period.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">What payment methods do you accept?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    We accept all major credit cards (Visa, Mastercard, American Express) through our secure payment processor Stripe.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Features & Usage */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-foreground">Features & Usage</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">What's the difference between Starter and Pro plans?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Starter Plan gives you 10 AI-generated posts per month with basic scheduling. Pro Plan offers unlimited posts, 
+                    advanced analytics, team collaboration, multiple content variations, and priority support.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">How long are free plan posts visible?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Free plan posts are automatically deleted after 24 hours. Upgrade to Starter or Pro to keep your posts permanently.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Can I generate images with AI?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Yes! AI image generation is available on Starter and Pro plans. You can generate custom images based on your content and industry.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Which social media platforms are supported?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    We support Instagram, Facebook, Twitter/X, LinkedIn, and TikTok. You can connect multiple accounts and post to all platforms simultaneously with Pro plan.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Technical Support */}
+            <div>
+              <h3 className="font-semibold text-lg mb-3 text-foreground">Technical Support</h3>
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">What support do I get with the Free plan?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Free plan users have access to our documentation, knowledge base, and community support resources.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">How fast is email support response time?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Starter and Pro plan users typically receive email responses within 24 hours during business days. 
+                    Pro users get priority support with faster response times.
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-foreground mb-1">Can I request new features?</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Absolutely! We welcome feature requests from all users. Submit your ideas through the contact form 
+                    and we'll consider them for future updates.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Contact Form */}
         <div className="mb-8">
           <ContactForm />
