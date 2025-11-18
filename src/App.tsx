@@ -30,6 +30,7 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DataDeletionPage from "./pages/DataDeletionPage";
 import NotFound from "./pages/NotFound";
 import UpgradeProPage from "./pages/UpgradeProPage";
+import UpgradeStarterPage from "./pages/UpgradeStarterPage";
 import TestUtilityPage from "./pages/TestUtilityPage";
 
 const queryClient = new QueryClient();
@@ -66,6 +67,11 @@ const App = () => (
                   <Route path="/upgrade-pro" element={
                     <ProtectedRoute>
                       <UpgradeProPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/upgrade-starter" element={
+                    <ProtectedRoute>
+                      <UpgradeStarterPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/support" element={

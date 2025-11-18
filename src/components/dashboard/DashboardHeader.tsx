@@ -11,9 +11,10 @@ import { Crown, Zap } from 'lucide-react';
 interface DashboardHeaderProps {
   isProUser: boolean;
   isStarterUser: boolean;
+  title?: string;
 }
 
-const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => {
+const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard' }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [profileData, setProfileData] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
@@ -47,7 +48,7 @@ const DashboardHeader = ({ isProUser, isStarterUser }: DashboardHeaderProps) => 
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            Dashboard
+            {title}
           </h1>
           <div className="text-muted-foreground flex items-center gap-2">
             <span>Welcome back, {user?.email}</span>
