@@ -57,10 +57,10 @@ const Pricing = () => {
       description: "Perfect for getting started",
       features: [
         "1 post per month",
-        "AI-generated captions",
+        "AI captions & content",
         "Basic hashtags",
         "Manual posting only",
-        "Community support"
+        "FAQ & help center access"
       ],
       buttonText: "Get Started Free",
       popular: false,
