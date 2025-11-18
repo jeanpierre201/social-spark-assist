@@ -93,15 +93,13 @@ const ContentGenerator = () => {
               />
             </div>
 
-            {/* Display Generated Posts - Only for Starter and Pro plans */}
-            {!isFreeUser && (
-              <PostsDisplay
-                posts={posts}
-                onEditPost={handleEditPost}
-                onUpdatePost={handleUpdatePost}
-                onDeletePost={handleDeletePost}
-              />
-            )}
+            {/* Display Generated Posts */}
+            <PostsDisplay
+              posts={posts}
+              onEditPost={handleEditPost}
+              onUpdatePost={handleUpdatePost}
+              onDeletePost={handleDeletePost}
+            />
           </>
         )}
       </div>
