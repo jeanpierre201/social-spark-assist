@@ -25,6 +25,7 @@ import AdminDashboardPage from "./pages/AdminDashboardPage";
 import ContentGeneratorPage from "./pages/ContentGeneratorPage";
 import ContentGeneratorStarterPage from "./pages/ContentGeneratorStarterPage";
 import SupportPage from "./pages/SupportPage";
+import AboutPage from "./pages/AboutPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DataDeletionPage from "./pages/DataDeletionPage";
@@ -50,6 +51,8 @@ const App = () => (
                   <Route path="/" element={<Index />} />
                   <Route path="/login" element={<LoginPage />} />
                   <Route path="/signup" element={<SignupPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/support" element={<SupportPage />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                   <Route path="/terms-of-service" element={<TermsOfServicePage />} />
                   <Route path="/data-deletion" element={<DataDeletionPage />} />
@@ -72,11 +75,6 @@ const App = () => (
                   <Route path="/upgrade-starter" element={
                     <ProtectedRoute>
                       <UpgradeStarterPage />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/support" element={
-                    <ProtectedRoute>
-                      <SupportPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard" element={
