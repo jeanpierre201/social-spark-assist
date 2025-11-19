@@ -14,8 +14,10 @@ import {
   changeTestUserPassword,
   logoutTestUser
 } from '@/utils/testUtils';
-import { Users, Play, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { Users, Play, CheckCircle, XCircle, Loader2, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface TestResult {
   step: string;
@@ -26,8 +28,10 @@ interface TestResult {
 
 const TestUtilityPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [numberOfUsers, setNumberOfUsers] = useState(50);
   const [isRunning, setIsRunning] = useState(false);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentStep, setCurrentStep] = useState('');
   const [results, setResults] = useState<TestResult[]>([]);
@@ -42,6 +46,50 @@ const TestUtilityPage = () => {
 
   const addResult = (step: string, success: boolean, message: string) => {
     setResults(prev => [...prev, { step, success, message, timestamp: new Date() }]);
+  };
+
+  const handleCleanupTestUsers = async () => {
+    if (!confirm('Are you sure you want to delete all test users and their data? This action cannot be undone.')) {
+      return;
+    }
+
+    setIsCleaningUp(true);
+    setCurrentStep('Cleaning up test users...');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('cleanup-test-users', {
+        body: {}
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: "Cleanup Successful",
+        description: data.message || `Deleted ${data.deleted} test users`,
+      });
+
+      addResult('Cleanup Test Users', true, data.message || `Deleted ${data.deleted} test users`);
+      
+      if (data.errors && data.errors.length > 0) {
+        console.warn('Cleanup had some errors:', data.errors);
+        data.errors.forEach((err: string) => {
+          addResult('Cleanup Error', false, err);
+        });
+      }
+    } catch (error) {
+      console.error('Error cleaning up test users:', error);
+      toast({
+        title: "Cleanup Failed",
+        description: error.message || 'Failed to clean up test users',
+        variant: "destructive",
+      });
+      addResult('Cleanup Test Users', false, error.message || 'Failed to clean up test users');
+    } finally {
+      setIsCleaningUp(false);
+      setCurrentStep('');
+    }
   };
 
   const runFullTest = async () => {
@@ -223,6 +271,39 @@ const TestUtilityPage = () => {
                 <Progress value={progress} />
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* Cleanup Test Data */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Cleanup Test Data
+            </CardTitle>
+            <CardDescription>
+              Remove all test users created with @socialnova.test emails and their associated data
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              onClick={handleCleanupTestUsers}
+              disabled={isCleaningUp || isRunning}
+              variant="destructive"
+              className="w-full"
+            >
+              {isCleaningUp ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cleaning up...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete All Test Users
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
 

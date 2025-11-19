@@ -75,3 +75,9 @@ verify_jwt = true
 
 [functions.assign-user-role]
 verify_jwt = true
+
+[functions.cleanup-test-users]
+verify_jwt = true
+
+[functions.handle-oauth-callback]
+verify_jwt = true
