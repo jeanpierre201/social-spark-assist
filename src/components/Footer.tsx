@@ -27,10 +27,43 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Product</h3>
             <ul className="space-y-2">
-              <li><a href="/#features" className="text-gray-400 hover:text-white transition-colors">Features</a></li>
-              <li><a href="/upgrade-starter" className="text-gray-400 hover:text-white transition-colors">Starter Plan</a></li>
-              <li><a href="/upgrade-pro" className="text-gray-400 hover:text-white transition-colors">Pro Plan</a></li>
-              <li><a href="/dashboard" className="text-gray-400 hover:text-white transition-colors">Dashboard</a></li>
+              <li>
+                <a 
+                  href="/" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/#features';
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Features
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/#pricing';
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Starter Plan
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/#pricing';
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Pro Plan
+                </a>
+              </li>
+              <li><a href="/signup" className="text-gray-400 hover:text-white transition-colors">Dashboard</a></li>
             </ul>
           </div>
           
