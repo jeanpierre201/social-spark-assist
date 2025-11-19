@@ -115,10 +115,7 @@ const AboutPage = () => {
         </Card>
 
         {/* CTA */}
-        <div className="text-center space-y-4">
-          <p className="text-lg text-muted-foreground">
-            Ready to transform your social media presence?
-          </p>
+        <div className="text-center">
           <div className="flex justify-center gap-4">
             {!user && (
               <Button size="lg" onClick={() => navigate('/signup')}>
