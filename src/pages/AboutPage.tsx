@@ -4,9 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Home, Zap, Target, Heart, Lightbulb } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useAuth } from '@/hooks/useAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 
 const AboutPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { subscriptionTier } = useSubscription();
+
+  const isStarterOrPro = subscriptionTier === 'Starter' || subscriptionTier === 'Pro';
 
   return (
     <div className="min-h-screen bg-background">
@@ -114,12 +120,16 @@ const AboutPage = () => {
             Ready to transform your social media presence?
           </p>
           <div className="flex justify-center gap-4">
-            <Button size="lg" onClick={() => navigate('/signup')}>
-              Get Started Free
-            </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate('/support')}>
-              Contact Us
-            </Button>
+            {!user && (
+              <Button size="lg" onClick={() => navigate('/signup')}>
+                Get Started Free
+              </Button>
+            )}
+            {isStarterOrPro && (
+              <Button size="lg" variant="outline" onClick={() => navigate('/support')}>
+                Contact Us
+              </Button>
+            )}
           </div>
         </div>
       </div>
