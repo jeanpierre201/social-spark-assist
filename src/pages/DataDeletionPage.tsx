@@ -4,8 +4,13 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Trash2, AlertTriangle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const DataDeletionPage = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
   const handleDeleteRequest = () => {
     // In a real implementation, this would trigger a data deletion process
     window.location.href = 'mailto:privacy@socialassistanceai.com?subject=Data Deletion Request&body=I would like to request deletion of my account and all associated data.';
@@ -67,14 +72,29 @@ const DataDeletionPage = () => {
               </div>
 
               <div className="pt-4">
-                <Button 
-                  onClick={handleDeleteRequest}
-                  variant="destructive"
-                  className="w-full sm:w-auto"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Request Data Deletion
-                </Button>
+                {user ? (
+                  <Button 
+                    onClick={handleDeleteRequest}
+                    variant="destructive"
+                    className="w-full sm:w-auto"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Request Data Deletion
+                  </Button>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground text-sm">
+                      You must be logged in to request data deletion.
+                    </p>
+                    <Button 
+                      onClick={() => navigate('/login')}
+                      variant="default"
+                      className="w-full sm:w-auto"
+                    >
+                      Login to Continue
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
