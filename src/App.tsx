@@ -124,6 +124,11 @@ const App = () => (
                       <TestUtilityPage />
                     </ProtectedRoute>
                   } />
+                  <Route path="/test" element={
+                    <ProtectedRoute>
+                      <TestUtilityPage />
+                    </ProtectedRoute>
+                  } />
                   
                   {/* Catch-all route */}
                   <Route path="*" element={<NotFound />} />
