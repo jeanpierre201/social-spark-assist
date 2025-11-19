@@ -60,12 +60,12 @@ const AboutPage = () => {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground leading-relaxed mb-4">
-              As a solo developer and entrepreneur, I experienced firsthand the challenges of maintaining a 
+              As a small team of developers and entrepreneurs, we experienced firsthand the challenges of maintaining a 
               consistent social media presence while building a business. The existing tools were either too 
               expensive, too complicated, or simply didn't leverage AI in meaningful ways.
             </p>
             <p className="text-muted-foreground leading-relaxed">
-              Social Assistance AI is my answer to that problem. It's designed by someone who understands 
+              Social Assistance AI is our answer to that problem. It's designed by a team who understands 
               the constraints of limited time and resources, built to deliver maximum value without unnecessary 
               complexity. Every feature is crafted with the solo entrepreneur and small team in mind.
             </p>
