@@ -16,6 +16,11 @@ const Index = () => {
       if (element) {
         element.scrollIntoView({ behavior: 'smooth' });
       }
+    } else if (location.hash === '#features') {
+      const element = document.getElementById('features');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   }, [location.hash]);
 
