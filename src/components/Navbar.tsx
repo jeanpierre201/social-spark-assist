@@ -68,8 +68,8 @@ const Navbar = () => {
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-foreground hover:text-purple-600 transition-colors">Features</a>
-            <a href="#pricing" className="text-foreground hover:text-purple-600 transition-colors">Pricing</a>
+            <a href="/#features" className="text-foreground hover:text-purple-600 transition-colors">Features</a>
+            <a href="/#pricing" className="text-foreground hover:text-purple-600 transition-colors">Pricing</a>
             <a href="/about" className="text-foreground hover:text-purple-600 transition-colors">About</a>
             <a href="/support" className="text-foreground hover:text-purple-600 transition-colors">Support</a>
             
@@ -119,8 +119,8 @@ const Navbar = () => {
         {isMenuOpen && (
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <a href="#features" className="block px-3 py-2 text-foreground hover:text-purple-600">Features</a>
-              <a href="#pricing" className="block px-3 py-2 text-foreground hover:text-purple-600">Pricing</a>
+              <a href="/#features" className="block px-3 py-2 text-foreground hover:text-purple-600">Features</a>
+              <a href="/#pricing" className="block px-3 py-2 text-foreground hover:text-purple-600">Pricing</a>
               <a href="/about" className="block px-3 py-2 text-foreground hover:text-purple-600">About</a>
               <a href="/support" className="block px-3 py-2 text-foreground hover:text-purple-600">Support</a>
               
