@@ -39,8 +39,30 @@ const Footer = () => {
                   Features
                 </a>
               </li>
-              <li><a href="/upgrade-starter" className="text-gray-400 hover:text-white transition-colors">Starter Plan</a></li>
-              <li><a href="/upgrade-pro" className="text-gray-400 hover:text-white transition-colors">Pro Plan</a></li>
+              <li>
+                <a 
+                  href="/" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/#pricing';
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Starter Plan
+                </a>
+              </li>
+              <li>
+                <a 
+                  href="/" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    window.location.href = '/#pricing';
+                  }}
+                  className="text-gray-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  Pro Plan
+                </a>
+              </li>
               <li><a href="/signup" className="text-gray-400 hover:text-white transition-colors">Dashboard</a></li>
             </ul>
           </div>
