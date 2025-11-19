@@ -15,13 +15,13 @@ const Pricing = () => {
     if (user) {
       navigate('/content-generator');
     } else {
-      navigate('/login');
+      navigate('/signup');
     }
   };
 
   const handleStarterPlan = () => {
     if (!user) {
-      navigate('/login');
+      navigate('/signup');
       return;
     }
 
@@ -36,7 +36,7 @@ const Pricing = () => {
 
   const handleProPlan = () => {
     if (!user) {
-      navigate('/login');
+      navigate('/signup');
       return;
     }
     
