@@ -27,10 +27,10 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Product</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Features</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Pricing</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors">API</a></li>
-              <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Integrations</a></li>
+              <li><a href="/#features" className="text-gray-400 hover:text-white transition-colors">Features</a></li>
+              <li><a href="/upgrade-starter" className="text-gray-400 hover:text-white transition-colors">Starter Plan</a></li>
+              <li><a href="/upgrade-pro" className="text-gray-400 hover:text-white transition-colors">Pro Plan</a></li>
+              <li><a href="/dashboard" className="text-gray-400 hover:text-white transition-colors">Dashboard</a></li>
             </ul>
           </div>
           
