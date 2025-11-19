@@ -551,12 +551,12 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                 Upgrade to unlock scheduling, platform selection, image uploads, and more posts per month!
               </p>
               <Button 
-                onClick={() => window.location.href = '/#pricing'}
+                asChild
                 variant="outline" 
                 size="sm"
                 className="border-blue-300 text-blue-700 hover:bg-blue-50"
               >
-                View Plans
+                <a href="/#pricing">View Plans</a>
               </Button>
             </div>
           </div>
