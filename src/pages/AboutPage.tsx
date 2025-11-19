@@ -67,7 +67,7 @@ const AboutPage = () => {
             <p className="text-muted-foreground leading-relaxed">
               Social Assistance AI is our answer to that problem. It's designed by a team who understands 
               the constraints of limited time and resources, built to deliver maximum value without unnecessary 
-              complexity. Every feature is crafted with the solo entrepreneur and small team in mind.
+              complexity.
             </p>
           </CardContent>
         </Card>
