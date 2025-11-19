@@ -116,7 +116,7 @@ const AboutPage = () => {
 
         {/* CTA */}
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-foreground mb-6">
+          <h2 className="text-2xl font-bold text-foreground mb-6">
             Ready to transform your social media presence?
           </h2>
           <div className="flex justify-center gap-4">
