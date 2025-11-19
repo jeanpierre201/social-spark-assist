@@ -551,7 +551,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                 Upgrade to unlock scheduling, platform selection, image uploads, and more posts per month!
               </p>
               <Button 
-                onClick={() => navigate('/#pricing')}
+                onClick={() => window.location.href = '/#pricing'}
                 variant="outline" 
                 size="sm"
                 className="border-blue-300 text-blue-700 hover:bg-blue-50"
