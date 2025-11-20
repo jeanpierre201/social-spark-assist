@@ -169,6 +169,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
     try {
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: {
+          userId: user?.id,
           industry: industry.trim(),
           goal: goal.trim(),
           nicheInfo: nicheInfo.trim(),
@@ -426,6 +427,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         
         const { data, error } = await supabase.functions.invoke('generate-content', {
           body: {
+            userId: user?.id,
             industry: industry.trim(),
             goal: currentGoal,
             nicheInfo: nicheInfo.trim(),
