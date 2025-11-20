@@ -207,7 +207,9 @@ const Dashboard = () => {
             <UpgradePrompt />
           )}
 
-          <SubscriptionManagement />
+          <div className="w-full lg:w-1/3">
+            <SubscriptionManagement />
+          </div>
         </div>
       </div>
     </div>
