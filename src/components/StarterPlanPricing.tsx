@@ -13,13 +13,13 @@ const StarterPlanPricing = () => {
   const navigate = useNavigate();
 
   const features = [
-    "All Free Plan features",
-    "10 AI-generated posts per month",
+    "Everything in Free Plan",
+    "10 posts per month",
     "2 AI-generated images per post",
-    "Multi-platform post scheduling",
-    "Basic analytics (Engagement & Reach)",
+    "Post scheduling to all platforms",
+    "Basic analytics",
     "Email support",
-    "Bulk generate: Create 10 posts at once"
+    "Auto-create 10 posts at once"
   ];
 
   const formatDate = (dateString: string) => {
