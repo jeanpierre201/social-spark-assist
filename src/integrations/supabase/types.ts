@@ -699,7 +699,7 @@ export type Database = {
           stripe_customer_id: string | null
           subscribed: boolean
           subscription_end: string | null
-          subscription_tier: string | null
+          subscription_tier: string
           updated_at: string
           user_id: string | null
         }
@@ -710,7 +710,7 @@ export type Database = {
           stripe_customer_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
-          subscription_tier?: string | null
+          subscription_tier?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -721,7 +721,7 @@ export type Database = {
           stripe_customer_id?: string | null
           subscribed?: boolean
           subscription_end?: string | null
-          subscription_tier?: string | null
+          subscription_tier?: string
           updated_at?: string
           user_id?: string | null
         }
@@ -886,6 +886,8 @@ export type Database = {
         Args: { campaign_uuid: string }
         Returns: boolean
       }
+      user_can_create_content: { Args: { user_uuid: string }; Returns: boolean }
+      user_has_active_access: { Args: { user_uuid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
