@@ -2,7 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Crown, Settings, Home, ArrowLeft, Zap } from 'lucide-react';
+import { Check, Crown, Settings, Home, ArrowLeft, Zap, Calendar, Image, Clock, BarChart, Mail, Package } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -13,13 +13,13 @@ const StarterPlanPricing = () => {
   const navigate = useNavigate();
 
   const features = [
-    "Everything in Free Plan",
-    "10 posts per month",
-    "2 AI-generated images per post",
-    "Post scheduling to all platforms",
-    "Auto-create 10 posts at once",
-    "Basic analytics",
-    "Email support"
+    { icon: Package, text: "Everything in Free Plan" },
+    { icon: Calendar, text: "10 posts per month" },
+    { icon: Image, text: "2 AI-generated images per post" },
+    { icon: Clock, text: "Post scheduling to all platforms" },
+    { icon: Zap, text: "Auto-create 10 posts at once" },
+    { icon: BarChart, text: "Basic analytics" },
+    { icon: Mail, text: "Email support" }
   ];
 
   const formatDate = (dateString: string) => {
@@ -98,8 +98,8 @@ const StarterPlanPricing = () => {
               <div className="space-y-3">
                 {features.map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
-                    <Check className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                    <span>{feature}</span>
+                    <feature.icon className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <span>{feature.text}</span>
                   </div>
                 ))}
               </div>
