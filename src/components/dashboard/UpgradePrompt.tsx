@@ -4,9 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { 
   Zap, 
-  Sparkles, 
   Calendar, 
-  BarChart3,
+  Image,
   Crown
 } from 'lucide-react';
 
@@ -22,22 +21,22 @@ const UpgradePrompt = () => {
             Get Started with Starter Plan
           </CardTitle>
           <CardDescription>
-            Unlock AI-powered content generation and scheduling
+            Perfect for getting started with social media
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="flex items-center">
-              <Sparkles className="h-4 w-4 text-blue-600 mr-2" />
-              <span className="text-sm">10 AI-Generated Posts</span>
+              <Calendar className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="text-sm font-medium">10 posts per month</span>
             </div>
             <div className="flex items-center">
-              <Calendar className="h-4 w-4 text-blue-600 mr-2" />
-              <span className="text-sm">Post Scheduling</span>
+              <Image className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="text-sm font-medium">2 AI-generated images per post</span>
             </div>
             <div className="flex items-center">
-              <BarChart3 className="h-4 w-4 text-blue-600 mr-2" />
-              <span className="text-sm">Basic Analytics</span>
+              <Zap className="h-5 w-5 text-blue-600 mr-2" />
+              <span className="text-sm font-medium">Auto-create 10 posts at once</span>
             </div>
           </div>
           <div className="flex gap-3">

@@ -158,7 +158,9 @@ const Dashboard = () => {
             currentMonthPosts={currentMonthPosts}
           />
           
-          <ActionCards 
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <ActionCards
             isProUser={isProUser}
             isStarterUser={isStarterUser}
             hasAnyPlan={hasAnyPlan}
@@ -201,15 +203,17 @@ const Dashboard = () => {
               else if (tab === 'analytics') navigate('/dashboard/analytics');
               else if (tab === 'team') navigate('/dashboard/team');
             }}
-          />
+              />
+            </div>
+            
+            <div className="lg:col-span-1">
+              <SubscriptionManagement />
+            </div>
+          </div>
 
           {!hasAnyPlan && (
             <UpgradePrompt />
           )}
-
-          <div className="w-full lg:w-1/3">
-            <SubscriptionManagement />
-          </div>
         </div>
       </div>
     </div>
