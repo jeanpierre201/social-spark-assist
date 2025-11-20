@@ -153,6 +153,9 @@ const StarterPlanPricing = () => {
                     <Zap className="h-4 w-4 mr-2" />
                     Get Starter Plan
                   </Button>
+                  <p className="text-center text-sm text-muted-foreground">
+                    Cancel anytime
+                  </p>
                 </>
               )}
             </CardContent>
