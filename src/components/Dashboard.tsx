@@ -206,7 +206,9 @@ const Dashboard = () => {
           {!hasAnyPlan && (
             <UpgradePrompt />
           )}
+        </div>
 
+        <div className="mt-6">
           <SubscriptionManagement />
         </div>
       </div>
