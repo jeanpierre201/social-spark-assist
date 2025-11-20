@@ -228,10 +228,10 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             const blob = new Blob([byteArray], { type: 'image/png' });
 
             const timestamp = new Date().getTime();
-            const storagePath = `ai-images/${user.id}/${timestamp}-generated.png`;
+            const storagePath = `${user.id}/${timestamp}-generated.png`;
 
             const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('media')
+              .from('ai-images')
               .upload(storagePath, blob, {
                 cacheControl: '3600',
                 upsert: false
@@ -239,7 +239,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
             if (!uploadError) {
               const { data: publicUrlData } = supabase.storage
-                .from('media')
+                .from('ai-images')
                 .getPublicUrl(uploadData.path);
               
               imageUrl = publicUrlData.publicUrl;
