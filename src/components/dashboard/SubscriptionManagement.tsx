@@ -1,16 +1,48 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Settings, CreditCard, Calendar, Trash2 } from 'lucide-react';
+import { Settings, CreditCard, Calendar, Trash2, AlertCircle } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useState, useEffect } from 'react';
 
 const SubscriptionManagement = () => {
   const { subscriptionTier, subscriptionEnd, openCustomerPortal, subscribed } = useSubscription();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [hasStripeCustomer, setHasStripeCustomer] = useState<boolean>(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkStripeCustomer = async () => {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('subscribers')
+          .select('stripe_customer_id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+        setHasStripeCustomer(!!data?.stripe_customer_id);
+      } catch (error) {
+        console.error('Error checking Stripe customer:', error);
+        setHasStripeCustomer(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkStripeCustomer();
+  }, [user]);
 
   const handleCancelFreeAccount = async () => {
     if (!confirm('Are you sure you want to cancel your free account? This will delete all your data.')) {
@@ -92,17 +124,46 @@ const SubscriptionManagement = () => {
             </>
           ) : (
             <>
-              <Button 
-                onClick={openCustomerPortal}
-                variant="outline"
-                className="w-full"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Manage Subscription & Billing
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Update payment method, view invoices, or cancel subscription
-              </p>
+              {loading ? (
+                <Button variant="outline" className="w-full" disabled>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Loading...
+                </Button>
+              ) : hasStripeCustomer ? (
+                <>
+                  <Button 
+                    onClick={openCustomerPortal}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Manage Subscription & Billing
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    Update payment method, view invoices, or cancel subscription
+                  </p>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
+                    <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-amber-800">
+                      <p className="font-medium">Test Account</p>
+                      <p className="mt-1">This is a manually created test subscription without Stripe billing. To access billing management, upgrade through the normal checkout flow.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={() => navigate('/upgrade-pro')}
+                      variant="outline"
+                      className="flex-1"
+                      size="sm"
+                    >
+                      Upgrade to Pro
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
