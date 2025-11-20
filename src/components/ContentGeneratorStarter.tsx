@@ -226,11 +226,12 @@ const ContentGeneratorStarter = () => {
               <ArrowLeft className="h-4 w-4" />
               Dashboard
             </Button>
-            <ProfileAvatar />
-            <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
+            <Button variant="outline" onClick={handleGoHome} className="flex items-center gap-2">
               <Home className="h-4 w-4" />
-              <span>Home</span>
+              Home
             </Button>
+            <div className="h-8 w-px bg-border mx-1" />
+            <ProfileAvatar />
           </div>
         </div>
 
