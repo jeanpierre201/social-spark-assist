@@ -17,9 +17,9 @@ const StarterPlanPricing = () => {
     "10 posts per month",
     "2 AI-generated images per post",
     "Post scheduling to all platforms",
+    "Auto-create 10 posts at once",
     "Basic analytics",
-    "Email support",
-    "Auto-create 10 posts at once"
+    "Email support"
   ];
 
   const formatDate = (dateString: string) => {
