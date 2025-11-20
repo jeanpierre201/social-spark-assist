@@ -182,7 +182,9 @@ const Dashboard = () => {
                 }}
                 onCalendarView={() => {
                   if (isStarterUser) {
-                    navigate('/content-generator-starter');
+                    navigate('/content-generator-starter', { 
+                      state: { scrollToPosts: true, viewMode: 'calendar' } 
+                    });
                   }
                 }}
                 onConnectAccounts={() => {
@@ -214,7 +216,9 @@ const Dashboard = () => {
                   navigate('/content-generator-starter');
                 }}
               onCalendarView={() => {
-                navigate('/content-generator-starter');
+                navigate('/content-generator-starter', { 
+                  state: { scrollToPosts: true, viewMode: 'calendar' } 
+                });
               }}
               onConnectAccounts={() => {
                 navigate('/dashboard/social');
