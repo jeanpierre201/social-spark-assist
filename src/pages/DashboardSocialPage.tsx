@@ -32,7 +32,7 @@ const DashboardSocialPage = () => {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-6">
-          <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} />
+          <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Social Media" showLogout={false} />
           <UpgradePrompt />
         </div>
       </div>
@@ -42,7 +42,7 @@ const DashboardSocialPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6">
-        <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} />
+        <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Social Media" showLogout={false} />
 
         {/* Navigation tabs - only show for Pro users */}
         {isProUser && (
