@@ -10,6 +10,7 @@ import DashboardHeader from './dashboard/DashboardHeader';
 import QuickStats from './dashboard/QuickStats';
 import ActionCards from './dashboard/ActionCards';
 import UpgradePrompt from './dashboard/UpgradePrompt';
+import SubscriptionManagement from './dashboard/SubscriptionManagement';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -201,6 +202,10 @@ const Dashboard = () => {
               else if (tab === 'team') navigate('/dashboard/team');
             }}
           />
+
+          {hasAnyPlan && (
+            <SubscriptionManagement />
+          )}
 
           {!hasAnyPlan && (
             <UpgradePrompt />
