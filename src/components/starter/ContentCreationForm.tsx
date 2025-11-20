@@ -239,7 +239,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                 upsert: false
               });
 
-            if (!uploadError) {
+            if (uploadError) {
+              console.error('Error uploading AI image to storage:', uploadError);
+              toast({
+                title: "Image upload failed",
+                description: "Could not save the generated image. Post will be created without image.",
+                variant: "destructive",
+              });
+            } else if (uploadData) {
               const { data: publicUrlData } = supabase.storage
                 .from('ai-images')
                 .getPublicUrl(uploadData.path);
