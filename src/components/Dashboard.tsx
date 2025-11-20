@@ -203,11 +203,11 @@ const Dashboard = () => {
             }}
           />
 
-          <SubscriptionManagement />
-
           {!hasAnyPlan && (
             <UpgradePrompt />
           )}
+
+          <SubscriptionManagement />
         </div>
       </div>
     </div>
