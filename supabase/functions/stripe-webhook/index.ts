@@ -100,7 +100,7 @@ async function handleSubscriptionChange(
   }
 
   // Get subscription tier based on price
-  let subscriptionTier = null;
+  let subscriptionTier = "Free"; // Default to Free
   let revenue = 0;
   
   if (subscription.items.data.length > 0) {
@@ -108,15 +108,42 @@ async function handleSubscriptionChange(
     const amount = price.unit_amount || 0;
     revenue = amount / 100; // Convert cents to euros
     
+    logStep("Processing subscription price", { 
+      amount, 
+      priceId: price.id,
+      currency: price.currency 
+    });
+    
+    // Determine tier based on price amount (in cents)
     if (amount >= 2500) {
       subscriptionTier = "Pro";
     } else if (amount >= 1200) {
       subscriptionTier = "Starter";
+    } else if (amount > 0) {
+      // If there's a price but it doesn't match known tiers, log a warning
+      logStep("WARNING: Unknown subscription price amount", { amount });
+      subscriptionTier = "Free"; // Default to Free for unknown prices
     }
   }
 
   const isActive = subscription.status === "active";
   const subscriptionEnd = isActive ? new Date(subscription.current_period_end * 1000).toISOString() : null;
+
+  logStep("Subscription details before update", {
+    email: customerEmail,
+    isActive,
+    tier: subscriptionTier,
+    subscriptionEnd,
+    stripeCustomerId: subscription.customer
+  });
+
+  // Only update if we have a valid tier determined
+  if (!subscriptionTier || subscriptionTier === "Free") {
+    logStep("WARNING: Attempting to set Free tier - verifying this is intended", {
+      subscriptionStatus: subscription.status,
+      itemsCount: subscription.items.data.length
+    });
+  }
 
   // Update subscribers table - the database trigger will automatically handle analytics
   const { error: updateError } = await supabaseClient
