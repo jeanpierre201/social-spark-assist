@@ -83,19 +83,6 @@ const DashboardSocialPage = () => {
           </div>
         )}
 
-        {/* Dashboard button for Starter users */}
-        {isStarterUser && (
-          <div className="mb-6">
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/dashboard')}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Dashboard
-            </Button>
-          </div>
-        )}
 
         {/* Social Media Settings Content */}
         <SocialMediaSettings />

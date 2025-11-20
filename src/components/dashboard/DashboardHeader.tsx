@@ -11,9 +11,16 @@ interface DashboardHeaderProps {
   isStarterUser: boolean;
   title?: string;
   showLogout?: boolean;
+  showDashboardButton?: boolean;
 }
 
-const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard', showLogout = true }: DashboardHeaderProps) => {
+const DashboardHeader = ({ 
+  isProUser, 
+  isStarterUser, 
+  title = 'Dashboard', 
+  showLogout = true,
+  showDashboardButton = true 
+}: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -42,14 +49,16 @@ const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard', showLo
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            onClick={() => navigate('/dashboard')}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Dashboard
-          </Button>
+          {showDashboardButton && (
+            <Button
+              onClick={() => navigate('/dashboard')}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Dashboard
+            </Button>
+          )}
           <Button
             onClick={() => navigate('/')}
             variant="outline"
