@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Crown, Zap, Home, LogOut } from 'lucide-react';
+import { Crown, Zap, Home, LogOut, ArrowLeft } from 'lucide-react';
 import SubscriptionStatusBadge from '@/components/SubscriptionStatusBadge';
 import ProfileAvatar from '@/components/ProfileAvatar';
 
@@ -42,6 +42,14 @@ const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard', showLo
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate('/dashboard')}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Dashboard
+          </Button>
           <Button
             onClick={() => navigate('/')}
             variant="outline"
