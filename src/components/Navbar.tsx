@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, X, Calendar, Shield } from 'lucide-react';
@@ -6,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import SubscriptionStatusBadge from '@/components/SubscriptionStatusBadge';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -94,6 +94,7 @@ const Navbar = () => {
             {user ? (
               <div className="flex items-center space-x-4">
                 <span className="text-sm text-muted-foreground">Welcome, {displayName}</span>
+                <SubscriptionStatusBadge />
                 <Button variant="outline" onClick={() => navigate('/dashboard')}>
                   Dashboard
                 </Button>

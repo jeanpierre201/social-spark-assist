@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Crown, Zap } from 'lucide-react';
+import SubscriptionStatusBadge from '@/components/SubscriptionStatusBadge';
 
 interface DashboardHeaderProps {
   isProUser: boolean;
@@ -52,6 +52,7 @@ const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard' }: Dash
           </h1>
           <div className="text-muted-foreground flex items-center gap-2">
             <span>Welcome back, {user?.email}</span>
+            <SubscriptionStatusBadge />
             {isProUser && (
               <Badge className="bg-purple-100 text-purple-800">
                 <Crown className="h-3 w-3 mr-1 text-purple-600" />
