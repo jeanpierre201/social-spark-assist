@@ -39,9 +39,9 @@ const SubscriptionManagement = () => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -49,63 +49,53 @@ const SubscriptionManagement = () => {
   const isFreeUser = !subscribed || subscriptionTier === 'Free';
 
   return (
-    <Card>
+    <Card className="hover:shadow-lg transition-shadow">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Subscription Management
-            </CardTitle>
-            <CardDescription>Manage your subscription and billing</CardDescription>
-          </div>
+          <CardTitle className="flex items-center text-base">
+            <CreditCard className="h-5 w-5 mr-2" />
+            Subscription
+          </CardTitle>
           <Badge 
             variant="secondary" 
-            className={`bg-${tierColor}-100 text-${tierColor}-800`}
+            className={`bg-${tierColor}-100 text-${tierColor}-800 text-xs`}
           >
-            {subscriptionTier} Plan
+            {subscriptionTier || 'Free'}
           </Badge>
         </div>
+        <CardDescription className="text-sm">
+          {isFreeUser ? 'Manage your free account' : 'Manage billing and subscription'}
+        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {subscriptionEnd && !isFreeUser && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <span>Renews on {formatDate(subscriptionEnd)}</span>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" />
+            <span>Renews {formatDate(subscriptionEnd)}</span>
           </div>
         )}
         
-        <div className="pt-2">
-          {isFreeUser ? (
-            <>
-              <Button 
-                onClick={handleCancelFreeAccount}
-                variant="destructive"
-                className="w-full"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Cancel Free Account
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                This will log you out. Contact support to permanently delete your data.
-              </p>
-            </>
-          ) : (
-            <>
-              <Button 
-                onClick={openCustomerPortal}
-                variant="outline"
-                className="w-full"
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Manage Subscription & Billing
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                Update payment method, view invoices, or cancel subscription
-              </p>
-            </>
-          )}
-        </div>
+        {isFreeUser ? (
+          <Button 
+            onClick={handleCancelFreeAccount}
+            variant="outline"
+            className="w-full text-sm"
+            size="sm"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Cancel Account
+          </Button>
+        ) : (
+          <Button 
+            onClick={openCustomerPortal}
+            variant="outline"
+            className="w-full text-sm"
+            size="sm"
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            Manage Subscription
+          </Button>
+        )}
       </CardContent>
     </Card>
   );
