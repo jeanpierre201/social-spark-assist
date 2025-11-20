@@ -213,11 +213,13 @@ const Dashboard = () => {
                 onViewAllPosts={() => {
                   navigate('/content-generator-starter');
                 }}
-                onCalendarView={() => {
-                  navigate('/content-generator-starter');
-                }}
-                onConnectAccounts={() => {}}
-                onSetActiveTab={() => {}}
+              onCalendarView={() => {
+                navigate('/content-generator-starter');
+              }}
+              onConnectAccounts={() => {
+                navigate('/dashboard/social');
+              }}
+              onSetActiveTab={() => {}}
               />
             </>
           ) : (
