@@ -36,7 +36,7 @@ export const useProSubscriptionStatus = () => {
         let remainingDays = 0;
 
         if (subscriberData && subscriberData.subscribed && 
-            (subscriberData.subscription_tier === 'Pro')) {
+            (subscriberData.subscription_tier === 'Starter' || subscriberData.subscription_tier === 'Pro')) {
           
           // Get subscription start date from created_at or updated_at when subscription became active
           subscriptionStart = subscriberData.created_at;

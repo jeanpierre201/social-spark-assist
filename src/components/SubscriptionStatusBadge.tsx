@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
+import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 
 interface SubscriptionStatusBadgeProps {
   className?: string;
@@ -8,7 +9,11 @@ interface SubscriptionStatusBadgeProps {
 
 const SubscriptionStatusBadge = ({ className }: SubscriptionStatusBadgeProps) => {
   const { subscribed, subscriptionTier, loading } = useSubscription();
-  const { canCreatePosts, daysRemaining } = useProSubscriptionStatus();
+  const proStatus = useProSubscriptionStatus();
+  const starterStatus = useStarterSubscriptionStatus();
+  
+  // Use the appropriate hook based on subscription tier
+  const { canCreatePosts, daysRemaining } = subscriptionTier === 'Pro' ? proStatus : starterStatus;
 
   if (loading) {
     return (
