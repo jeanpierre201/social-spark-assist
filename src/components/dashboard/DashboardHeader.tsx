@@ -10,9 +10,10 @@ interface DashboardHeaderProps {
   isProUser: boolean;
   isStarterUser: boolean;
   title?: string;
+  showLogout?: boolean;
 }
 
-const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard' }: DashboardHeaderProps) => {
+const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard', showLogout = true }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
@@ -49,17 +50,19 @@ const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard' }: Dash
             <Home className="h-4 w-4" />
             Home
           </Button>
-          <Button
-            onClick={async () => {
-              await logout();
-              navigate('/');
-            }}
-            variant="destructive"
-            className="flex items-center gap-2"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
+          {showLogout && (
+            <Button
+              onClick={async () => {
+                await logout();
+                navigate('/');
+              }}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </Button>
+          )}
           <div className="h-8 w-px bg-border mx-1" />
           <ProfileAvatar />
         </div>
