@@ -12,8 +12,25 @@ const DataDeletionPage = () => {
   const navigate = useNavigate();
 
   const handleDeleteRequest = () => {
-    // In a real implementation, this would trigger a data deletion process
-    window.location.href = 'mailto:privacy@socialassistanceai.com?subject=Data Deletion Request&body=I would like to request deletion of my account and all associated data.';
+    const userEmail = user?.email || 'Not available';
+    const userId = user?.id || 'Not available';
+    const emailBody = `I would like to request deletion of my account and all associated data.
+
+User Information:
+- Email: ${userEmail}
+- User ID: ${userId}
+
+Please delete all of the following:
+- My account information and profile
+- All connected social media accounts
+- Generated content and templates
+- Analytics and performance data
+- Billing and subscription information
+- Any stored preferences or settings
+
+I understand this action cannot be undone.`;
+
+    window.location.href = `mailto:privacy@socialassistanceai.com?subject=Data Deletion Request - ${userEmail}&body=${encodeURIComponent(emailBody)}`;
   };
 
   return (

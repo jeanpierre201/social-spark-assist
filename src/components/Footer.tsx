@@ -63,7 +63,7 @@ const Footer = () => {
                   Pro Plan
                 </a>
               </li>
-              <li><a href="/login" className="text-gray-400 hover:text-white transition-colors">Dashboard</a></li>
+              <li><a href="/dashboard" className="text-gray-400 hover:text-white transition-colors">Dashboard</a></li>
             </ul>
           </div>
           
