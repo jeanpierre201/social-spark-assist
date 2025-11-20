@@ -198,7 +198,7 @@ const Pricing = () => {
         
         <div className="text-center mt-12">
           <p className="text-muted-foreground">
-            All plans include 14-day free trial • No setup fees • Cancel anytime
+            No setup fees • Cancel anytime
           </p>
         </div>
       </div>
