@@ -14,9 +14,10 @@ const StarterPlanPricing = () => {
 
   const features = [
     "10 AI-generated posts per month",
-    "Social media scheduling",
-    "Basic analytics",
-    "Multi-platform posting",
+    "2 AI-generated images per post",
+    "Upload your own images",
+    "Post scheduling & calendar view",
+    "Basic analytics (Engagement & Reach)",
     "Email support"
   ];
 
