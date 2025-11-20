@@ -126,6 +126,121 @@ export const loginTestUser = async (email: string, password: string) => {
 };
 
 /**
+ * Creates a Starter plan subscription for a test user
+ * @param userId User ID
+ * @param email User email
+ * @returns Subscription creation result
+ */
+export const createStarterSubscription = async (userId: string, email: string) => {
+  try {
+    const subscriptionEnd = new Date();
+    subscriptionEnd.setDate(subscriptionEnd.getDate() + 30); // 30 days from now
+
+    const { data, error } = await supabase
+      .from('subscribers')
+      .insert({
+        user_id: userId,
+        email: email,
+        subscription_tier: 'Starter',
+        subscribed: true,
+        subscription_end: subscriptionEnd.toISOString(),
+        stripe_customer_id: `cus_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, subscription: data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Creates a Pro plan subscription for a test user
+ * @param userId User ID
+ * @param email User email
+ * @returns Subscription creation result
+ */
+export const createProSubscription = async (userId: string, email: string) => {
+  try {
+    const subscriptionEnd = new Date();
+    subscriptionEnd.setDate(subscriptionEnd.getDate() + 30); // 30 days from now
+
+    const { data, error } = await supabase
+      .from('subscribers')
+      .insert({
+        user_id: userId,
+        email: email,
+        subscription_tier: 'Pro',
+        subscribed: true,
+        subscription_end: subscriptionEnd.toISOString(),
+        stripe_customer_id: `cus_test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, subscription: data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Simulates a Stripe webhook for subscription creation
+ * @param customerId Stripe customer ID
+ * @param priceId Stripe price ID
+ * @param subscriptionTier Subscription tier (Starter or Pro)
+ * @returns Webhook simulation result
+ */
+export const simulateStripeWebhook = async (
+  customerId: string,
+  priceId: string,
+  subscriptionTier: 'Starter' | 'Pro'
+) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('stripe-webhook', {
+      body: {
+        type: 'customer.subscription.created',
+        data: {
+          object: {
+            id: `sub_test_${Date.now()}`,
+            customer: customerId,
+            status: 'active',
+            items: {
+              data: [{
+                price: {
+                  id: priceId,
+                  recurring: {
+                    interval: 'month'
+                  }
+                }
+              }]
+            },
+            current_period_end: Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60)
+          }
+        }
+      }
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Generates test content for a user
  * @param userId User ID
  * @returns Content generation result
