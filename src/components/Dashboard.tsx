@@ -203,9 +203,7 @@ const Dashboard = () => {
             }}
           />
 
-          {hasAnyPlan && (
-            <SubscriptionManagement />
-          )}
+          <SubscriptionManagement />
 
           {!hasAnyPlan && (
             <UpgradePrompt />
