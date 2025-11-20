@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon } from 'lucide-react';
@@ -14,6 +13,7 @@ import PostsList from '@/components/starter/PostsList';
 import PostEditDialog from '@/components/starter/PostEditDialog';
 import UpgradePrompt from '@/components/starter/UpgradePrompt';
 import CalendarView from '@/components/starter/CalendarView';
+import ProfileAvatar from '@/components/ProfileAvatar';
 
 interface GeneratedContent {
   caption: string;
@@ -36,51 +36,6 @@ interface PostData {
 }
 
 type ViewMode = 'list' | 'calendar';
-
-const ProfileAvatar = () => {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [profileData, setProfileData] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('full_name, avatar_url')
-          .eq('id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching profile:', error);
-        } else if (data) {
-          setProfileData(data);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
-
-  return (
-    <Avatar 
-      className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
-      onClick={() => navigate('/profile')}
-    >
-      <AvatarImage 
-        src={profileData?.avatar_url || ''} 
-        alt="Profile picture" 
-      />
-      <AvatarFallback className="bg-blue-600 text-white font-bold text-lg border-2 border-blue-500">
-        {profileData?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-      </AvatarFallback>
-    </Avatar>
-  );
-};
 
 const ContentGeneratorStarter = () => {
   const { user } = useAuth();
