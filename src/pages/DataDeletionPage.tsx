@@ -13,12 +13,9 @@ const DataDeletionPage = () => {
 
   const handleDeleteRequest = () => {
     const userEmail = user?.email || 'Not available';
-    const userId = user?.id || 'Not available';
     const emailBody = `I would like to request deletion of my account and all associated data.
 
-User Information:
-- Email: ${userEmail}
-- User ID: ${userId}
+Account Email: ${userEmail}
 
 Please delete all of the following:
 - My account information and profile
