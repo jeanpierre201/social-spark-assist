@@ -3,7 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Crown, Zap } from 'lucide-react';
+import { Crown, Zap, Home, ArrowLeft } from 'lucide-react';
+import ProfileAvatar from '@/components/ProfileAvatar';
 
 interface ContentGeneratorHeaderProps {
   isProUser: boolean;
@@ -47,10 +48,21 @@ const ContentGeneratorHeader = ({ isProUser, isStarterUser, isFreeUser }: Conten
           <Button
             onClick={() => navigate('/dashboard')}
             variant="outline"
-            className="flex items-center space-x-2"
+            className="flex items-center gap-2"
           >
-            <span>Dashboard</span>
+            <ArrowLeft className="h-4 w-4" />
+            Dashboard
           </Button>
+          <Button
+            onClick={() => navigate('/')}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Home className="h-4 w-4" />
+            Home
+          </Button>
+          <div className="h-8 w-px bg-border mx-1" />
+          <ProfileAvatar />
         </div>
       </div>
     </div>

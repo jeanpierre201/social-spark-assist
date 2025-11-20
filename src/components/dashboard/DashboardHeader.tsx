@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
-import { Crown, Zap } from 'lucide-react';
+import { Crown, Zap, Home, LogOut } from 'lucide-react';
 import SubscriptionStatusBadge from '@/components/SubscriptionStatusBadge';
+import ProfileAvatar from '@/components/ProfileAvatar';
 
 interface DashboardHeaderProps {
   isProUser: boolean;
@@ -17,31 +15,6 @@ interface DashboardHeaderProps {
 const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard' }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [profileData, setProfileData] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      if (!user) return;
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('full_name, avatar_url')
-          .eq('id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Error fetching profile:', error);
-        } else if (data) {
-          setProfileData(data);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-      }
-    };
-
-    fetchProfile();
-  }, [user]);
 
   return (
     <div className="mb-8">
@@ -68,25 +41,13 @@ const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard' }: Dash
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Avatar 
-            className="h-10 w-10 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => navigate('/profile')}
-          >
-            <AvatarImage 
-              src={profileData?.avatar_url || ''} 
-              alt="Profile picture" 
-            />
-            <AvatarFallback className="bg-blue-600 text-white font-bold text-lg border-2 border-blue-500">
-              {profileData?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          
           <Button
             onClick={() => navigate('/')}
             variant="outline"
-            className="flex items-center space-x-2"
+            className="flex items-center gap-2"
           >
-            <span>Home</span>
+            <Home className="h-4 w-4" />
+            Home
           </Button>
           <Button
             onClick={async () => {
@@ -94,10 +55,13 @@ const DashboardHeader = ({ isProUser, isStarterUser, title = 'Dashboard' }: Dash
               navigate('/');
             }}
             variant="destructive"
-            className="flex items-center space-x-2"
+            className="flex items-center gap-2"
           >
-            <span>Logout</span>
+            <LogOut className="h-4 w-4" />
+            Logout
           </Button>
+          <div className="h-8 w-px bg-border mx-1" />
+          <ProfileAvatar />
         </div>
       </div>
     </div>
