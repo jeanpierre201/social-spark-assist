@@ -205,8 +205,30 @@ const Dashboard = () => {
                 <SubscriptionManagement />
               </div>
             </>
+          ) : isStarterUser ? (
+            /* Starter User Layout: Vertical Stack (Full Width) */
+            <>
+              <ActionCards
+                isProUser={isProUser}
+                isStarterUser={isStarterUser}
+                hasAnyPlan={hasAnyPlan}
+                onContentGeneration={() => {
+                  navigate('/content-generator-starter');
+                }}
+                onViewAllPosts={() => {
+                  navigate('/content-generator-starter');
+                }}
+                onCalendarView={() => {
+                  navigate('/content-generator-starter');
+                }}
+                onConnectAccounts={() => {}}
+                onSetActiveTab={() => {}}
+              />
+              
+              <SubscriptionManagement />
+            </>
           ) : (
-            /* Subscribed User Layout: Grid with Subscription Management on Side */
+            /* Pro User Layout: Grid with Subscription Management on Side */
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
                 <ActionCards
@@ -214,30 +236,14 @@ const Dashboard = () => {
                   isStarterUser={isStarterUser}
                   hasAnyPlan={hasAnyPlan}
                   onContentGeneration={() => {
-                    if (isProUser) {
-                      navigate('/dashboard/content');
-                    } else if (isStarterUser) {
-                      navigate('/content-generator-starter');
-                    } else {
-                      navigate('/content-generator');
-                    }
+                    navigate('/dashboard/content');
                   }}
                   onViewAllPosts={() => {
-                    if (isProUser) {
-                      navigate('/dashboard/content');
-                    } else if (isStarterUser) {
-                      navigate('/content-generator-starter');
-                    }
+                    navigate('/dashboard/content');
                   }}
-                  onCalendarView={() => {
-                    if (isStarterUser) {
-                      navigate('/content-generator-starter');
-                    }
-                  }}
+                  onCalendarView={() => {}}
                   onConnectAccounts={() => {
-                    if (isProUser) {
-                      navigate('/dashboard/social');
-                    }
+                    navigate('/dashboard/social');
                   }}
                   onSetActiveTab={(tab) => {
                     if (tab === 'content') navigate('/dashboard/content');
