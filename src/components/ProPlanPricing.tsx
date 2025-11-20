@@ -134,6 +134,9 @@ const ProPlanPricing = () => {
                     <Crown className="h-5 w-5 mr-2" />
                     {isStarterUser ? 'Upgrade to Pro' : 'Get Pro Plan'}
                   </Button>
+                  <p className="text-xs text-center text-muted-foreground">
+                    Cancel anytime
+                  </p>
                 </div>
               )}
             </CardContent>
