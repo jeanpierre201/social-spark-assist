@@ -217,9 +217,9 @@ export const useSocialAccounts = () => {
 
 const getOAuthScopes = (platform: string): string => {
   const scopes = {
-    instagram: 'instagram_basic,pages_show_list',
+    instagram: 'email,public_profile',
     twitter: 'tweet.read,users.read,offline.access',
-    facebook: 'pages_show_list,pages_read_engagement,instagram_basic',
+    facebook: 'email,public_profile',
     linkedin: 'r_liteprofile,r_emailaddress,w_member_social',
     tiktok: '',
     snapchat: ''
