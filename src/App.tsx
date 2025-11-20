@@ -33,6 +33,7 @@ import NotFound from "./pages/NotFound";
 import UpgradeProPage from "./pages/UpgradeProPage";
 import UpgradeStarterPage from "./pages/UpgradeStarterPage";
 import TestUtilityPage from "./pages/TestUtilityPage";
+import StarterPlanTestPage from "./pages/StarterPlanTestPage";
 
 const queryClient = new QueryClient();
 
@@ -125,6 +126,11 @@ const App = () => (
                   <Route path="/test" element={
                     <ProtectedRoute>
                       <TestUtilityPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/test-starter-plan" element={
+                    <ProtectedRoute>
+                      <StarterPlanTestPage />
                     </ProtectedRoute>
                   } />
                   
