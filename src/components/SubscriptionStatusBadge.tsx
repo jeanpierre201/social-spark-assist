@@ -29,6 +29,7 @@ const SubscriptionStatusBadge = ({ className }: SubscriptionStatusBadgeProps) =>
     }
 
     if (subscriptionTier === 'Starter' || subscriptionTier === 'Pro') {
+      // Active: Can create posts (within 30-day window and subscribed)
       if (subscribed && canCreatePosts) {
         return {
           label: 'Active',
@@ -37,6 +38,7 @@ const SubscriptionStatusBadge = ({ className }: SubscriptionStatusBadgeProps) =>
         };
       }
 
+      // View Only: Has subscription but creation period ended
       if (subscribed && !canCreatePosts) {
         return {
           label: 'View Only',
@@ -45,6 +47,7 @@ const SubscriptionStatusBadge = ({ className }: SubscriptionStatusBadgeProps) =>
         };
       }
 
+      // Expired: Payment stopped
       return {
         label: 'Expired',
         variant: 'destructive' as const,
