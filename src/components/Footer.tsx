@@ -1,7 +1,21 @@
 
 import { Zap, Twitter, Instagram, Linkedin, Facebook } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Footer = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleLogoClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (location.pathname === '/') {
+      // Already on home page, just scroll to top
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      // Navigate to home page
+      navigate('/');
+    }
+  };
   return (
     <footer className="bg-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -9,6 +23,7 @@ const Footer = () => {
           <div className="col-span-1 md:col-span-1">
             <a 
               href="/" 
+              onClick={handleLogoClick}
               className="flex items-center space-x-2 mb-4 cursor-pointer hover:opacity-80 transition-opacity inline-flex"
               aria-label="Go to home page"
             >
