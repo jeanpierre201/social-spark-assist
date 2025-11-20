@@ -10,7 +10,6 @@ import DashboardHeader from './dashboard/DashboardHeader';
 import QuickStats from './dashboard/QuickStats';
 import ActionCards from './dashboard/ActionCards';
 import UpgradePrompt from './dashboard/UpgradePrompt';
-import SubscriptionManagement from './dashboard/SubscriptionManagement';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -200,10 +199,6 @@ const Dashboard = () => {
               />
               
               <UpgradePrompt />
-              
-              <div className="w-full lg:w-1/3">
-                <SubscriptionManagement />
-              </div>
             </>
           ) : isStarterUser ? (
             /* Starter User Layout: Vertical Stack (Full Width) */
@@ -224,14 +219,10 @@ const Dashboard = () => {
                 onConnectAccounts={() => {}}
                 onSetActiveTab={() => {}}
               />
-              
-              <SubscriptionManagement />
             </>
           ) : (
-            /* Pro User Layout: Grid with Subscription Management on Side */
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <ActionCards
+            /* Pro User Layout */
+            <ActionCards
                   isProUser={isProUser}
                   isStarterUser={isStarterUser}
                   hasAnyPlan={hasAnyPlan}
@@ -252,12 +243,6 @@ const Dashboard = () => {
                     else if (tab === 'team') navigate('/dashboard/team');
                   }}
                 />
-              </div>
-              
-              <div className="lg:col-span-1">
-                <SubscriptionManagement />
-              </div>
-            </div>
           )}
         </div>
       </div>
