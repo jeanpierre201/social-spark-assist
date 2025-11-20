@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { ArrowLeft, Upload, Eye, EyeOff, Trash2 } from 'lucide-react';
+import SubscriptionManagement from '@/components/dashboard/SubscriptionManagement';
 
 interface Profile {
   id: string;
@@ -418,6 +419,11 @@ const ProfilePage = () => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* Subscription Management */}
+          <div className="md:col-span-3">
+            <SubscriptionManagement />
+          </div>
         </div>
       </div>
     </div>
