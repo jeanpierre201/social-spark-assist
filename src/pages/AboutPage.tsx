@@ -114,24 +114,6 @@ const AboutPage = () => {
           </CardContent>
         </Card>
 
-        {/* CTA */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-6">
-            Ready to transform your social media presence?
-          </h2>
-          <div className="flex justify-center gap-4">
-            {!user && (
-              <Button size="lg" onClick={() => navigate('/signup')}>
-                Get Started Free
-              </Button>
-            )}
-            {isStarterOrPro && (
-              <Button size="lg" variant="outline" onClick={() => navigate('/support')}>
-                Contact Us
-              </Button>
-            )}
-          </div>
-        </div>
       </div>
 
       <Footer />
