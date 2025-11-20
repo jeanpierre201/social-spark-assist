@@ -7,12 +7,16 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-1">
-            <div className="flex items-center space-x-2 mb-4">
+            <a 
+              href="/" 
+              className="flex items-center space-x-2 mb-4 cursor-pointer hover:opacity-80 transition-opacity inline-flex"
+              aria-label="Go to home page"
+            >
               <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-2 rounded-lg">
                 <Zap className="h-6 w-6 text-white" />
               </div>
               <span className="text-xl font-bold">Social Assistance AI</span>
-            </div>
+            </a>
             <p className="text-gray-400 mb-4">
               Empowering businesses with AI-driven social media management and content creation.
             </p>
