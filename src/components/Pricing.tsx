@@ -73,12 +73,13 @@ const Pricing = () => {
       period: "/month",
       description: "Ideal for small businesses",
       features: [
-        "Everything in Free",
-        "AI image generation",
+        "Everything in Free Plan",
         "10 posts per month",
-        "Basic scheduling",
+        "2 AI-generated images per post",
+        "Post scheduling to all platforms",
+        "Basic analytics",
         "Email support",
-        "Content calendar"
+        "Auto-create 10 posts at once"
       ],
       buttonText: subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Pro') 
         ? "Access Features" 
