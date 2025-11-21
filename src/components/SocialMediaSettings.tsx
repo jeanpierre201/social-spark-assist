@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useFacebookAuth } from '@/hooks/useFacebookAuth';
 import { 
   Instagram, 
   Twitter, 
@@ -17,6 +18,7 @@ import {
 
 const SocialMediaSettings = () => {
   const { accounts, metrics, loading, connectAccount, disconnectAccount, refreshMetrics } = useSocialAccounts();
+  const { connectFacebook, isConnecting } = useFacebookAuth();
 
   const platforms = [
     { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500' },
@@ -112,10 +114,11 @@ const SocialMediaSettings = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => connectAccount(platform.id)}
+                    onClick={() => platform.id === 'facebook' ? connectFacebook() : connectAccount(platform.id)}
+                    disabled={platform.id === 'facebook' && isConnecting}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Connect
+                    {platform.id === 'facebook' && isConnecting ? 'Connecting...' : 'Connect'}
                   </Button>
                 )}
               </div>

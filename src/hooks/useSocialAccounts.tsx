@@ -83,6 +83,13 @@ export const SocialAccountsProvider = ({ children }: { children: React.ReactNode
   };
 
   const connectAccount = async (platform: string) => {
+    if (platform === 'facebook') {
+      toast({
+        title: "Facebook Connection",
+        description: "Please use the Connect button in the Social Media Settings to connect your Facebook account.",
+      });
+      return;
+    }
     if (!user) return;
 
     try {
