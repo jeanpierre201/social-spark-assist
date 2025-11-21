@@ -6,6 +6,7 @@ import logoOption2 from '@/assets/logo-option-2.png';
 import logoOption3 from '@/assets/logo-option-3.png';
 import currentLogo from '@/assets/rombipost-logo-icon.svg';
 import logo3D from '@/assets/rombipost-logo-3d.svg';
+import logoAlt4 from '@/assets/rombipost-logo-alt4.svg';
 
 const LogoPreviewPage = () => {
   const navigate = useNavigate();
@@ -76,6 +77,16 @@ const LogoPreviewPage = () => {
             </div>
             <p className="text-sm text-center text-muted-foreground">
               Geometric split design - dynamic and unique
+            </p>
+          </Card>
+
+          <Card className="p-8">
+            <h3 className="text-xl font-semibold mb-4 text-center">Option 4</h3>
+            <div className="flex items-center justify-center bg-white rounded-lg p-8 mb-4">
+              <img src={logoAlt4} alt="Logo Option 4" className="h-48 w-48 object-contain" />
+            </div>
+            <p className="text-sm text-center text-muted-foreground">
+              Arrow-shaped inner edges pointing outward
             </p>
           </Card>
         </div>
