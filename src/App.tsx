@@ -35,7 +35,6 @@ import UpgradeStarterPage from "./pages/UpgradeStarterPage";
 import TestUtilityPage from "./pages/TestUtilityPage";
 import StarterPlanTestPage from "./pages/StarterPlanTestPage";
 import LogoPreviewPage from "./pages/LogoPreviewPage";
-import FacebookConnectPage from "./pages/FacebookConnectPage";
 
 const queryClient = new QueryClient();
 
@@ -104,11 +103,6 @@ const App = () => (
                   <Route path="/dashboard/social" element={
                     <ProtectedRoute>
                       <DashboardSocialPage />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/connect/facebook" element={
-                    <ProtectedRoute>
-                      <FacebookConnectPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/profile" element={

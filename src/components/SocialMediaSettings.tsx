@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useFacebookAuth } from '@/hooks/useFacebookAuth';
-import { useNavigate } from 'react-router-dom';
 import { 
   Instagram, 
   Twitter, 
@@ -19,8 +18,7 @@ import {
 
 const SocialMediaSettings = () => {
   const { accounts, metrics, loading, connectAccount, disconnectAccount, refreshMetrics } = useSocialAccounts();
-  const { isConnecting } = useFacebookAuth();
-  const navigate = useNavigate();
+  const { connectFacebook, isConnecting } = useFacebookAuth();
 
   const platforms = [
     { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500' },
@@ -116,7 +114,7 @@ const SocialMediaSettings = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => platform.id === 'facebook' ? navigate('/connect/facebook') : connectAccount(platform.id)}
+                    onClick={() => platform.id === 'facebook' ? connectFacebook() : connectAccount(platform.id)}
                     disabled={platform.id === 'facebook' && isConnecting}
                   >
                     <Plus className="h-4 w-4 mr-2" />
@@ -129,9 +127,15 @@ const SocialMediaSettings = () => {
         })}
 
         {accounts.length === 0 && (
-          <div className="text-center py-8">
-            <p className="text-lg font-medium text-muted-foreground mb-2">No accounts connected yet</p>
-            <p className="text-sm text-muted-foreground mb-4">Connect your Facebook Page to start posting</p>
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-lg font-medium">No accounts connected yet</p>
+            <p className="text-sm">Connect your social media accounts to see real analytics</p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg text-left">
+              <p className="text-sm font-medium text-blue-900 mb-2">Setup Required:</p>
+              <p className="text-sm text-blue-800">
+                Configure OAuth providers in your Supabase Dashboard under Authentication → Providers to enable social media connections.
+              </p>
+            </div>
           </div>
         )}
       </CardContent>
