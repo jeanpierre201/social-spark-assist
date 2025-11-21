@@ -1,7 +1,7 @@
 
 import { Twitter, Instagram, Linkedin, Facebook } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logoIcon from '@/assets/rombipost-logo-icon.svg';
+import logoNew from '@/assets/rombipost-logo-new.png';
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -25,16 +25,16 @@ const Footer = () => {
             <a 
               href="/" 
               onClick={handleLogoClick}
-              className="flex items-center mb-4 cursor-pointer hover:opacity-80 transition-opacity inline-flex"
+              className="flex items-center mb-4 cursor-pointer inline-flex"
               aria-label="Go to home page"
             >
               <img 
-                src={logoIcon} 
+                src={logoNew} 
                 alt="RombiPost Logo" 
-                className="h-[46px] w-[46px] object-contain"
+                className="h-[46px] w-auto object-contain"
               />
               <div className="h-10 w-px bg-gradient-to-b from-purple-600 via-blue-600 to-cyan-600 opacity-50 mx-3"></div>
-              <span className="text-xl font-bold text-white">RombiPost</span>
+              <span className="text-xl md:text-3xl font-bold text-white">RombiPost</span>
             </a>
             <p className="text-gray-400 mb-4">
               Empowering businesses with AI-driven social media management and content creation.
