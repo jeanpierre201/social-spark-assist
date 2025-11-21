@@ -25,14 +25,15 @@ const Footer = () => {
             <a 
               href="/" 
               onClick={handleLogoClick}
-              className="flex items-center space-x-3 mb-4 cursor-pointer hover:opacity-80 transition-opacity inline-flex"
+              className="flex items-center mb-4 cursor-pointer hover:opacity-80 transition-opacity inline-flex"
               aria-label="Go to home page"
             >
               <img 
                 src={logoIcon} 
                 alt="RombiPost Logo" 
-                className="h-16 w-16 object-contain"
+                className="h-12 w-12 object-contain"
               />
+              <div className="h-10 w-px bg-gradient-to-b from-purple-600 via-blue-600 to-cyan-600 opacity-50 mx-3"></div>
               <span className="text-xl font-bold text-white">RombiPost</span>
             </a>
             <p className="text-gray-400 mb-4">
