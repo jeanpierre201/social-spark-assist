@@ -1,7 +1,7 @@
 
 import { Twitter, Instagram, Linkedin, Facebook } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import logoIcon from '@/assets/socialnova-logo-icon.png';
+import logoIcon from '@/assets/socialnova-logo-icon.svg';
 
 const Footer = () => {
   const navigate = useNavigate();

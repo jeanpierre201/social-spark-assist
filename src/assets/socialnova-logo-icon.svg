@@ -1,0 +1,24 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rhombusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer rhombus -->
+  <path d="M 256 64 L 448 256 L 256 448 L 64 256 Z" fill="url(#rhombusGradient)"/>
+  
+  <!-- Inner rhombus (cutout for transparency) -->
+  <path d="M 256 160 L 352 256 L 256 352 L 160 256 Z" fill="white" opacity="0"/>
+  
+  <!-- Create the hollow effect with a mask -->
+  <mask id="hollowMask">
+    <rect width="512" height="512" fill="white"/>
+    <path d="M 256 160 L 352 256 L 256 352 L 160 256 Z" fill="black"/>
+  </mask>
+  
+  <!-- Apply mask to outer rhombus -->
+  <path d="M 256 64 L 448 256 L 256 448 L 64 256 Z" fill="url(#rhombusGradient)" mask="url(#hollowMask)"/>
+</svg>

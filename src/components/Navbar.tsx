@@ -6,7 +6,7 @@ import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import SubscriptionStatusBadge from '@/components/SubscriptionStatusBadge';
-import logoIcon from '@/assets/socialnova-logo-icon.png';
+import logoIcon from '@/assets/socialnova-logo-icon.svg';
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [profileName, setProfileName] = useState<string>('');
