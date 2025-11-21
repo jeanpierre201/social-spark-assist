@@ -21,7 +21,7 @@ export const generateTestUsers = (count: number): TestUser[] => {
   
   for (let i = 1; i <= count; i++) {
     users.push({
-      email: `testuser${i}@socialnova.test`,
+      email: `testuser${i}@rombipost.test`,
       password: `TestPass${i}123!`,
       fullName: `Test User ${i}`
     });

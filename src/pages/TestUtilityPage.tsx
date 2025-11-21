@@ -282,7 +282,7 @@ const TestUtilityPage = () => {
               Cleanup Test Data
             </CardTitle>
             <CardDescription>
-              Remove all test users created with @socialnova.test emails and their associated data
+              Remove all test users created with @rombipost.test emails and their associated data
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -401,7 +401,7 @@ const TestUtilityPage = () => {
               <Alert>
                 <AlertDescription>
                   <strong>Note:</strong> This test will create real user accounts in your database. 
-                  Test emails will be in the format: testuser1@socialnova.test, testuser2@socialnova.test, etc.
+                  Test emails will be in the format: testuser1@rombipost.test, testuser2@rombipost.test, etc.
                   Make sure email confirmation is disabled in Supabase settings for faster testing.
                 </AlertDescription>
               </Alert>
