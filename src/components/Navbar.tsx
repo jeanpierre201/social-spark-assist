@@ -55,7 +55,7 @@ const Navbar = () => {
           <button onClick={() => navigate('/')} className="flex items-center cursor-pointer hover:opacity-80 transition-opacity" aria-label="Go to home page">
             <img alt="RombiPost Logo" className="h-[46px] w-[46px] object-contain" src={logoIcon} />
             <div className="h-10 w-px bg-gradient-to-b from-purple-600 via-blue-600 to-cyan-600 opacity-50 mx-3"></div>
-            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent" style={{ fontSize: 'xx-large' }}>
+            <span className="text-xl font-bold text-foreground hover:bg-gradient-to-r hover:from-purple-600 hover:to-blue-600 hover:bg-clip-text hover:text-transparent transition-all duration-300" style={{ fontSize: 'xx-large' }}>
               RombiPost
             </span>
           </button>
