@@ -24,16 +24,22 @@ export const useFacebookAuth = () => {
 
       // Login to Facebook
       window.FB.login(
-        async (response: any) => {
+        (response: any) => {
           if (response.authResponse) {
             const accessToken = response.authResponse.accessToken;
             
             console.log('Facebook login successful, getting pages...');
 
             // Get user's pages
-            window.FB.api('/me/accounts', async (pagesResponse: any) => {
+            window.FB.api('/me/accounts', (pagesResponse: any) => {
               if (pagesResponse.error) {
-                throw new Error(pagesResponse.error.message);
+                toast({
+                  title: 'Error',
+                  description: pagesResponse.error.message,
+                  variant: 'destructive',
+                });
+                setIsConnecting(false);
+                return;
               }
 
               if (!pagesResponse.data || pagesResponse.data.length === 0) {
@@ -52,30 +58,46 @@ export const useFacebookAuth = () => {
 
               console.log('Using page:', page.name);
 
-              // Get the current user session
-              const { data: { session } } = await supabase.auth.getSession();
-              if (!session) {
-                throw new Error('Not authenticated');
-              }
-
               // Call our backend to store the connection
-              const { data, error } = await supabase.functions.invoke('facebook-oauth', {
-                body: {
-                  accessToken: pageAccessToken,
-                  pageId: page.id,
-                  pageName: page.name
+              supabase.auth.getSession().then(({ data: { session } }) => {
+                if (!session) {
+                  toast({
+                    title: 'Error',
+                    description: 'Not authenticated',
+                    variant: 'destructive',
+                  });
+                  setIsConnecting(false);
+                  return;
                 }
+
+                supabase.functions.invoke('facebook-oauth', {
+                  body: {
+                    accessToken: pageAccessToken,
+                    pageId: page.id,
+                    pageName: page.name
+                  }
+                }).then(({ data, error }) => {
+                  if (error) {
+                    toast({
+                      title: 'Error',
+                      description: error.message,
+                      variant: 'destructive',
+                    });
+                    setIsConnecting(false);
+                    return;
+                  }
+
+                  toast({
+                    title: 'Success',
+                    description: `Connected to Facebook Page: ${page.name}`,
+                  });
+
+                  // Refresh the page to update the UI
+                  setTimeout(() => {
+                    window.location.reload();
+                  }, 1000);
+                });
               });
-
-              if (error) throw error;
-
-              toast({
-                title: 'Success',
-                description: `Connected to Facebook Page: ${page.name}`,
-              });
-
-              // Refresh the page to update the UI
-              window.location.reload();
             });
           } else {
             toast({
@@ -83,8 +105,8 @@ export const useFacebookAuth = () => {
               description: 'Facebook connection was cancelled',
               variant: 'destructive',
             });
+            setIsConnecting(false);
           }
-          setIsConnecting(false);
         },
         { 
           scope: 'pages_show_list,pages_read_engagement,pages_manage_posts,publish_to_groups',
