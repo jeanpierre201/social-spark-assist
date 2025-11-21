@@ -54,7 +54,7 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <button onClick={() => navigate('/')} className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" aria-label="Go to home page">
             <img alt="RombiPost Logo" className="h-16 w-16 object-contain" src={logoIcon} />
-            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent" style={{ fontSize: 'xx-large' }}>
               RombiPost
             </span>
           </button>
