@@ -45,7 +45,7 @@ const StarterPlanTestPage = () => {
       // Step 1: Generate test user data
       const testUsers = generateTestUsers(userCount).map((user, index) => ({
         ...user,
-        email: `starter_test_${Date.now()}_${index + 1}@socialnova.test`
+        email: `starter_test_${Date.now()}_${index + 1}@rombipost.test`
       }));
       
       setProgress(10);
@@ -290,7 +290,7 @@ const StarterPlanTestPage = () => {
 
               <Alert>
                 <AlertDescription>
-                  <strong>Test Credentials:</strong> All test accounts use the pattern starter_test_[timestamp]_[number]@socialnova.test with passwords TestPass[number]123!
+                  <strong>Test Credentials:</strong> All test accounts use the pattern starter_test_[timestamp]_[number]@rombipost.test with passwords TestPass[number]123!
                 </AlertDescription>
               </Alert>
             </>
