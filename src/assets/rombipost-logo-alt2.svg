@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="40 40 432 432" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="rhombusGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d946ef;stop-opacity:1" />
+      <stop offset="35%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="65%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <g>
+    <!-- Double outline rhombus - two concentric borders -->
+    <path 
+      d="M 256 40 L 472 256 L 256 472 L 40 256 Z M 256 80 L 432 256 L 256 432 L 80 256 Z M 256 150 L 362 256 L 256 362 L 150 256 Z M 256 190 L 322 256 L 256 322 L 190 256 Z" 
+      fill="url(#rhombusGradient2)" 
+      fill-rule="evenodd"
+    />
+  </g>
+</svg>
