@@ -66,11 +66,11 @@ const Navbar = () => {
           >
             <img 
               src={logoIcon} 
-              alt="SocialNova Logo" 
-              className="h-10 w-10 object-contain"
+              alt="RombiPost Logo" 
+              className="h-12 w-12 object-contain"
             />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              SocialNova
+              RombiPost
             </span>
           </button>
           

@@ -1,6 +1,7 @@
 
-import { Zap, Twitter, Instagram, Linkedin, Facebook } from 'lucide-react';
+import { Twitter, Instagram, Linkedin, Facebook } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import logoIcon from '@/assets/socialnova-logo-icon.png';
 
 const Footer = () => {
   const navigate = useNavigate();
@@ -24,13 +25,15 @@ const Footer = () => {
             <a 
               href="/" 
               onClick={handleLogoClick}
-              className="flex items-center space-x-2 mb-4 cursor-pointer hover:opacity-80 transition-opacity inline-flex"
+              className="flex items-center space-x-3 mb-4 cursor-pointer hover:opacity-80 transition-opacity inline-flex"
               aria-label="Go to home page"
             >
-              <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-2 rounded-lg">
-                <Zap className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-xl font-bold">Social Assistance AI</span>
+              <img 
+                src={logoIcon} 
+                alt="RombiPost Logo" 
+                className="h-12 w-12 object-contain"
+              />
+              <span className="text-xl font-bold text-white">RombiPost</span>
             </a>
             <p className="text-gray-400 mb-4">
               Empowering businesses with AI-driven social media management and content creation.
@@ -106,7 +109,7 @@ const Footer = () => {
         
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-400">
-            © 2024 Social Assistance AI. All rights reserved.
+            © 2024 RombiPost. All rights reserved.
           </p>
         </div>
       </div>
