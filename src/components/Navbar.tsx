@@ -52,8 +52,9 @@ const Navbar = () => {
   return <nav className="bg-white/80 backdrop-blur-md border-b border-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <button onClick={() => navigate('/')} className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity" aria-label="Go to home page">
+          <button onClick={() => navigate('/')} className="flex items-center space-x-4 cursor-pointer hover:opacity-80 transition-opacity" aria-label="Go to home page">
             <img alt="RombiPost Logo" className="h-16 w-16 object-contain" src={logoIcon} />
+            <div className="h-12 w-px bg-gradient-to-b from-purple-600 via-blue-600 to-cyan-600 opacity-50"></div>
             <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent" style={{ fontSize: 'xx-large' }}>
               RombiPost
             </span>
