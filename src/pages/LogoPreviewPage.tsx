@@ -5,6 +5,7 @@ import logoOption1 from '@/assets/logo-option-1.png';
 import logoOption2 from '@/assets/logo-option-2.png';
 import logoOption3 from '@/assets/logo-option-3.png';
 import currentLogo from '@/assets/rombipost-logo-icon.svg';
+import logo3D from '@/assets/rombipost-logo-3d.svg';
 
 const LogoPreviewPage = () => {
   const navigate = useNavigate();
@@ -38,13 +39,23 @@ const LogoPreviewPage = () => {
             </p>
           </Card>
 
+          <Card className="p-8 border-2 border-primary">
+            <h3 className="text-xl font-semibold mb-4 text-center">Option 1 - 3D SVG ⭐</h3>
+            <div className="flex items-center justify-center bg-white rounded-lg p-8 mb-4">
+              <img src={logo3D} alt="3D Logo SVG" className="h-48 w-48 object-contain" />
+            </div>
+            <p className="text-sm text-center text-muted-foreground">
+              Thick 3D borders with depth effects - bold and substantial (SVG format)
+            </p>
+          </Card>
+
           <Card className="p-8">
-            <h3 className="text-xl font-semibold mb-4 text-center">Option 1</h3>
+            <h3 className="text-xl font-semibold mb-4 text-center">Option 1 - PNG</h3>
             <div className="flex items-center justify-center bg-white rounded-lg p-8 mb-4">
               <img src={logoOption1} alt="Logo Option 1" className="h-48 w-48 object-contain" />
             </div>
             <p className="text-sm text-center text-muted-foreground">
-              Thick 3D borders with smaller center hole - bold and substantial
+              Original PNG version for reference
             </p>
           </Card>
 

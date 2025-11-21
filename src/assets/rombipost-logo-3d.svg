@@ -1,0 +1,99 @@
+<svg width="512" height="512" viewBox="40 40 432 432" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Main gradient with 3D color progression -->
+    <linearGradient id="gradient3D" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d946ef;stop-opacity:1" />
+      <stop offset="35%" style="stop-color:#a855f7;stop-opacity:1" />
+      <stop offset="65%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06b6d4;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Highlight gradient for top-left lighting -->
+    <linearGradient id="highlightGradient" x1="0%" y1="0%" x2="50%" y2="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.3" />
+      <stop offset="50%" style="stop-color:#ffffff;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </linearGradient>
+    
+    <!-- Shadow gradient for bottom-right depth -->
+    <linearGradient id="shadowGradient" x1="50%" y1="50%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#000000;stop-opacity:0" />
+      <stop offset="50%" style="stop-color:#000000;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.3" />
+    </linearGradient>
+    
+    <!-- Inner glow for depth -->
+    <radialGradient id="innerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0" />
+      <stop offset="70%" style="stop-color:#ffffff;stop-opacity:0" />
+      <stop offset="100%" style="stop-color:#000000;stop-opacity:0.2" />
+    </radialGradient>
+    
+    <!-- Drop shadow filter -->
+    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="2" dy="2" result="offsetblur"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.3"/>
+      </feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Inner shadow for depth -->
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feOffset in="blur" dx="1" dy="1" result="offsetBlur"/>
+      <feFlood flood-color="#000000" flood-opacity="0.4" result="offsetColor"/>
+      <feComposite in="offsetColor" in2="offsetBlur" operator="in" result="offsetBlur"/>
+      <feMerge>
+        <feMergeNode in="SourceGraphic"/>
+        <feMergeNode in="offsetBlur"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <g>
+    <!-- Base shadow layer for overall depth -->
+    <path 
+      d="M 256 40 L 472 256 L 256 472 L 40 256 Z M 256 195 L 317 256 L 256 317 L 195 256 Z" 
+      fill="#000000" 
+      opacity="0.15"
+      transform="translate(3, 3)"
+    />
+    
+    <!-- Main rhombus with thick borders and primary gradient -->
+    <path 
+      d="M 256 40 L 472 256 L 256 472 L 40 256 Z M 256 195 L 317 256 L 256 317 L 195 256 Z" 
+      fill="url(#gradient3D)" 
+      fill-rule="evenodd"
+      filter="url(#dropShadow)"
+    />
+    
+    <!-- Highlight overlay for top-left lighting effect -->
+    <path 
+      d="M 256 40 L 472 256 L 256 472 L 40 256 Z M 256 195 L 317 256 L 256 317 L 195 256 Z" 
+      fill="url(#highlightGradient)" 
+      fill-rule="evenodd"
+      opacity="0.6"
+    />
+    
+    <!-- Shadow overlay for bottom-right depth -->
+    <path 
+      d="M 256 40 L 472 256 L 256 472 L 40 256 Z M 256 195 L 317 256 L 256 317 L 195 256 Z" 
+      fill="url(#shadowGradient)" 
+      fill-rule="evenodd"
+      opacity="0.5"
+    />
+    
+    <!-- Inner glow for dimension -->
+    <path 
+      d="M 256 40 L 472 256 L 256 472 L 40 256 Z M 256 195 L 317 256 L 256 317 L 195 256 Z" 
+      fill="url(#innerGlow)" 
+      fill-rule="evenodd"
+      filter="url(#innerShadow)"
+    />
+  </g>
+</svg>
