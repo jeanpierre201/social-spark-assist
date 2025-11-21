@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Calendar, Shield } from 'lucide-react';
+import { Menu, X, Shield } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminAuth } from '@/hooks/useAdminAuth';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import SubscriptionStatusBadge from '@/components/SubscriptionStatusBadge';
+import logoIcon from '@/assets/socialnova-logo-icon.png';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -60,14 +61,16 @@ const Navbar = () => {
         <div className="flex justify-between items-center h-16">
           <button 
             onClick={() => navigate('/')}
-            className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+            className="flex items-center space-x-3 cursor-pointer hover:opacity-80 transition-opacity"
             aria-label="Go to home page"
           >
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-2 rounded-lg">
-              <Calendar className="h-6 w-6 text-white" />
-            </div>
+            <img 
+              src={logoIcon} 
+              alt="SocialNova Logo" 
+              className="h-10 w-10 object-contain"
+            />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Social Assistance AI
+              SocialNova
             </span>
           </button>
           
