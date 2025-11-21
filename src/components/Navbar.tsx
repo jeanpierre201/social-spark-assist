@@ -67,7 +67,7 @@ const Navbar = () => {
             <img 
               src={logoIcon} 
               alt="RombiPost Logo" 
-              className="h-12 w-12 object-contain"
+              className="h-16 w-16 object-contain"
             />
             <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
               RombiPost

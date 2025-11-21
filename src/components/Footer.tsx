@@ -31,7 +31,7 @@ const Footer = () => {
               <img 
                 src={logoIcon} 
                 alt="RombiPost Logo" 
-                className="h-12 w-12 object-contain"
+                className="h-16 w-16 object-contain"
               />
               <span className="text-xl font-bold text-white">RombiPost</span>
             </a>
