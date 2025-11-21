@@ -1,21 +1,8 @@
 
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
 
 const Hero = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-
-  const handleStartCreating = () => {
-    if (user) {
-      navigate('/dashboard');
-    } else {
-      navigate('/signup');
-    }
-  };
-
   return (
     <section className="relative py-20 lg:py-32 bg-gradient-accent overflow-hidden">
       {/* Background decoration */}
@@ -38,7 +25,7 @@ const Hero = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-lg" onClick={handleStartCreating}>
+              <Button size="lg" className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-lg">
                 Start Creating Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
