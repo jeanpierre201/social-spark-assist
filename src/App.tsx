@@ -34,6 +34,7 @@ import UpgradeProPage from "./pages/UpgradeProPage";
 import UpgradeStarterPage from "./pages/UpgradeStarterPage";
 import TestUtilityPage from "./pages/TestUtilityPage";
 import StarterPlanTestPage from "./pages/StarterPlanTestPage";
+import LogoPreviewPage from "./pages/LogoPreviewPage";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
                   <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                   <Route path="/terms-of-service" element={<TermsOfServicePage />} />
                   <Route path="/data-deletion" element={<DataDeletionPage />} />
+                  <Route path="/logo-preview" element={<LogoPreviewPage />} />
                   
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLoginPage />} />
