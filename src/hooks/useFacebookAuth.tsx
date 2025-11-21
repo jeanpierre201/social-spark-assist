@@ -13,6 +13,22 @@ export const useFacebookAuth = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
+  const handleFacebookCallback = (statusResponse: any) => {
+    console.log('Handling Facebook callback:', statusResponse);
+    
+    if (statusResponse.status === 'connected') {
+      setIsConnecting(true);
+      console.log('User connected to Facebook, getting pages...');
+      handleFacebookPages(statusResponse.authResponse.accessToken);
+    } else {
+      toast({
+        title: 'Connection Failed',
+        description: 'Could not connect to Facebook. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const connectFacebook = async () => {
     setIsConnecting(true);
 
@@ -173,6 +189,7 @@ export const useFacebookAuth = () => {
   return {
     connectFacebook,
     postToFacebook,
+    handleFacebookCallback,
     isConnecting
   };
 };
