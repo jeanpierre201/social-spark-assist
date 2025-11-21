@@ -217,9 +217,13 @@ export const useSocialAccounts = () => {
 
 const getOAuthScopes = (platform: string): string => {
   const scopes = {
-    instagram: 'email,public_profile',
-    twitter: 'tweet.read,users.read,offline.access',
-    facebook: 'email,public_profile',
+    // Facebook Pages posting permissions (requires Business Verification + App Review)
+    facebook: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish',
+    // Instagram uses Facebook permissions (Business accounts only)
+    instagram: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish',
+    // Twitter/X posting
+    twitter: 'tweet.read,tweet.write,users.read,offline.access',
+    // LinkedIn posting
     linkedin: 'r_liteprofile,r_emailaddress,w_member_social',
     tiktok: '',
     snapchat: ''
