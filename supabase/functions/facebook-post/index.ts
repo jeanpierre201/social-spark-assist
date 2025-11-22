@@ -121,9 +121,9 @@ serve(async (req) => {
       
       // Check for specific error codes
       if (result.error?.code === 190) {
-        throw new Error('Facebook access token has expired or is invalid. Please reconnect your Facebook account.');
+        throw new Error('Facebook token expired. Please disconnect and reconnect Facebook on the Social page.');
       } else if (result.error?.code === 200) {
-        throw new Error(`Facebook permission error: ${result.error.message}. Please reconnect your Facebook account with the required permissions.`);
+        throw new Error('Facebook permission denied. This requires: 1) Adding yourself as App Admin/Tester in Facebook App settings, OR 2) Submitting app for Facebook App Review. Then disconnect and reconnect on the Social page.');
       }
       
       throw new Error(result.error?.message || 'Failed to post to Facebook');
