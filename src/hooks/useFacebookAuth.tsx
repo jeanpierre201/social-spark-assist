@@ -57,10 +57,12 @@ export const useFacebookAuth = () => {
           
           // Check if we got the required permissions
           const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
+          console.log('[FACEBOOK-AUTH] Granted scopes:', grantedScopes);
+          
           if (!grantedScopes.includes('pages_show_list')) {
             toast({
               title: 'Insufficient Permissions',
-              description: 'Please grant access to manage your Facebook Pages',
+              description: 'Please grant access to view your Facebook Pages',
               variant: 'destructive',
             });
             setIsConnecting(false);
@@ -79,7 +81,7 @@ export const useFacebookAuth = () => {
         }
       },
       { 
-        scope: 'pages_show_list,pages_manage_posts',
+        scope: 'pages_show_list',
         return_scopes: true 
       }
     );
