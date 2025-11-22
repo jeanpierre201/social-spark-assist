@@ -56,11 +56,13 @@ serve(async (req) => {
       throw new Error('Facebook account not found');
     }
 
-    // Get access token from vault
+    // Get access token from vault - get the most recent one
     const { data: tokenData, error: tokenError } = await supabaseClient
       .from('social_tokens_vault')
       .select('encrypted_access_token, token_expires_at')
       .eq('social_account_id', accountId)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
 
     if (tokenError || !tokenData) {

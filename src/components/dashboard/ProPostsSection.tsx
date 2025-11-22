@@ -64,7 +64,7 @@ interface ProPostsSectionProps {
 const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSectionProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { publishToFacebook, isPublishing } = useManualPublish();
+  const { publishToFacebook, isPublishingPost } = useManualPublish();
   const { accounts } = useSocialAccounts();
   const [posts, setPosts] = useState<Post[]>([]);
   const [transformedPosts, setTransformedPosts] = useState<PostData[]>([]);
@@ -419,7 +419,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span>Created: {format(new Date(post.created_at), 'MMM dd, yyyy')}</span>
                         {post.scheduled_date && (
-                          <span>Scheduled: {format(new Date(post.scheduled_date), 'MMM dd, yyyy')}</span>
+                          <span>Scheduled: {format(new Date(post.scheduled_date), 'MMM dd, yyyy')} at {post.scheduled_time || '00:00'}</span>
                         )}
                         {post.posted_at && (
                           <span>Posted: {format(new Date(post.posted_at), 'MMM dd, yyyy')}</span>
@@ -434,7 +434,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
                           variant="default"
                           size="sm"
                           onClick={() => handleManualPublish(post)}
-                          disabled={isPublishing}
+                          disabled={isPublishingPost(post.id)}
                           className="bg-green-600 hover:bg-green-700"
                           title="Post Now to Facebook"
                         >
