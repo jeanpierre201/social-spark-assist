@@ -7,12 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, List, Calendar as CalendarIcon } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, List, Calendar as CalendarIcon, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, isSameDay } from 'date-fns';
 import CalendarDisplay from '@/components/starter/calendar/CalendarDisplay';
 import PostsList from '@/components/starter/calendar/PostsList';
 import PostEditDialog from '@/components/starter/PostEditDialog';
+import { useManualPublish } from '@/hooks/useManualPublish';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 
 interface Post {
   id: string;
@@ -62,6 +64,8 @@ interface ProPostsSectionProps {
 const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSectionProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { publishToFacebook, isPublishing } = useManualPublish();
+  const { accounts } = useSocialAccounts();
   const [posts, setPosts] = useState<Post[]>([]);
   const [transformedPosts, setTransformedPosts] = useState<PostData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -183,7 +187,8 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
   };
 
   const isEditable = (status: string) => {
-    return status === 'draft' || status === 'scheduled';
+    // Failed and rescheduled posts should be editable so users can reschedule them
+    return status === 'draft' || status === 'scheduled' || status === 'rescheduled' || status === 'failed';
   };
 
   const isFromPreviousPeriod = (createdAt: string) => {
@@ -260,6 +265,33 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
     fetchPosts();
     setIsEditDialogOpen(false);
     setEditingPost(null);
+  };
+
+  // Manual publish to Facebook
+  const handleManualPublish = async (post: Post) => {
+    const facebookAccount = accounts.find(acc => acc.platform === 'facebook' && acc.is_active);
+    
+    if (!facebookAccount) {
+      toast({
+        title: 'No Facebook Account',
+        description: 'Please connect your Facebook account first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const message = `${post.generated_caption}\n\n${post.generated_hashtags.join(' ')}`;
+    const result = await publishToFacebook(
+      post.id,
+      facebookAccount.id,
+      message,
+      post.media_url || undefined
+    );
+
+    if (result.success) {
+      // Refresh posts to show updated status
+      fetchPosts();
+    }
   };
 
   if (loading) {
@@ -396,6 +428,20 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
                     </div>
                     
                     <div className="flex gap-2 ml-4">
+                      {/* Post Now button for scheduled/failed posts */}
+                      {(post.status === 'scheduled' || post.status === 'failed' || post.status === 'rescheduled') && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handleManualPublish(post)}
+                          disabled={isPublishing}
+                          className="bg-green-600 hover:bg-green-700"
+                          title="Post Now to Facebook"
+                        >
+                          <Send className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
                       {isEditable(post.status) ? (
                         <Button
                           variant="outline"
