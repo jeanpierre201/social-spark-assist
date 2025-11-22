@@ -945,7 +945,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   className="text-sm"
                 />
                  <p className="text-xs text-muted-foreground mt-1">
-                   💡 AI image generation creates images from text descriptions. Describe visual elements like colors, style, objects, and composition for best results.
+                   💡 DALL-E 3 creates images from text descriptions only. Describe visual elements like colors, style, objects, and composition for best results.
                  </p>
               </div>
             )}
