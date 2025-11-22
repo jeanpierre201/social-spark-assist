@@ -11,9 +11,9 @@ const corsHeaders = {
 
 interface RequestBody {
   prompt: string;
-  size?: '1024x1024' | '1792x1024' | '1024x1792';
-  quality?: 'standard' | 'hd';
-  style?: 'vivid' | 'natural';
+  size?: '1024x1024' | '1536x1024' | '1024x1536';
+  quality?: 'high' | 'medium' | 'low';
+  output_format?: 'png' | 'jpeg' | 'webp';
 }
 
 const validateInput = (body: RequestBody): string | null => {
@@ -21,8 +21,8 @@ const validateInput = (body: RequestBody): string | null => {
     return 'Prompt is required';
   }
   
-  if (body.prompt.length > 1000) {
-    return 'Prompt must be less than 1000 characters';
+  if (body.prompt.length > 32000) {
+    return 'Prompt must be less than 32,000 characters';
   }
   
   return null;
@@ -72,14 +72,14 @@ serve(async (req) => {
     // Sanitize inputs
     const prompt = sanitizeInput(body.prompt);
     const size = body.size || '1024x1024';
-    const quality = body.quality || 'standard';
-    const style = body.style || 'vivid';
+    const quality = body.quality || 'medium';
+    const output_format = body.output_format || 'png';
 
-    console.log('Sanitized inputs:', { prompt, size, quality, style });
+    console.log('Sanitized inputs:', { prompt, size, quality, output_format });
 
-    console.log('Making OpenAI DALL-E API call...');
+    console.log('Making OpenAI gpt-image-1 API call...');
 
-    // Call OpenAI DALL-E API
+    // Call OpenAI gpt-image-1 API (more powerful than dall-e-3)
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
@@ -87,13 +87,12 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'dall-e-3',
+        model: 'gpt-image-1',
         prompt: prompt,
         n: 1,
         size: size,
         quality: quality,
-        style: style,
-        response_format: 'b64_json'
+        output_format: output_format
       }),
     });
 
@@ -108,14 +107,17 @@ serve(async (req) => {
     
     const imageData = data.data[0];
     const base64Image = imageData.b64_json;
-    const revisedPrompt = imageData.revised_prompt;
 
     console.log('Image generated successfully');
 
+    // Determine mime type based on output format
+    const mimeType = output_format === 'jpeg' ? 'image/jpeg' : 
+                     output_format === 'webp' ? 'image/webp' : 
+                     'image/png';
+
     return new Response(
       JSON.stringify({ 
-        image: `data:image/png;base64,${base64Image}`,
-        revisedPrompt: revisedPrompt
+        image: `data:${mimeType};base64,${base64Image}`
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
