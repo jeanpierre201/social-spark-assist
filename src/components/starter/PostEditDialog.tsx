@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2, RotateCcw, Sparkles, Palette } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 
 interface Post {
   id: string;
@@ -32,10 +33,12 @@ interface Post {
   selected_image_type: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
+  user_timezone: string | null;
   social_platforms: string[];
-  status: 'draft' | 'scheduled' | 'published' | 'archived';
+  status: 'draft' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
   created_at: string;
   posted_at: string | null;
+  error_message?: string | null;
 }
 
 interface PostEditDialogProps {
@@ -72,19 +75,56 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     ai1: '',
     ai2: ''
   });
+  const [userTimezone, setUserTimezone] = useState<string>('UTC');
+  const [timezoneDisplay, setTimezoneDisplay] = useState<string>('');
   const [formData, setFormData] = useState({
     caption: '',
     hashtags: '',
     scheduled_date: '',
     scheduled_time: '',
     social_platforms: [] as string[],
-    status: 'draft' as 'draft' | 'scheduled' | 'published' | 'archived',
+    status: 'draft' as 'draft' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed',
     media_url: '',
     uploaded_image_url: '',
     ai_generated_image_1_url: '',
     ai_generated_image_2_url: '',
     selected_image_type: ''
   });
+
+  // Fetch user timezone from profile
+  useEffect(() => {
+    const fetchUserTimezone = async () => {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('timezone')
+        .eq('id', user.id)
+        .single();
+      
+      if (!error && data?.timezone) {
+        setUserTimezone(data.timezone);
+      } else {
+        // Fallback to browser timezone
+        const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setUserTimezone(browserTz);
+      }
+    };
+    
+    fetchUserTimezone();
+  }, [user?.id]);
+
+  // Calculate and display timezone offset
+  useEffect(() => {
+    const now = new Date();
+    const offsetMinutes = -now.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absMinutes = Math.abs(offsetMinutes);
+    const hours = Math.floor(absMinutes / 60);
+    const minutes = absMinutes % 60;
+    const gmtOffset = `GMT${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    setTimezoneDisplay(`${userTimezone} (${gmtOffset})`);
+  }, [userTimezone]);
 
   const socialPlatforms = [
     { id: 'facebook', name: 'Facebook' },
@@ -120,11 +160,26 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       // Store original post data for cancel functionality
       setOriginalPost(post);
       
+      // Convert UTC scheduled times to local time for display
+      let localDate = post.scheduled_date || '';
+      let localTime = post.scheduled_time || '';
+      
+      if (post.scheduled_date && post.scheduled_time && post.user_timezone) {
+        try {
+          const utcDateTimeStr = `${post.scheduled_date}T${post.scheduled_time}:00Z`;
+          const localDateTime = toZonedTime(utcDateTimeStr, post.user_timezone);
+          localDate = format(localDateTime, 'yyyy-MM-dd');
+          localTime = format(localDateTime, 'HH:mm');
+        } catch (error) {
+          console.error('Error converting UTC to local time:', error);
+        }
+      }
+      
       setFormData({
         caption: post.generated_caption,
         hashtags: post.generated_hashtags.join(' '),
-        scheduled_date: post.scheduled_date || '',
-        scheduled_time: post.scheduled_time || '',
+        scheduled_date: localDate,
+        scheduled_time: localTime,
         social_platforms: post.social_platforms || [],
         status: post.status,
         media_url: post.media_url || '',
@@ -504,6 +559,17 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     try {
       setLoading(true);
       
+      // Convert local time to UTC for storage
+      let utcDateStr = formData.scheduled_date;
+      let utcTimeStr = formData.scheduled_time;
+      
+      if (formData.scheduled_date && formData.scheduled_time) {
+        const localDateTimeStr = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
+        const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
+        utcDateStr = format(utcDate, 'yyyy-MM-dd');
+        utcTimeStr = format(utcDate, 'HH:mm');
+      }
+      
       // Determine status based on scheduling
       let status = formData.status;
       if (formData.scheduled_date && formData.scheduled_time && status === 'draft') {
@@ -513,8 +579,10 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       const updates = {
         generated_caption: formData.caption,
         generated_hashtags: formData.hashtags.split(' ').filter(tag => tag.trim()),
-        scheduled_date: formData.scheduled_date || null,
-        scheduled_time: formData.scheduled_time || null,
+        scheduled_date: utcDateStr || null,
+        scheduled_time: utcTimeStr || null,
+        user_timezone: userTimezone,
+        social_platforms: formData.social_platforms,
         status: status,
         media_url: formData.media_url || null,
         uploaded_image_url: formData.uploaded_image_url || null,
@@ -956,36 +1024,41 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
           {/* Scheduling */}
           {!isReadOnly && (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="scheduled_date" className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Scheduled Date
-                </Label>
-                <Input
-                  id="scheduled_date"
-                  type="date"
-                  value={formData.scheduled_date}
-                  min={format(new Date(), 'yyyy-MM-dd')}
-                  max={getMaxScheduleDate()}
-                  disabled={isSubscriptionExpired}
-                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_date: e.target.value }))}
-                />
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="scheduled_date" className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Scheduled Date
+                  </Label>
+                  <Input
+                    id="scheduled_date"
+                    type="date"
+                    value={formData.scheduled_date}
+                    min={format(new Date(), 'yyyy-MM-dd')}
+                    max={getMaxScheduleDate()}
+                    disabled={isSubscriptionExpired}
+                    onChange={(e) => setFormData(prev => ({ ...prev, scheduled_date: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="scheduled_time" className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2" />
+                    Scheduled Time
+                  </Label>
+                  <Input
+                    id="scheduled_time"
+                    type="time"
+                    value={formData.scheduled_time}
+                    disabled={isSubscriptionExpired}
+                    onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="scheduled_time" className="flex items-center">
-                  <Clock className="h-4 w-4 mr-2" />
-                  Scheduled Time
-                </Label>
-                <Input
-                  id="scheduled_time"
-                  type="time"
-                  value={formData.scheduled_time}
-                  disabled={isSubscriptionExpired}
-                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
-                />
-              </div>
-            </div>
+              <p className="text-xs text-muted-foreground col-span-2">
+                Your timezone: {timezoneDisplay}. Choose the date and time in your local time; we'll automatically convert it to UTC for publishing.
+              </p>
+            </>
           )}
 
           {/* Status (only for editable posts) */}

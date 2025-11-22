@@ -7,9 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format, isAfter, startOfMonth } from 'date-fns';
+import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
 
 interface Post {
   id: string;
@@ -21,9 +21,11 @@ interface Post {
   media_url: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
-  status: 'draft' | 'scheduled' | 'published' | 'archived';
+  user_timezone: string | null;
+  status: 'draft' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
   created_at: string;
   posted_at: string | null;
+  error_message?: string | null;
 }
 
 interface PostsListProps {
@@ -98,7 +100,9 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
       case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'rescheduled': return 'bg-yellow-100 text-yellow-800';
       case 'published': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
       case 'archived': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
@@ -109,7 +113,22 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   };
 
   const isEditable = (status: string) => {
-    return status === 'draft' || status === 'scheduled';
+    return status === 'draft' || status === 'scheduled' || status === 'rescheduled';
+  };
+
+  // Check if a scheduled post is overdue
+  const isOverdue = (post: Post) => {
+    if (post.status !== 'scheduled' || !post.scheduled_date || !post.scheduled_time) {
+      return false;
+    }
+    
+    // Post times are stored in UTC
+    const scheduledDateTime = new Date(`${post.scheduled_date}T${post.scheduled_time}:00Z`);
+    const now = new Date();
+    const gracePeriodMinutes = 15;
+    
+    // Check if post is overdue by more than grace period
+    return now > addMinutes(scheduledDateTime, gracePeriodMinutes);
   };
 
   // Check if post is from previous subscription period (subscription period context)
@@ -234,6 +253,22 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                       <Badge variant="outline" className="text-xs text-orange-600 border-orange-200 bg-orange-50">
                         <Calendar className="h-3 w-3 mr-1" />
                         Previous Period
+                      </Badge>
+                    )}
+                    {isOverdue(post) && (
+                      <Badge variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
+                        <AlertTriangle className="h-3 w-3 mr-1" />
+                        Overdue - Check connection
+                      </Badge>
+                    )}
+                    {post.status === 'rescheduled' && post.error_message && (
+                      <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-200 bg-yellow-50">
+                        Retrying soon
+                      </Badge>
+                    )}
+                    {post.status === 'failed' && post.error_message && (
+                      <Badge variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
+                        {post.error_message}
                       </Badge>
                     )}
                   </div>
