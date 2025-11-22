@@ -10,6 +10,7 @@ interface SubscriptionContextType {
   subscriptionEnd: string | null;
   loading: boolean;
   checkSubscription: () => Promise<void>;
+  refreshFromStripe: () => Promise<void>;
   createCheckout: () => Promise<void>;
   openCustomerPortal: () => Promise<void>;
   clearSubscriptionCache: () => void;
@@ -42,61 +43,91 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       setLoading(true);
       console.log('Checking subscription for user:', user.email);
       
-      // Create a timeout promise that rejects after 10 seconds
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Subscription check timed out')), 10000);
-      });
-      
-      // Race the function invocation against the timeout
-      const invokePromise = supabase.functions.invoke('check-subscription');
-      
-      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
-      
-      console.log('Subscription check response:', { data, error });
+      // Read directly from database - much faster and more reliable
+      const { data, error } = await supabase
+        .from('subscribers')
+        .select('subscribed, subscription_tier, subscription_end')
+        .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
       
       if (error) {
-        console.error('Subscription check error:', error);
-        
-        // If it's an authentication error, logout the user
-        if (error.message?.includes('Authentication') || 
-            error.message?.includes('401') || 
-            error.message?.includes('authorization')) {
-          console.log('Authentication error detected, logging out user');
-          toast({
-            title: "Session Expired",
-            description: "Please log in again to continue",
-            variant: "destructive",
-          });
-          await logout();
-          return;
-        }
-        
-        // For other errors, set as free user and continue
+        console.error('Database query error:', error);
+        // Default to free tier on error
         setSubscribed(false);
         setSubscriptionTier(null);
         setSubscriptionEnd(null);
         return;
       }
       
-      setSubscribed(data?.subscribed || false);
-      setSubscriptionTier(data?.subscription_tier || null);
-      setSubscriptionEnd(data?.subscription_end || null);
+      // If no record exists, user is free tier
+      if (!data) {
+        console.log('No subscription record found, defaulting to free tier');
+        setSubscribed(false);
+        setSubscriptionTier(null);
+        setSubscriptionEnd(null);
+        return;
+      }
       
-      console.log('Subscription status updated:', {
-        subscribed: data?.subscribed || false,
-        tier: data?.subscription_tier || null,
-        end: data?.subscription_end || null
+      setSubscribed(data.subscribed || false);
+      setSubscriptionTier(data.subscription_tier || null);
+      setSubscriptionEnd(data.subscription_end || null);
+      
+      console.log('Subscription status loaded:', {
+        subscribed: data.subscribed,
+        tier: data.subscription_tier,
+        end: data.subscription_end
       });
       
     } catch (error) {
       console.error('Error checking subscription:', error);
       
-      // Set as free user on error to allow the app to continue
+      // Default to free tier on error
       setSubscribed(false);
       setSubscriptionTier(null);
       setSubscriptionEnd(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const refreshFromStripe = async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to refresh subscription",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      toast({
+        title: "Refreshing...",
+        description: "Syncing subscription status with Stripe",
+      });
+
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Refresh from database after Stripe sync
+      await checkSubscription();
+      
+      toast({
+        title: "Success",
+        description: "Subscription status refreshed",
+      });
+    } catch (error) {
+      console.error('Error refreshing from Stripe:', error);
+      toast({
+        title: "Error",
+        description: "Failed to refresh subscription status",
+        variant: "destructive",
+      });
     }
   };
 
@@ -171,6 +202,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       subscriptionEnd,
       loading,
       checkSubscription,
+      refreshFromStripe,
       createCheckout,
       openCustomerPortal,
       clearSubscriptionCache
