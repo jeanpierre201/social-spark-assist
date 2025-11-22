@@ -43,19 +43,14 @@ serve(async (req) => {
 
     console.log('Connecting Facebook account for user:', user.id);
 
-    // Get user info from Facebook
-    const userInfoResponse = await fetch(
-      `https://graph.facebook.com/v21.0/me?fields=id,name&access_token=${accessToken}`
-    );
-    
-    if (!userInfoResponse.ok) {
-      const errorText = await userInfoResponse.text();
-      console.error('Facebook API error:', errorText);
-      throw new Error(`Failed to fetch Facebook user info: ${errorText}`);
-    }
+    // We already have the page information from the client, so we don't need
+    // to call the Facebook Graph API here. This avoids extra permissions like
+    // pages_read_engagement which your app doesn't have approved yet.
 
-    const userInfo = await userInfoResponse.json();
-    console.log('Facebook user info:', userInfo);
+    const accountData = {
+      page_id: pageId,
+      page_name: pageName,
+    };
 
     // Check if account already exists
     const { data: existingAccount } = await supabaseClient
@@ -63,21 +58,15 @@ serve(async (req) => {
       .select('id')
       .eq('user_id', user.id)
       .eq('platform', 'facebook')
-      .eq('platform_user_id', pageId || userInfo.id)
+      .eq('platform_user_id', pageId)
       .maybeSingle();
-
-    const accountData = {
-      page_id: pageId,
-      page_name: pageName,
-      user_name: userInfo.name
-    };
 
     if (existingAccount) {
       // Update existing account
       const { error: updateError } = await supabaseClient
         .from('social_accounts')
         .update({
-          username: pageName || userInfo.name,
+          username: pageName,
           account_data: accountData,
           is_active: true,
           updated_at: new Date().toISOString()
@@ -105,8 +94,8 @@ serve(async (req) => {
         .insert({
           user_id: user.id,
           platform: 'facebook',
-          platform_user_id: pageId || userInfo.id,
-          username: pageName || userInfo.name,
+          platform_user_id: pageId,
+          username: pageName,
           account_data: accountData,
           is_active: true
         })
