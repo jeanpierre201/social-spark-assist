@@ -49,7 +49,9 @@ serve(async (req) => {
     );
     
     if (!userInfoResponse.ok) {
-      throw new Error('Failed to fetch Facebook user info');
+      const errorText = await userInfoResponse.text();
+      console.error('Facebook API error:', errorText);
+      throw new Error(`Failed to fetch Facebook user info: ${errorText}`);
     }
 
     const userInfo = await userInfoResponse.json();
@@ -62,7 +64,7 @@ serve(async (req) => {
       .eq('user_id', user.id)
       .eq('platform', 'facebook')
       .eq('platform_user_id', pageId || userInfo.id)
-      .single();
+      .maybeSingle();
 
     const accountData = {
       page_id: pageId,
