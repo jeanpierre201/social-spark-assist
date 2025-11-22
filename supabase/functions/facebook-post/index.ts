@@ -59,12 +59,24 @@ serve(async (req) => {
     // Get access token from vault
     const { data: tokenData, error: tokenError } = await supabaseClient
       .from('social_tokens_vault')
-      .select('encrypted_access_token')
+      .select('encrypted_access_token, token_expires_at')
       .eq('social_account_id', accountId)
       .single();
 
     if (tokenError || !tokenData) {
-      throw new Error('Access token not found');
+      console.error('Token fetch error:', tokenError);
+      throw new Error('Facebook access token not found. Please reconnect your Facebook account.');
+    }
+
+    // Check if token is expired
+    if (tokenData.token_expires_at) {
+      const expiresAt = new Date(tokenData.token_expires_at);
+      const now = new Date();
+      if (expiresAt < now) {
+        console.error('Token expired at:', expiresAt.toISOString(), 'Current time:', now.toISOString());
+        throw new Error('Facebook access token has expired. Please reconnect your Facebook account to refresh the token.');
+      }
+      console.log('Token valid until:', expiresAt.toISOString());
     }
 
     const accessToken = tokenData.encrypted_access_token;
@@ -84,10 +96,13 @@ serve(async (req) => {
       postData.published = true;
     }
 
-    // Post to Facebook
+    // Post to Facebook - using latest API version
     const endpoint = imageUrl 
       ? `https://graph.facebook.com/v21.0/${pageId}/photos`
       : `https://graph.facebook.com/v21.0/${pageId}/feed`;
+
+    console.log('Posting to endpoint:', endpoint);
+    console.log('Post data (without token):', { message, imageUrl, pageId });
 
     const response = await fetch(endpoint, {
       method: 'POST',
@@ -100,7 +115,15 @@ serve(async (req) => {
     const result = await response.json();
 
     if (!response.ok) {
-      console.error('Facebook API error:', result);
+      console.error('Facebook API error response:', result);
+      
+      // Check for specific error codes
+      if (result.error?.code === 190) {
+        throw new Error('Facebook access token has expired or is invalid. Please reconnect your Facebook account.');
+      } else if (result.error?.code === 200) {
+        throw new Error(`Facebook permission error: ${result.error.message}. Please reconnect your Facebook account with the required permissions.`);
+      }
+      
       throw new Error(result.error?.message || 'Failed to post to Facebook');
     }
 

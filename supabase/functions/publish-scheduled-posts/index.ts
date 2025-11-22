@@ -66,9 +66,28 @@ Deno.serve(async (req) => {
 
     const now = new Date();
     const currentDate = now.toISOString().split('T')[0];
-    const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+    // Include seconds for proper comparison with database times
+    const currentTime = now.toTimeString().split(' ')[0].substring(0, 8); // HH:MM:SS
 
     console.log(`[PUBLISH-SCHEDULED-POSTS] Current UTC time: ${currentDate} ${currentTime}`);
+    
+    // First, log ALL scheduled/rescheduled posts to debug
+    const { data: allScheduledPosts, error: debugError } = await supabaseClient
+      .from('posts')
+      .select('id, status, scheduled_date, scheduled_time, created_at')
+      .in('status', ['scheduled', 'rescheduled']);
+    
+    if (!debugError && allScheduledPosts) {
+      console.log(`[PUBLISH-SCHEDULED-POSTS] All scheduled/rescheduled posts in database:`, 
+        allScheduledPosts.map(p => ({
+          id: p.id,
+          status: p.status,
+          scheduled_date: p.scheduled_date,
+          scheduled_time: p.scheduled_time,
+          created_at: p.created_at
+        }))
+      );
+    }
 
     // Query for scheduled AND rescheduled posts that are due
     const { data: scheduledPosts, error: queryError } = await supabaseClient
@@ -84,6 +103,17 @@ Deno.serve(async (req) => {
     }
 
     console.log(`[PUBLISH-SCHEDULED-POSTS] Found ${scheduledPosts?.length || 0} posts to process`);
+    
+    if (scheduledPosts && scheduledPosts.length > 0) {
+      console.log(`[PUBLISH-SCHEDULED-POSTS] Posts ready to publish:`, 
+        scheduledPosts.map(p => ({
+          id: p.id,
+          status: p.status,
+          scheduled_date: p.scheduled_date,
+          scheduled_time: p.scheduled_time
+        }))
+      );
+    }
 
     if (!scheduledPosts || scheduledPosts.length === 0) {
       return new Response(
@@ -146,12 +176,23 @@ Deno.serve(async (req) => {
               // Get access token from vault
               const { data: tokenData, error: tokenError } = await supabaseClient
                 .from('social_tokens_vault')
-                .select('encrypted_access_token')
+                .select('encrypted_access_token, token_expires_at')
                 .eq('social_account_id', account.id)
                 .single();
 
               if (tokenError || !tokenData?.encrypted_access_token) {
+                console.error(`[PUBLISH-SCHEDULED-POSTS] Token fetch error for account ${account.id}:`, tokenError);
                 throw new Error('Facebook access token not found. Please reconnect your Facebook account.');
+              }
+
+              // Check token expiration
+              if (tokenData.token_expires_at) {
+                const expiresAt = new Date(tokenData.token_expires_at);
+                const now = new Date();
+                if (expiresAt < now) {
+                  console.error(`[PUBLISH-SCHEDULED-POSTS] Token expired at ${expiresAt.toISOString()}, current time: ${now.toISOString()}`);
+                  throw new Error('Facebook access token has expired. Please reconnect your Facebook account to refresh the token.');
+                }
               }
 
               // Get page ID from account_data

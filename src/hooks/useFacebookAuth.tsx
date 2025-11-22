@@ -50,10 +50,26 @@ export const useFacebookAuth = () => {
   const promptFacebookLogin = () => {
     window.FB.login(
       (response: any) => {
+        console.log('[FACEBOOK-AUTH] Login response:', response);
+        
         if (response.authResponse) {
-          console.log('Facebook login successful');
+          console.log('[FACEBOOK-AUTH] Login successful, granted scopes:', response.authResponse.grantedScopes);
+          
+          // Check if we got the required permissions
+          const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
+          if (!grantedScopes.includes('pages_show_list')) {
+            toast({
+              title: 'Insufficient Permissions',
+              description: 'Please grant access to manage your Facebook Pages',
+              variant: 'destructive',
+            });
+            setIsConnecting(false);
+            return;
+          }
+          
           handleFacebookPages(response.authResponse.accessToken);
         } else {
+          console.log('[FACEBOOK-AUTH] Login cancelled or failed');
           toast({
             title: 'Connection Cancelled',
             description: 'Facebook connection was cancelled',
@@ -62,17 +78,20 @@ export const useFacebookAuth = () => {
           setIsConnecting(false);
         }
       },
-    { 
-      scope: 'pages_show_list',
-      return_scopes: true 
-    }
+      { 
+        scope: 'pages_show_list,pages_manage_posts',
+        return_scopes: true 
+      }
     );
   };
 
   const handleFacebookPages = (userAccessToken: string) => {
-    // Get user's pages
+    console.log('[FACEBOOK-AUTH] Fetching user pages...');
+    
+    // Get user's pages with their access tokens
     window.FB.api('/me/accounts', (pagesResponse: any) => {
       if (pagesResponse.error) {
+        console.error('[FACEBOOK-AUTH] Error fetching pages:', pagesResponse.error);
         toast({
           title: 'Error',
           description: pagesResponse.error.message,
@@ -83,6 +102,7 @@ export const useFacebookAuth = () => {
       }
 
       if (!pagesResponse.data || pagesResponse.data.length === 0) {
+        console.log('[FACEBOOK-AUTH] No pages found for user');
         toast({
           title: 'No Pages Found',
           description: 'You need to have a Facebook Page to connect. Please create one first.',
@@ -92,11 +112,13 @@ export const useFacebookAuth = () => {
         return;
       }
 
+      console.log('[FACEBOOK-AUTH] Found pages:', pagesResponse.data.length);
+      
       // Use the first page (you can add page selection UI later)
       const page = pagesResponse.data[0];
       const pageAccessToken = page.access_token;
 
-      console.log('Using page:', page.name);
+      console.log('[FACEBOOK-AUTH] Using page:', page.name, 'ID:', page.id);
 
       // Call our backend to store the connection
       supabase.auth.getSession().then(({ data: { session } }) => {
