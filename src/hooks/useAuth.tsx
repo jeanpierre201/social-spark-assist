@@ -50,9 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Save timezone when user signs in
+        // Save timezone when user signs in (non-blocking)
         if (event === 'SIGNED_IN' && session?.user?.id) {
-          await saveUserTimezone(session.user.id);
+          setTimeout(() => saveUserTimezone(session.user.id), 0);
         }
       }
     );
@@ -64,9 +64,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       setLoading(false);
       
-      // Save timezone on initial load if user is logged in
+      // Save timezone on initial load if user is logged in (non-blocking)
       if (session?.user?.id) {
-        await saveUserTimezone(session.user.id);
+        setTimeout(() => saveUserTimezone(session.user.id), 0);
       }
     });
 
