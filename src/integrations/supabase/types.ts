@@ -466,6 +466,7 @@ export type Database = {
           ai_generations_count: number | null
           ai_image_prompts: Json | null
           created_at: string | null
+          error_message: string | null
           generated_caption: string
           generated_hashtags: string[]
           goal: string
@@ -477,10 +478,12 @@ export type Database = {
           scheduled_date: string | null
           scheduled_time: string | null
           selected_image_type: string | null
+          social_platforms: Json | null
           status: string | null
           updated_at: string | null
           uploaded_image_url: string | null
           user_id: string
+          user_timezone: string | null
         }
         Insert: {
           ai_generated_image_1_url?: string | null
@@ -488,6 +491,7 @@ export type Database = {
           ai_generations_count?: number | null
           ai_image_prompts?: Json | null
           created_at?: string | null
+          error_message?: string | null
           generated_caption: string
           generated_hashtags: string[]
           goal: string
@@ -499,10 +503,12 @@ export type Database = {
           scheduled_date?: string | null
           scheduled_time?: string | null
           selected_image_type?: string | null
+          social_platforms?: Json | null
           status?: string | null
           updated_at?: string | null
           uploaded_image_url?: string | null
           user_id: string
+          user_timezone?: string | null
         }
         Update: {
           ai_generated_image_1_url?: string | null
@@ -510,6 +516,7 @@ export type Database = {
           ai_generations_count?: number | null
           ai_image_prompts?: Json | null
           created_at?: string | null
+          error_message?: string | null
           generated_caption?: string
           generated_hashtags?: string[]
           goal?: string
@@ -521,10 +528,12 @@ export type Database = {
           scheduled_date?: string | null
           scheduled_time?: string | null
           selected_image_type?: string | null
+          social_platforms?: Json | null
           status?: string | null
           updated_at?: string | null
           uploaded_image_url?: string | null
           user_id?: string
+          user_timezone?: string | null
         }
         Relationships: []
       }
@@ -534,6 +543,7 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
+          timezone: string | null
           updated_at: string | null
         }
         Insert: {
@@ -541,6 +551,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
+          timezone?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -548,6 +559,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          timezone?: string | null
           updated_at?: string | null
         }
         Relationships: []
