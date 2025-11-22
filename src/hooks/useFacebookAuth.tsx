@@ -63,7 +63,7 @@ export const useFacebookAuth = () => {
         }
       },
     { 
-      scope: 'pages_show_list,pages_manage_posts,pages_read_engagement',
+      scope: 'pages_show_list',
       return_scopes: true 
     }
     );
