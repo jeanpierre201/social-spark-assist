@@ -42,7 +42,15 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       setLoading(true);
       console.log('Checking subscription for user:', user.email);
       
-      const { data, error } = await supabase.functions.invoke('check-subscription');
+      // Create a timeout promise that rejects after 10 seconds
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Subscription check timed out')), 10000);
+      });
+      
+      // Race the function invocation against the timeout
+      const invokePromise = supabase.functions.invoke('check-subscription');
+      
+      const { data, error } = await Promise.race([invokePromise, timeoutPromise]) as any;
       
       console.log('Subscription check response:', { data, error });
       
@@ -63,13 +71,10 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
           return;
         }
         
-        // For other errors, just clear the cache and continue
-        clearSubscriptionCache();
-        toast({
-          title: "Error",
-          description: "Failed to check subscription status. Please try logging in again.",
-          variant: "destructive",
-        });
+        // For other errors, set as free user and continue
+        setSubscribed(false);
+        setSubscriptionTier(null);
+        setSubscriptionEnd(null);
         return;
       }
       
@@ -86,14 +91,10 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
     } catch (error) {
       console.error('Error checking subscription:', error);
       
-      // Clear subscription data on error
-      clearSubscriptionCache();
-      
-      toast({
-        title: "Error",
-        description: "Failed to check subscription status. Please try logging in again.",
-        variant: "destructive",
-      });
+      // Set as free user on error to allow the app to continue
+      setSubscribed(false);
+      setSubscriptionTier(null);
+      setSubscriptionEnd(null);
     } finally {
       setLoading(false);
     }
