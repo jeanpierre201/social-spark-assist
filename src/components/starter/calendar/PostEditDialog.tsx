@@ -136,7 +136,9 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         ai_generated_image_2_url: content?.aiImage2,
         selected_image_type: content?.selectedImageType || 'none',
         ai_generations_count: content?.aiGenerationsCount || 0,
-        ai_image_prompts: content?.aiImagePrompts || []
+        ai_image_prompts: content?.aiImagePrompts || [],
+        status: editingPost.scheduledDate && editingPost.scheduledTime ? 'scheduled' : 'draft',
+        social_platforms: ['facebook']
       });
       
       toast({

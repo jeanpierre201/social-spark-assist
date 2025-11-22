@@ -20,22 +20,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Detect and save user's timezone
+    const saveUserTimezone = async (userId: string) => {
+      try {
+        const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        console.log('Detected user timezone:', userTimezone);
+        
+        // Update user profile with timezone
+        const { error } = await supabase
+          .from('profiles')
+          .update({ timezone: userTimezone })
+          .eq('id', userId);
+        
+        if (error) {
+          console.error('Error saving timezone:', error);
+        } else {
+          console.log('User timezone saved successfully');
+        }
+      } catch (error) {
+        console.error('Error detecting timezone:', error);
+      }
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Save timezone when user signs in
+        if (event === 'SIGNED_IN' && session?.user?.id) {
+          await saveUserTimezone(session.user.id);
+        }
       }
     );
 
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Save timezone on initial load if user is logged in
+      if (session?.user?.id) {
+        await saveUserTimezone(session.user.id);
+      }
     });
 
     return () => subscription.unsubscribe();

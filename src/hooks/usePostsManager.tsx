@@ -133,7 +133,9 @@ export const usePostsManager = () => {
       ai_generated_image_2_url,
       selected_image_type,
       ai_generations_count,
-      ai_image_prompts
+      ai_image_prompts,
+      status,
+      social_platforms
     }: { 
       id: string; 
       industry?: string;
@@ -149,6 +151,8 @@ export const usePostsManager = () => {
       selected_image_type?: string;
       ai_generations_count?: number;
       ai_image_prompts?: string[];
+      status?: string;
+      social_platforms?: string[];
     }) => {
       const updateData: any = {
         generated_caption: content,
@@ -167,6 +171,8 @@ export const usePostsManager = () => {
       if (selected_image_type !== undefined) updateData.selected_image_type = selected_image_type;
       if (ai_generations_count !== undefined) updateData.ai_generations_count = ai_generations_count;
       if (ai_image_prompts !== undefined) updateData.ai_image_prompts = ai_image_prompts;
+      if (status !== undefined) updateData.status = status;
+      if (social_platforms !== undefined) updateData.social_platforms = social_platforms;
       
       // Update media_url based on selected image type for backward compatibility
       if (selected_image_type !== undefined) {

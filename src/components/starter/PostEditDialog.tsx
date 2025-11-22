@@ -504,12 +504,18 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     try {
       setLoading(true);
       
+      // Determine status based on scheduling
+      let status = formData.status;
+      if (formData.scheduled_date && formData.scheduled_time && status === 'draft') {
+        status = 'scheduled';
+      }
+      
       const updates = {
         generated_caption: formData.caption,
         generated_hashtags: formData.hashtags.split(' ').filter(tag => tag.trim()),
         scheduled_date: formData.scheduled_date || null,
         scheduled_time: formData.scheduled_time || null,
-        status: formData.status,
+        status: status,
         media_url: formData.media_url || null,
         uploaded_image_url: formData.uploaded_image_url || null,
         ai_generated_image_1_url: formData.ai_generated_image_1_url || null,
