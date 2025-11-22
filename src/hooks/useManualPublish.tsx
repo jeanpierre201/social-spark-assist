@@ -3,11 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const useManualPublish = () => {
-  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishingPosts, setPublishingPosts] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const publishToFacebook = async (postId: string, accountId: string, message: string, imageUrl?: string) => {
-    setIsPublishing(true);
+    setPublishingPosts(prev => new Set(prev).add(postId));
 
     try {
       console.log('[MANUAL-PUBLISH] Publishing to Facebook:', { postId, accountId });
@@ -68,12 +68,18 @@ export const useManualPublish = () => {
 
       return { success: false, error: error.message };
     } finally {
-      setIsPublishing(false);
+      setPublishingPosts(prev => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
     }
   };
 
+  const isPublishingPost = (postId: string) => publishingPosts.has(postId);
+
   return {
     publishToFacebook,
-    isPublishing
+    isPublishingPost
   };
 };
