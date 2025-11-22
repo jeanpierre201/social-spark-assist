@@ -28,10 +28,12 @@ interface Post {
   selected_image_type: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
+  user_timezone: string | null;
   social_platforms: string[];
-  status: 'draft' | 'scheduled' | 'published' | 'archived';
+  status: 'draft' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
   created_at: string;
   posted_at: string | null;
+  error_message?: string | null;
 }
 
 interface PostData {
@@ -127,10 +129,12 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
         selected_image_type: post.selected_image_type || null,
         scheduled_date: post.scheduled_date,
         scheduled_time: post.scheduled_time,
+        user_timezone: post.user_timezone || null,
         social_platforms: post.social_platforms || [],
         status: post.status,
         created_at: post.created_at,
-        posted_at: post.posted_at
+        posted_at: post.posted_at,
+        error_message: post.error_message || null
       }));
       
       setPosts(typedPosts);

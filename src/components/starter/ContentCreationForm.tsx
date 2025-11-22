@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Loader2, Wand2, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { fromZonedTime } from 'date-fns-tz';
+import { format } from 'date-fns';
 
 interface GeneratedContent {
   caption: string;
@@ -53,6 +55,43 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const [includeEmojis, setIncludeEmojis] = useState(true);
   const [selectedSocialPlatforms, setSelectedSocialPlatforms] = useState<string[]>([]);
   const [customImagePrompt, setCustomImagePrompt] = useState('');
+  const [userTimezone, setUserTimezone] = useState<string>('UTC');
+  const [timezoneDisplay, setTimezoneDisplay] = useState<string>('');
+
+  // Fetch user timezone from profile
+  useEffect(() => {
+    const fetchUserTimezone = async () => {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('timezone')
+        .eq('id', user.id)
+        .single();
+      
+      if (!error && data?.timezone) {
+        setUserTimezone(data.timezone);
+      } else {
+        // Fallback to browser timezone
+        const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setUserTimezone(browserTz);
+      }
+    };
+    
+    fetchUserTimezone();
+  }, [user?.id]);
+
+  // Calculate and display timezone offset
+  useEffect(() => {
+    const now = new Date();
+    const offsetMinutes = -now.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absMinutes = Math.abs(offsetMinutes);
+    const hours = Math.floor(absMinutes / 60);
+    const minutes = absMinutes % 60;
+    const gmtOffset = `GMT${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    setTimezoneDisplay(`${userTimezone} (${gmtOffset})`);
+  }, [userTimezone]);
 
   const socialPlatforms = [
     { id: 'facebook', name: 'Facebook' },
@@ -273,10 +312,13 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       };
 
       // Convert local time to UTC for storage
-      let utcDateTime = null;
+      let utcDateStr = null;
+      let utcTimeStr = null;
       if (scheduledDate && scheduledTime) {
-        const localDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-        utcDateTime = localDateTime.toISOString();
+        const localDateTimeStr = `${scheduledDate}T${scheduledTime}:00`;
+        const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
+        utcDateStr = format(utcDate, 'yyyy-MM-dd');
+        utcTimeStr = format(utcDate, 'HH:mm');
       }
 
       // Determine post status based on scheduling and social media selection
@@ -293,8 +335,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           industry: industry.trim(),
           goal: goal.trim(),
           niche_info: nicheInfo.trim() || null,
-          scheduled_date: scheduledDate || null,
-          scheduled_time: scheduledTime || null,
+          scheduled_date: utcDateStr,
+          scheduled_time: utcTimeStr,
+          user_timezone: userTimezone,
+          social_platforms: selectedSocialPlatforms,
           generated_caption: generatedContent.caption,
           generated_hashtags: generatedContent.hashtags,
           media_url: imageUrl || null,
@@ -451,6 +495,16 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           isGenerated: false
         };
 
+        // Convert local time to UTC for storage
+        let utcDateStr = null;
+        let utcTimeStr = null;
+        if (scheduledDate && scheduledTime) {
+          const localDateTimeStr = `${scheduledDate}T${scheduledTime}:00`;
+          const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
+          utcDateStr = format(utcDate, 'yyyy-MM-dd');
+          utcTimeStr = format(utcDate, 'HH:mm');
+        }
+
         // Determine post status based on scheduling and social media selection
         let postStatus = 'draft';
         if (scheduledDate && scheduledTime && selectedSocialPlatforms.length > 0) {
@@ -465,8 +519,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             industry: industry.trim(),
             goal: currentGoal,
             niche_info: nicheInfo.trim() || null,
-            scheduled_date: scheduledDate || null,
-            scheduled_time: scheduledTime || null,
+            scheduled_date: utcDateStr,
+            scheduled_time: utcTimeStr,
+            user_timezone: userTimezone,
+            social_platforms: selectedSocialPlatforms,
             generated_caption: generatedContent.caption,
             generated_hashtags: generatedContent.hashtags,
             media_url: baseImageUrl || null,
@@ -640,7 +696,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
               />
             </div>
             <div>
-              <Label htmlFor="scheduledTime" className="text-sm">Time (UTC)</Label>
+              <Label htmlFor="scheduledTime" className="text-sm">Time</Label>
               <Input
                 id="scheduledTime"
                 type="time"
@@ -650,9 +706,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
               />
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            <Clock className="h-3 w-3 inline mr-1" />
-            Post will be set to 'Scheduled' when date, time and at least one social platform is selected.
+          <p className="text-xs text-muted-foreground mt-2">
+            Your timezone: {timezoneDisplay}. Choose the date and time in your local time; we'll automatically convert it to UTC for publishing.
           </p>
         </div>
 
