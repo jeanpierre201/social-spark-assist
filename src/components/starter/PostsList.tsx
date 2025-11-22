@@ -7,9 +7,11 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
+import { useManualPublish } from '@/hooks/useManualPublish';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 
 interface Post {
   id: string;
@@ -38,6 +40,8 @@ interface PostsListProps {
 const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreatePosts }: PostsListProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { publishToFacebook, isPublishing } = useManualPublish();
+  const { accounts } = useSocialAccounts();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -113,7 +117,8 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   };
 
   const isEditable = (status: string) => {
-    return status === 'draft' || status === 'scheduled' || status === 'rescheduled';
+    // Failed posts should be editable so users can reschedule them
+    return status === 'draft' || status === 'scheduled' || status === 'rescheduled' || status === 'failed';
   };
 
   // Check if a scheduled post is overdue
@@ -178,6 +183,33 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
         description: "Failed to delete post",
         variant: "destructive",
       });
+    }
+  };
+
+  // Manual publish to Facebook
+  const handleManualPublish = async (post: Post) => {
+    const facebookAccount = accounts.find(acc => acc.platform === 'facebook' && acc.is_active);
+    
+    if (!facebookAccount) {
+      toast({
+        title: 'No Facebook Account',
+        description: 'Please connect your Facebook account first',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const message = `${post.generated_caption}\n\n${post.generated_hashtags.join(' ')}`;
+    const result = await publishToFacebook(
+      post.id,
+      facebookAccount.id,
+      message,
+      post.media_url || undefined
+    );
+
+    if (result.success) {
+      // Refresh posts to show updated status
+      fetchPosts();
     }
   };
 
@@ -304,6 +336,19 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                 </div>
                 
                 <div className="flex gap-2 ml-4">
+                  {/* Post Now button for scheduled/failed posts */}
+                  {(post.status === 'scheduled' || post.status === 'failed' || post.status === 'rescheduled') && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleManualPublish(post)}
+                      disabled={isPublishing}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  )}
+                  
                   {isEditable(post.status) ? (
                     <Button
                       variant="outline"
