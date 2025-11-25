@@ -40,7 +40,7 @@ interface PostsListProps {
 const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreatePosts }: PostsListProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { publishToFacebook, isPublishingPost } = useManualPublish();
+  const { publishToFacebook, publishToTwitter, isPublishingPost } = useManualPublish();
   const { accounts } = useSocialAccounts();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -186,28 +186,49 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     }
   };
 
-  // Manual publish to Facebook
+  // Manual publish to social media
   const handleManualPublish = async (post: Post) => {
+    // Get connected accounts
     const facebookAccount = accounts.find(acc => acc.platform === 'facebook' && acc.is_active);
+    const twitterAccount = accounts.find(acc => acc.platform === 'twitter' && acc.is_active);
     
-    if (!facebookAccount) {
+    // Check if at least one account is connected
+    if (!facebookAccount && !twitterAccount) {
       toast({
-        title: 'No Facebook Account',
-        description: 'Please connect your Facebook account first',
+        title: 'No Connected Accounts',
+        description: 'Please connect a Facebook or Twitter account first',
         variant: 'destructive',
       });
       return;
     }
 
     const message = `${post.generated_caption}\n\n${post.generated_hashtags.join(' ')}`;
-    const result = await publishToFacebook(
-      post.id,
-      facebookAccount.id,
-      message,
-      post.media_url || undefined
-    );
 
-    if (result.success) {
+    // Publish to all connected platforms
+    const results = [];
+    
+    if (facebookAccount) {
+      const result = await publishToFacebook(
+        post.id,
+        facebookAccount.id,
+        message,
+        post.media_url || undefined
+      );
+      results.push({ platform: 'Facebook', ...result });
+    }
+
+    if (twitterAccount) {
+      const result = await publishToTwitter(
+        post.id,
+        twitterAccount.id,
+        message
+      );
+      results.push({ platform: 'Twitter', ...result });
+    }
+
+    // Check if any succeeded
+    const anySuccess = results.some(r => r.success);
+    if (anySuccess) {
       // Refresh posts to show updated status
       fetchPosts();
     }

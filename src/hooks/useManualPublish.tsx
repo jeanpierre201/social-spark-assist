@@ -76,14 +76,17 @@ export const useManualPublish = () => {
     }
   };
 
-  const publishToTwitter = async (postId: string, message: string) => {
+  const publishToTwitter = async (postId: string, accountId: string, message: string) => {
     setPublishingPosts(prev => new Set(prev).add(postId));
 
     try {
-      console.log('[MANUAL-PUBLISH] Publishing to Twitter:', { postId });
+      console.log('[MANUAL-PUBLISH] Publishing to Twitter:', { postId, accountId });
 
       const { data, error } = await supabase.functions.invoke('twitter-post', {
-        body: { message }
+        body: { 
+          accountId,
+          message 
+        }
       });
 
       if (error) {

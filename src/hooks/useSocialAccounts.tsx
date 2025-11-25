@@ -90,18 +90,35 @@ export const SocialAccountsProvider = ({ children }: { children: React.ReactNode
       });
       return;
     }
+    
     if (!user) return;
 
     try {
-      // Check if provider is supported
-      const supportedProviders = ['google', 'facebook', 'twitter', 'linkedin_oidc'];
+      // Twitter uses custom OAuth 1.0a flow
+      if (platform === 'twitter') {
+        console.log('[SOCIAL-ACCOUNTS] Starting Twitter OAuth');
+        
+        const { data, error } = await supabase.functions.invoke('twitter-oauth', {
+          body: {}
+        });
+
+        if (error) throw error;
+
+        if (data?.authUrl) {
+          // Redirect to Twitter authorization page
+          window.location.href = data.authUrl;
+        } else {
+          throw new Error('Failed to get Twitter authorization URL');
+        }
+        return;
+      }
+
+      // Other platforms (LinkedIn, etc.)
       const providerMap: { [key: string]: string } = {
-        'instagram': 'facebook', // Instagram uses Facebook OAuth
-        'twitter': 'twitter',
-        'facebook': 'facebook',
+        'instagram': 'facebook',
         'linkedin': 'linkedin_oidc',
-        'tiktok': null, // TikTok OAuth not yet supported
-        'snapchat': null // Snapchat OAuth not yet supported
+        'tiktok': null,
+        'snapchat': null
       };
 
       const oauthProvider = providerMap[platform];
