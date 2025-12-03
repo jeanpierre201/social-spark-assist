@@ -18,13 +18,17 @@ function generateOAuthSignature(
   consumerSecret: string,
   tokenSecret: string = ""
 ): string {
-  const signatureBaseString = `${method}&${encodeURIComponent(url)}&${encodeURIComponent(
-    Object.entries(params)
-      .sort()
-      .map(([k, v]) => `${k}=${v}`)
-      .join("&")
-  )}`;
+  // Sort and encode params for signature base string
+  const paramString = Object.entries(params)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+    .join("&");
+  
+  const signatureBaseString = `${method}&${encodeURIComponent(url)}&${encodeURIComponent(paramString)}`;
   const signingKey = `${encodeURIComponent(consumerSecret)}&${encodeURIComponent(tokenSecret)}`;
+  
+  console.log('[TWITTER-OAUTH] Signature base string:', signatureBaseString);
+  
   const hmacSha1 = createHmac("sha1", signingKey);
   return hmacSha1.update(signatureBaseString).digest("base64");
 }
@@ -35,7 +39,7 @@ function generateOAuthHeader(
   additionalParams: Record<string, string> = {},
   tokenSecret: string = ""
 ): string {
-  const oauthParams = {
+  const oauthParams: Record<string, string> = {
     oauth_consumer_key: TWITTER_CONSUMER_KEY!,
     oauth_nonce: Math.random().toString(36).substring(2),
     oauth_signature_method: "HMAC-SHA1",
@@ -54,7 +58,8 @@ function generateOAuthHeader(
 async function getRequestToken(): Promise<{ oauth_token: string; oauth_token_secret: string }> {
   const url = "https://api.x.com/oauth/request_token";
   const method = "POST";
-  const oauthHeader = generateOAuthHeader(method, url, { oauth_callback: encodeURIComponent(CALLBACK_URL) });
+  // Don't pre-encode oauth_callback - the signature generation handles encoding
+  const oauthHeader = generateOAuthHeader(method, url, { oauth_callback: CALLBACK_URL });
 
   const response = await fetch(url, {
     method,
