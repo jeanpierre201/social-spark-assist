@@ -1,9 +1,9 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useFacebookAuth } from '@/hooks/useFacebookAuth';
+import { useTwitterAuth } from '@/hooks/useTwitterAuth';
 import { 
   Instagram, 
   Twitter, 
@@ -18,7 +18,8 @@ import {
 
 const SocialMediaSettings = () => {
   const { accounts, metrics, loading, connectAccount, disconnectAccount, refreshMetrics } = useSocialAccounts();
-  const { connectFacebook, isConnecting } = useFacebookAuth();
+  const { connectFacebook, isConnecting: isFacebookConnecting } = useFacebookAuth();
+  const { connectTwitter, isConnecting: isTwitterConnecting } = useTwitterAuth();
 
   const platforms = [
     { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500' },
@@ -114,11 +115,25 @@ const SocialMediaSettings = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => platform.id === 'facebook' ? connectFacebook() : connectAccount(platform.id)}
-                    disabled={platform.id === 'facebook' && isConnecting}
+                    onClick={() => {
+                      if (platform.id === 'facebook') {
+                        connectFacebook();
+                      } else if (platform.id === 'twitter') {
+                        connectTwitter();
+                      } else {
+                        connectAccount(platform.id);
+                      }
+                    }}
+                    disabled={
+                      (platform.id === 'facebook' && isFacebookConnecting) ||
+                      (platform.id === 'twitter' && isTwitterConnecting)
+                    }
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    {platform.id === 'facebook' && isConnecting ? 'Connecting...' : 'Connect'}
+                    {(platform.id === 'facebook' && isFacebookConnecting) || 
+                     (platform.id === 'twitter' && isTwitterConnecting) 
+                      ? 'Connecting...' 
+                      : 'Connect'}
                   </Button>
                 )}
               </div>
