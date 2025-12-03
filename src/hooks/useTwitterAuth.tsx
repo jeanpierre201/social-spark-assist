@@ -44,6 +44,12 @@ export const useTwitterAuth = (onSuccess?: () => void) => {
   const connectTwitter = useCallback(async () => {
     setIsConnecting(true);
 
+    // Show connecting toast immediately
+    toast({
+      title: 'Connecting to Twitter',
+      description: 'Please authorize in the popup window...',
+    });
+
     try {
       // First check if user is logged in with a valid session
       const { data: { session } } = await supabase.auth.getSession();
