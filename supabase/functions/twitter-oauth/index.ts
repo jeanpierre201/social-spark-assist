@@ -288,29 +288,72 @@ serve(async (req) => {
               text-align: center;
               padding: 40px;
             }
+            .icon {
+              width: 64px;
+              height: 64px;
+              margin: 0 auto 20px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 32px;
+            }
+            .spinner {
+              border: 3px solid rgba(255,255,255,0.3);
+              border-top: 3px solid white;
+              border-radius: 50%;
+              animation: spin 0.8s linear infinite;
+            }
             .success-icon {
-              font-size: 64px;
-              margin-bottom: 20px;
+              background: rgba(255,255,255,0.2);
+              animation: scaleIn 0.3s ease-out;
+            }
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+            @keyframes scaleIn {
+              0% { transform: scale(0); opacity: 0; }
+              100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes fadeIn {
+              0% { opacity: 0; transform: translateY(10px); }
+              100% { opacity: 1; transform: translateY(0); }
             }
             h1 { margin: 0 0 10px 0; font-size: 24px; }
             p { margin: 0; opacity: 0.9; }
+            .fade-in { animation: fadeIn 0.3s ease-out; }
+            #loading, #success { transition: opacity 0.2s ease-out; }
           </style>
         </head>
         <body>
           <div class="container">
-            <div class="success-icon">✓</div>
-            <h1>Connected to Twitter!</h1>
-            <p>@${screen_name}</p>
-            <p style="margin-top: 20px; font-size: 14px;">This window will close automatically...</p>
+            <div id="loading">
+              <div class="icon spinner"></div>
+              <h1>Connecting...</h1>
+              <p>Finishing up</p>
+            </div>
+            <div id="success" style="display:none">
+              <div class="icon success-icon">✓</div>
+              <h1 class="fade-in">Connected!</h1>
+              <p class="fade-in">@${screen_name}</p>
+            </div>
           </div>
           <script>
+            // Send message immediately
             if (window.opener) {
               window.opener.postMessage({
                 type: 'TWITTER_AUTH_SUCCESS',
                 screenName: '${screen_name}'
               }, '*');
             }
-            setTimeout(() => window.close(), 2000);
+            // Brief loading state then show success
+            setTimeout(() => {
+              document.getElementById('loading').style.display = 'none';
+              document.getElementById('success').style.display = 'block';
+              // Close quickly after showing success
+              setTimeout(() => window.close(), 600);
+            }, 400);
           </script>
         </body>
         </html>
@@ -373,7 +416,7 @@ serve(async (req) => {
                 error: '${error.message || 'OAuth failed'}'
               }, '*');
             }
-            setTimeout(() => window.close(), 3000);
+            setTimeout(() => window.close(), 1500);
           </script>
         </body>
         </html>
