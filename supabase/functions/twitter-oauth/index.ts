@@ -267,14 +267,59 @@ serve(async (req) => {
         .eq('platform', 'twitter_temp')
         .eq('platform_user_id', oauth_token);
 
-      // Redirect to success page
-      const redirectUrl = `${Deno.env.get('SUPABASE_URL').replace('.supabase.co', '.lovable.app')}/dashboard/social?twitter=connected`;
+      // Return HTML that posts message to parent window and closes popup
+      const successHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Twitter Connected</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              margin: 0;
+              background: linear-gradient(135deg, #1DA1F2 0%, #0d8bd9 100%);
+              color: white;
+            }
+            .container {
+              text-align: center;
+              padding: 40px;
+            }
+            .success-icon {
+              font-size: 64px;
+              margin-bottom: 20px;
+            }
+            h1 { margin: 0 0 10px 0; font-size: 24px; }
+            p { margin: 0; opacity: 0.9; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="success-icon">✓</div>
+            <h1>Connected to Twitter!</h1>
+            <p>@${screen_name}</p>
+            <p style="margin-top: 20px; font-size: 14px;">This window will close automatically...</p>
+          </div>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'TWITTER_AUTH_SUCCESS',
+                screenName: '${screen_name}'
+              }, '*');
+            }
+            setTimeout(() => window.close(), 2000);
+          </script>
+        </body>
+        </html>
+      `;
       
-      return new Response(null, {
-        status: 302,
+      return new Response(successHtml, {
         headers: {
           ...corsHeaders,
-          'Location': redirectUrl
+          'Content-Type': 'text/html'
         }
       });
     }
@@ -283,6 +328,65 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error('[TWITTER-OAUTH] Error:', error);
+    
+    // If this is a callback error, return HTML for the popup
+    if (url.pathname.endsWith('/callback')) {
+      const errorHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Twitter Connection Failed</title>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              margin: 0;
+              background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+              color: white;
+            }
+            .container {
+              text-align: center;
+              padding: 40px;
+            }
+            .error-icon {
+              font-size: 64px;
+              margin-bottom: 20px;
+            }
+            h1 { margin: 0 0 10px 0; font-size: 24px; }
+            p { margin: 0; opacity: 0.9; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="error-icon">✕</div>
+            <h1>Connection Failed</h1>
+            <p>${error.message || 'Failed to connect Twitter account'}</p>
+            <p style="margin-top: 20px; font-size: 14px;">This window will close automatically...</p>
+          </div>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({
+                type: 'TWITTER_AUTH_ERROR',
+                error: '${error.message || 'OAuth failed'}'
+              }, '*');
+            }
+            setTimeout(() => window.close(), 3000);
+          </script>
+        </body>
+        </html>
+      `;
+      
+      return new Response(errorHtml, {
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'text/html'
+        }
+      });
+    }
+    
     return new Response(
       JSON.stringify({ error: error.message || 'OAuth failed' }),
       {
