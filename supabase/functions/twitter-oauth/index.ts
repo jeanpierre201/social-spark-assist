@@ -340,13 +340,29 @@ serve(async (req) => {
             </div>
           </div>
           <script>
-            // Send message immediately
+            // Method 1: Try postMessage (may be blocked cross-origin)
             if (window.opener) {
-              window.opener.postMessage({
-                type: 'TWITTER_AUTH_SUCCESS',
-                screenName: '${screen_name}'
-              }, '*');
+              try {
+                window.opener.postMessage({
+                  type: 'TWITTER_AUTH_SUCCESS',
+                  screenName: '${screen_name}'
+                }, '*');
+              } catch (e) {
+                console.log('postMessage failed:', e);
+              }
             }
+            
+            // Method 2: localStorage fallback (parent will poll for this)
+            try {
+              localStorage.setItem('twitter_auth_result', JSON.stringify({
+                success: true,
+                screenName: '${screen_name}',
+                timestamp: Date.now()
+              }));
+            } catch (e) {
+              console.log('localStorage failed:', e);
+            }
+            
             // Brief loading state then show success
             setTimeout(() => {
               document.getElementById('loading').style.display = 'none';
@@ -410,12 +426,29 @@ serve(async (req) => {
             <p style="margin-top: 20px; font-size: 14px;">This window will close automatically...</p>
           </div>
           <script>
+            // Method 1: Try postMessage
             if (window.opener) {
-              window.opener.postMessage({
-                type: 'TWITTER_AUTH_ERROR',
-                error: '${error.message || 'OAuth failed'}'
-              }, '*');
+              try {
+                window.opener.postMessage({
+                  type: 'TWITTER_AUTH_ERROR',
+                  error: '${error.message || 'OAuth failed'}'
+                }, '*');
+              } catch (e) {
+                console.log('postMessage failed:', e);
+              }
             }
+            
+            // Method 2: localStorage fallback
+            try {
+              localStorage.setItem('twitter_auth_result', JSON.stringify({
+                success: false,
+                error: '${error.message || 'OAuth failed'}',
+                timestamp: Date.now()
+              }));
+            } catch (e) {
+              console.log('localStorage failed:', e);
+            }
+            
             setTimeout(() => window.close(), 1500);
           </script>
         </body>
