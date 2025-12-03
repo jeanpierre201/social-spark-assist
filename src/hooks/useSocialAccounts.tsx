@@ -94,22 +94,12 @@ export const SocialAccountsProvider = ({ children }: { children: React.ReactNode
     if (!user) return;
 
     try {
-      // Twitter uses custom OAuth 1.0a flow
+      // Twitter uses custom OAuth 1.0a flow via useTwitterAuth hook
       if (platform === 'twitter') {
-        console.log('[SOCIAL-ACCOUNTS] Starting Twitter OAuth');
-        
-        const { data, error } = await supabase.functions.invoke('twitter-oauth', {
-          body: {}
+        toast({
+          title: "Twitter Connection",
+          description: "Please use the Connect button in the Social Media Settings to connect your Twitter account.",
         });
-
-        if (error) throw error;
-
-        if (data?.authUrl) {
-          // Redirect to Twitter authorization page
-          window.location.href = data.authUrl;
-        } else {
-          throw new Error('Failed to get Twitter authorization URL');
-        }
         return;
       }
 
