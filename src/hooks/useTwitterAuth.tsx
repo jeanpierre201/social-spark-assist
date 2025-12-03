@@ -45,10 +45,10 @@ export const useTwitterAuth = (onSuccess?: () => void) => {
     setIsConnecting(true);
 
     try {
-      // First check if user is logged in
+      // First check if user is logged in with a valid session
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) {
+      if (!session?.access_token) {
         toast({
           title: 'Login Required',
           description: 'Please log in to connect your Twitter account',
@@ -58,12 +58,24 @@ export const useTwitterAuth = (onSuccess?: () => void) => {
         return;
       }
 
+      console.log('[TWITTER-AUTH] Session valid, user:', session.user.email);
       console.log('[TWITTER-AUTH] Starting OAuth flow...');
 
       // Call our edge function to get the auth URL
       const { data, error } = await supabase.functions.invoke('twitter-oauth');
 
       if (error) {
+        // Handle auth errors specifically
+        if (error.message?.includes('Missing authorization header') || 
+            error.message?.includes('401')) {
+          toast({
+            title: 'Session Expired',
+            description: 'Your session has expired. Please log in again.',
+            variant: 'destructive',
+          });
+          setIsConnecting(false);
+          return;
+        }
         throw new Error(error.message || 'Failed to start Twitter authentication');
       }
 
