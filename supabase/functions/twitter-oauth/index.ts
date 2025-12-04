@@ -146,12 +146,22 @@ serve(async (req) => {
       
       if (authError || !user) throw new Error('Invalid authentication token');
 
-      console.log('[TWITTER-OAUTH] Getting request token for user:', user.id);
+      // Get the frontend origin from request body
+      let frontendOrigin = 'https://rombipost.lovable.app'; // Default fallback
+      try {
+        const body = await req.json();
+        if (body.frontendOrigin) {
+          frontendOrigin = body.frontendOrigin;
+        }
+      } catch {
+        // No body or invalid JSON, use default
+      }
+
+      console.log('[TWITTER-OAUTH] Getting request token for user:', user.id, 'frontend:', frontendOrigin);
 
       const { oauth_token, oauth_token_secret } = await getRequestToken();
 
-      // Store the token secret temporarily with user association
-      // We'll use it in the callback
+      // Store the token secret and frontend origin temporarily with user association
       await supabaseClient
         .from('social_accounts')
         .upsert({
@@ -159,6 +169,7 @@ serve(async (req) => {
           platform: 'twitter_temp',
           platform_user_id: oauth_token,
           username: oauth_token_secret, // Temporarily store secret here
+          account_data: { frontendOrigin }, // Store frontend origin for callback redirect
           is_active: false
         });
 
@@ -260,6 +271,9 @@ serve(async (req) => {
           });
       }
 
+      // Get the frontend origin for redirect
+      const frontendOrigin = (tempAccount.account_data as any)?.frontendOrigin || 'https://rombipost.lovable.app';
+
       // Delete temporary record
       await supabaseClient
         .from('social_accounts')
@@ -267,118 +281,16 @@ serve(async (req) => {
         .eq('platform', 'twitter_temp')
         .eq('platform_user_id', oauth_token);
 
-      // Return HTML that posts message to parent window and closes popup
-      const successHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Twitter Connected</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              margin: 0;
-              background: linear-gradient(135deg, #1DA1F2 0%, #0d8bd9 100%);
-              color: white;
-            }
-            .container {
-              text-align: center;
-              padding: 40px;
-            }
-            .icon {
-              width: 64px;
-              height: 64px;
-              margin: 0 auto 20px;
-              border-radius: 50%;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 32px;
-            }
-            .spinner {
-              border: 3px solid rgba(255,255,255,0.3);
-              border-top: 3px solid white;
-              border-radius: 50%;
-              animation: spin 0.8s linear infinite;
-            }
-            .success-icon {
-              background: rgba(255,255,255,0.2);
-              animation: scaleIn 0.3s ease-out;
-            }
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-            @keyframes scaleIn {
-              0% { transform: scale(0); opacity: 0; }
-              100% { transform: scale(1); opacity: 1; }
-            }
-            @keyframes fadeIn {
-              0% { opacity: 0; transform: translateY(10px); }
-              100% { opacity: 1; transform: translateY(0); }
-            }
-            h1 { margin: 0 0 10px 0; font-size: 24px; }
-            p { margin: 0; opacity: 0.9; }
-            .fade-in { animation: fadeIn 0.3s ease-out; }
-            #loading, #success { transition: opacity 0.2s ease-out; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div id="loading">
-              <div class="icon spinner"></div>
-              <h1>Connecting...</h1>
-              <p>Finishing up</p>
-            </div>
-            <div id="success" style="display:none">
-              <div class="icon success-icon">✓</div>
-              <h1 class="fade-in">Connected!</h1>
-              <p class="fade-in">@${screen_name}</p>
-            </div>
-          </div>
-          <script>
-            // Method 1: Try postMessage (may be blocked cross-origin)
-            if (window.opener) {
-              try {
-                window.opener.postMessage({
-                  type: 'TWITTER_AUTH_SUCCESS',
-                  screenName: '${screen_name}'
-                }, '*');
-              } catch (e) {
-                console.log('postMessage failed:', e);
-              }
-            }
-            
-            // Method 2: localStorage fallback (parent will poll for this)
-            try {
-              localStorage.setItem('twitter_auth_result', JSON.stringify({
-                success: true,
-                screenName: '${screen_name}',
-                timestamp: Date.now()
-              }));
-            } catch (e) {
-              console.log('localStorage failed:', e);
-            }
-            
-            // Brief loading state then show success
-            setTimeout(() => {
-              document.getElementById('loading').style.display = 'none';
-              document.getElementById('success').style.display = 'block';
-              // Close quickly after showing success
-              setTimeout(() => window.close(), 600);
-            }, 400);
-          </script>
-        </body>
-        </html>
-      `;
+      // Redirect to frontend callback page instead of returning HTML
+      const redirectUrl = `${frontendOrigin}/auth/twitter/callback?success=true&screenName=${encodeURIComponent(screen_name)}`;
       
-      return new Response(successHtml, {
+      console.log('[TWITTER-OAUTH] Redirecting to frontend:', redirectUrl);
+      
+      return new Response(null, {
+        status: 302,
         headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/html'
+          'Location': redirectUrl,
+          ...corsHeaders
         }
       });
     }
@@ -388,77 +300,37 @@ serve(async (req) => {
   } catch (error: any) {
     console.error('[TWITTER-OAUTH] Error:', error);
     
-    // If this is a callback error, return HTML for the popup
+    // If this is a callback error, redirect to frontend error page
     if (url.pathname.endsWith('/callback')) {
-      const errorHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Twitter Connection Failed</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              display: flex;
-              justify-content: center;
-              align-items: center;
-              height: 100vh;
-              margin: 0;
-              background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-              color: white;
-            }
-            .container {
-              text-align: center;
-              padding: 40px;
-            }
-            .error-icon {
-              font-size: 64px;
-              margin-bottom: 20px;
-            }
-            h1 { margin: 0 0 10px 0; font-size: 24px; }
-            p { margin: 0; opacity: 0.9; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="error-icon">✕</div>
-            <h1>Connection Failed</h1>
-            <p>${error.message || 'Failed to connect Twitter account'}</p>
-            <p style="margin-top: 20px; font-size: 14px;">This window will close automatically...</p>
-          </div>
-          <script>
-            // Method 1: Try postMessage
-            if (window.opener) {
-              try {
-                window.opener.postMessage({
-                  type: 'TWITTER_AUTH_ERROR',
-                  error: '${error.message || 'OAuth failed'}'
-                }, '*');
-              } catch (e) {
-                console.log('postMessage failed:', e);
-              }
-            }
-            
-            // Method 2: localStorage fallback
-            try {
-              localStorage.setItem('twitter_auth_result', JSON.stringify({
-                success: false,
-                error: '${error.message || 'OAuth failed'}',
-                timestamp: Date.now()
-              }));
-            } catch (e) {
-              console.log('localStorage failed:', e);
-            }
-            
-            setTimeout(() => window.close(), 1500);
-          </script>
-        </body>
-        </html>
-      `;
+      // Try to get frontend origin from stored temp account
+      const oauth_token = url.searchParams.get('oauth_token');
+      let frontendOrigin = 'https://rombipost.lovable.app';
       
-      return new Response(errorHtml, {
+      if (oauth_token) {
+        try {
+          const { data: tempAccount } = await supabaseClient
+            .from('social_accounts')
+            .select('account_data')
+            .eq('platform', 'twitter_temp')
+            .eq('platform_user_id', oauth_token)
+            .maybeSingle();
+          
+          if (tempAccount?.account_data) {
+            frontendOrigin = (tempAccount.account_data as any)?.frontendOrigin || frontendOrigin;
+          }
+        } catch {
+          // Use default
+        }
+      }
+      
+      const errorMsg = encodeURIComponent(error.message || 'OAuth failed');
+      const redirectUrl = `${frontendOrigin}/auth/twitter/callback?success=false&error=${errorMsg}`;
+      
+      return new Response(null, {
+        status: 302,
         headers: {
-          ...corsHeaders,
-          'Content-Type': 'text/html'
+          'Location': redirectUrl,
+          ...corsHeaders
         }
       });
     }

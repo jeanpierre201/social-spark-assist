@@ -134,8 +134,10 @@ export const useTwitterAuth = (onSuccess?: () => void) => {
       console.log('[TWITTER-AUTH] Session valid, user:', session.user.email);
       console.log('[TWITTER-AUTH] Starting OAuth flow...');
 
-      // Call our edge function to get the auth URL
-      const { data, error } = await supabase.functions.invoke('twitter-oauth');
+      // Call our edge function to get the auth URL, passing frontend origin for redirect
+      const { data, error } = await supabase.functions.invoke('twitter-oauth', {
+        body: { frontendOrigin: window.location.origin }
+      });
 
       if (error) {
         // Handle auth errors specifically
