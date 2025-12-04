@@ -25,7 +25,7 @@ interface Post {
   scheduled_date: string | null;
   scheduled_time: string | null;
   user_timezone: string | null;
-  status: 'draft' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
+  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
   created_at: string;
   posted_at: string | null;
   error_message?: string | null;
@@ -105,6 +105,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'ready': return 'bg-purple-100 text-purple-800';
       case 'scheduled': return 'bg-blue-100 text-blue-800';
       case 'rescheduled': return 'bg-yellow-100 text-yellow-800';
       case 'published': return 'bg-green-100 text-green-800';
@@ -114,18 +115,32 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     }
   };
 
+  // Get platform brand color for badges
+  const getPlatformColor = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'facebook': return 'bg-[#1877F2] text-white border-[#1877F2]';
+      case 'twitter': return 'bg-black text-white border-black';
+      case 'instagram': return 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCAF45] text-white border-[#E1306C]';
+      case 'linkedin': return 'bg-[#0A66C2] text-white border-[#0A66C2]';
+      case 'tiktok': return 'bg-black text-white border-black';
+      case 'snapchat': return 'bg-[#FFFC00] text-black border-[#FFFC00]';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   const truncateText = (text: string, maxLength: number) => {
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
   const isEditable = (status: string) => {
-    // Failed posts should be editable so users can reschedule them
-    return status === 'draft' || status === 'scheduled' || status === 'rescheduled' || status === 'failed';
+    // Failed and ready posts should be editable
+    return status === 'draft' || status === 'ready' || status === 'scheduled' || status === 'rescheduled' || status === 'failed';
   };
 
-  // Check if post can have "Post Now" button (draft, scheduled, rescheduled - but NOT failed since it has Retry)
-  const canPostNow = (status: string) => {
-    return status === 'draft' || status === 'scheduled' || status === 'rescheduled';
+  // Check if post can have "Post Now" button - only ready and scheduled posts (have platforms selected)
+  const canPostNow = (post: Post) => {
+    const hasPlatforms = post.social_platforms && post.social_platforms.length > 0;
+    return hasPlatforms && (post.status === 'ready' || post.status === 'scheduled');
   };
 
   // Get failed platforms from social_platforms array
@@ -303,6 +318,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
             <SelectContent>
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="ready">Ready</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="published">Published</SelectItem>
               <SelectItem value="archived">Archived</SelectItem>
@@ -344,13 +360,17 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                         Retrying soon
                       </Badge>
                     )}
-                    {/* Show failed platforms with icons */}
-                    {(post.status === 'failed' || post.status === 'rescheduled') && getFailedPlatforms(post).length > 0 && (
+                    {/* Show selected platforms with brand colors */}
+                    {post.social_platforms && post.social_platforms.length > 0 && (
                       <div className="flex items-center gap-1">
-                        {getFailedPlatforms(post).map((platform) => {
+                        {post.social_platforms.map((platform) => {
                           const IconComponent = getPlatformIcon(platform);
+                          const isFailed = post.status === 'failed' || post.status === 'rescheduled';
+                          const colorClass = isFailed 
+                            ? 'text-red-600 border-red-200 bg-red-50' 
+                            : getPlatformColor(platform);
                           return (
-                            <Badge key={platform} variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50 px-1.5">
+                            <Badge key={platform} variant="outline" className={`text-xs px-1.5 ${colorClass}`}>
                               {IconComponent ? <IconComponent className="h-3 w-3" /> : <span className="capitalize">{platform}</span>}
                             </Badge>
                           );
@@ -390,8 +410,8 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                 </div>
                 
                 <div className="flex gap-2 ml-4">
-                  {/* Post Now button for draft, scheduled, rescheduled posts (NOT failed - it has Retry in error section) */}
-                  {canPostNow(post.status) && (
+                  {/* Post Now button for ready/scheduled posts with platforms */}
+                  {canPostNow(post) && (
                     <Button
                       variant="default"
                       size="sm"

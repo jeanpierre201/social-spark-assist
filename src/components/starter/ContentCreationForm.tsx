@@ -321,10 +321,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         utcTimeStr = format(utcDate, 'HH:mm');
       }
 
-      // Determine post status based on scheduling and social media selection
+      // Determine post status based on social media and scheduling
       let postStatus = 'draft';
-      if (scheduledDate && scheduledTime && selectedSocialPlatforms.length > 0) {
-        postStatus = 'scheduled';
+      if (selectedSocialPlatforms.length > 0) {
+        if (scheduledDate && scheduledTime) {
+          postStatus = 'scheduled';
+        } else {
+          postStatus = 'ready'; // Has platforms but no schedule
+        }
       }
 
       // Save to database
@@ -505,10 +509,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           utcTimeStr = format(utcDate, 'HH:mm');
         }
 
-        // Determine post status based on scheduling and social media selection
+        // Determine post status based on social media and scheduling
         let postStatus = 'draft';
-        if (scheduledDate && scheduledTime && selectedSocialPlatforms.length > 0) {
-          postStatus = 'scheduled';
+        if (selectedSocialPlatforms.length > 0) {
+          if (scheduledDate && scheduledTime) {
+            postStatus = 'scheduled';
+          } else {
+            postStatus = 'ready'; // Has platforms but no schedule
+          }
         }
 
         // Save to database
@@ -684,6 +692,13 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             <Calendar className="h-4 w-4 mr-2" />
             Schedule Post (Optional)
           </h4>
+          {selectedSocialPlatforms.length === 0 && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg mb-3">
+              <p className="text-sm text-yellow-700">
+                Select at least one social media platform to enable scheduling
+              </p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="scheduledDate" className="text-sm">Date</Label>
@@ -693,6 +708,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                 value={scheduledDate}
                 onChange={(e) => setScheduledDate(e.target.value)}
                 className="text-sm"
+                disabled={selectedSocialPlatforms.length === 0}
               />
             </div>
             <div>
@@ -703,6 +719,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                 value={scheduledTime}
                 onChange={(e) => setScheduledTime(e.target.value)}
                 className="text-sm"
+                disabled={selectedSocialPlatforms.length === 0}
               />
             </div>
           </div>

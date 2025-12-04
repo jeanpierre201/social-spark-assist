@@ -35,7 +35,7 @@ interface Post {
   scheduled_time: string | null;
   user_timezone: string | null;
   social_platforms: string[];
-  status: 'draft' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
+  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
   created_at: string;
   posted_at: string | null;
   error_message?: string | null;
@@ -83,7 +83,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     scheduled_date: '',
     scheduled_time: '',
     social_platforms: [] as string[],
-    status: 'draft' as 'draft' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed',
+    status: 'draft' as 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed',
     media_url: '',
     uploaded_image_url: '',
     ai_generated_image_1_url: '',
@@ -135,7 +135,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     { id: 'snapchat', name: 'Snapchat' }
   ];
 
-  const isEditable = (post?.status === 'draft' || post?.status === 'scheduled' || post?.status === 'rescheduled' || post?.status === 'failed') && !isSubscriptionExpired;
+  const isEditable = (post?.status === 'draft' || post?.status === 'ready' || post?.status === 'scheduled' || post?.status === 'rescheduled' || post?.status === 'failed') && !isSubscriptionExpired;
   const isReadOnly = !isEditable;
 
   // Calculate the maximum allowed scheduling date based on subscription period
@@ -570,17 +570,33 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         utcTimeStr = format(utcDate, 'HH:mm');
       }
       
-      // Determine status based on scheduling
-      let status = formData.status;
-      if (formData.scheduled_date && formData.scheduled_time && status === 'draft') {
-        status = 'scheduled';
+      // Determine status based on social media and scheduling
+      let status: typeof formData.status = formData.status;
+      const hasPlatforms = formData.social_platforms && formData.social_platforms.length > 0;
+      const hasSchedule = formData.scheduled_date && formData.scheduled_time;
+      
+      // Clear schedule if no platforms selected
+      let finalScheduledDate = utcDateStr;
+      let finalScheduledTime = utcTimeStr;
+      if (!hasPlatforms) {
+        finalScheduledDate = null;
+        finalScheduledTime = null;
+      }
+      
+      // Update status based on new rules
+      if (status === 'draft' || status === 'ready' || status === 'scheduled') {
+        if (hasPlatforms) {
+          status = hasSchedule ? 'scheduled' : 'ready';
+        } else {
+          status = 'draft';
+        }
       }
       
       const updates = {
         generated_caption: formData.caption,
         generated_hashtags: formData.hashtags.split(' ').filter(tag => tag.trim()),
-        scheduled_date: utcDateStr || null,
-        scheduled_time: utcTimeStr || null,
+        scheduled_date: finalScheduledDate || null,
+        scheduled_time: finalScheduledTime || null,
         user_timezone: userTimezone,
         social_platforms: formData.social_platforms,
         status: status,
@@ -621,12 +637,18 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'bg-gray-100 text-gray-800';
+      case 'ready': return 'bg-purple-100 text-purple-800';
       case 'scheduled': return 'bg-blue-100 text-blue-800';
+      case 'rescheduled': return 'bg-yellow-100 text-yellow-800';
       case 'published': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
       case 'archived': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Check if scheduling should be disabled (no platforms selected)
+  const schedulingDisabled = !formData.social_platforms || formData.social_platforms.length === 0;
 
   if (!post) return null;
 
@@ -1025,6 +1047,13 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
           {/* Scheduling */}
           {!isReadOnly && (
             <>
+              {schedulingDisabled && (
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-700">
+                    Select at least one social media platform to enable scheduling
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="scheduled_date" className="flex items-center">
@@ -1037,7 +1066,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     value={formData.scheduled_date}
                     min={format(new Date(), 'yyyy-MM-dd')}
                     max={getMaxScheduleDate()}
-                    disabled={isSubscriptionExpired}
+                    disabled={isSubscriptionExpired || schedulingDisabled}
                     onChange={(e) => setFormData(prev => ({ ...prev, scheduled_date: e.target.value }))}
                   />
                 </div>
@@ -1050,7 +1079,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     id="scheduled_time"
                     type="time"
                     value={formData.scheduled_time}
-                    disabled={isSubscriptionExpired}
+                    disabled={isSubscriptionExpired || schedulingDisabled}
                     onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
                   />
                 </div>
@@ -1067,12 +1096,24 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value: 'draft' | 'scheduled') => {
+                onValueChange={(value: 'draft' | 'ready' | 'scheduled') => {
+                  const hasPlatforms = formData.social_platforms && formData.social_platforms.length > 0;
+                  const hasSchedule = formData.scheduled_date && formData.scheduled_time;
+                  
                   // Only allow 'scheduled' if date, time and at least one social platform are set
-                  if (value === 'scheduled' && (!formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0)) {
+                  if (value === 'scheduled' && (!hasSchedule || !hasPlatforms)) {
                     toast({
                       title: "Scheduling Required",
                       description: "Please set scheduled date, time, and select at least one social media platform before marking as scheduled",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  // Only allow 'ready' if at least one social platform is set
+                  if (value === 'ready' && !hasPlatforms) {
+                    toast({
+                      title: "Platforms Required",
+                      description: "Please select at least one social media platform before marking as ready",
                       variant: "destructive",
                     });
                     return;
@@ -1086,10 +1127,16 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                 <SelectContent>
                   <SelectItem value="draft">Draft</SelectItem>
                   <SelectItem 
-                    value="scheduled"
-                    disabled={isSubscriptionExpired || !formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0}
+                    value="ready"
+                    disabled={schedulingDisabled}
                   >
-                    Scheduled {(isSubscriptionExpired && '(Subscription expired)') || ((!formData.scheduled_date || !formData.scheduled_time || formData.social_platforms.length === 0) && '(Set date, time & platform first)')}
+                    Ready {schedulingDisabled && '(Select platform first)'}
+                  </SelectItem>
+                  <SelectItem 
+                    value="scheduled"
+                    disabled={isSubscriptionExpired || !formData.scheduled_date || !formData.scheduled_time || schedulingDisabled}
+                  >
+                    Scheduled {(isSubscriptionExpired && '(Subscription expired)') || ((!formData.scheduled_date || !formData.scheduled_time || schedulingDisabled) && '(Set date, time & platform first)')}
                   </SelectItem>
                 </SelectContent>
               </Select>
