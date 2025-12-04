@@ -35,6 +35,7 @@ import UpgradeStarterPage from "./pages/UpgradeStarterPage";
 import TestUtilityPage from "./pages/TestUtilityPage";
 import StarterPlanTestPage from "./pages/StarterPlanTestPage";
 import LogoPreviewPage from "./pages/LogoPreviewPage";
+import TwitterCallbackPage from "./pages/TwitterCallbackPage";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +60,7 @@ const App = () => (
                   <Route path="/terms-of-service" element={<TermsOfServicePage />} />
                   <Route path="/data-deletion" element={<DataDeletionPage />} />
                   <Route path="/logo-preview" element={<LogoPreviewPage />} />
+                  <Route path="/auth/twitter/callback" element={<TwitterCallbackPage />} />
                   
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLoginPage />} />
