@@ -2,6 +2,34 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface PublishError {
+  message: string;
+  code?: string;
+  tip?: string;
+}
+
+const parseErrorResponse = (error: any): PublishError => {
+  // Try to extract structured error from response
+  if (error?.message) {
+    try {
+      // Check if error message contains JSON
+      const jsonMatch = error.message.match(/\{.*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          message: parsed.error || parsed.message || error.message,
+          code: parsed.code,
+          tip: parsed.tip
+        };
+      }
+    } catch {
+      // Not JSON, use as-is
+    }
+    return { message: error.message };
+  }
+  return { message: 'Unknown error occurred' };
+};
+
 export const useManualPublish = () => {
   const [publishingPosts, setPublishingPosts] = useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -21,11 +49,16 @@ export const useManualPublish = () => {
       });
 
       if (error) {
-        console.error('[MANUAL-PUBLISH] Error:', error);
+        console.error('[MANUAL-PUBLISH] Facebook error:', error);
         throw error;
       }
 
-      console.log('[MANUAL-PUBLISH] Success:', data);
+      // Check for error in response data
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      console.log('[MANUAL-PUBLISH] Facebook success:', data);
 
       // Update post status to published
       const { error: updateError } = await supabase
@@ -39,7 +72,6 @@ export const useManualPublish = () => {
 
       if (updateError) {
         console.error('[MANUAL-PUBLISH] Failed to update post status:', updateError);
-        // Still show success since the post was published
       }
 
       toast({
@@ -49,24 +81,29 @@ export const useManualPublish = () => {
 
       return { success: true, data };
     } catch (error: any) {
-      console.error('[MANUAL-PUBLISH] Failed:', error);
+      console.error('[MANUAL-PUBLISH] Facebook failed:', error);
       
-      // Update post with error message but keep it editable
+      const parsedError = parseErrorResponse(error);
+      const errorMessage = parsedError.tip 
+        ? `${parsedError.message}. ${parsedError.tip}`
+        : parsedError.message;
+
+      // Update post with detailed error message
       await supabase
         .from('posts')
         .update({ 
           status: 'failed',
-          error_message: error.message || 'Failed to publish'
+          error_message: errorMessage
         })
         .eq('id', postId);
 
       toast({
-        title: 'Post Failed',
-        description: error.message || 'Failed to publish to Facebook',
+        title: 'Facebook Post Failed',
+        description: parsedError.message,
         variant: 'destructive',
       });
 
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     } finally {
       setPublishingPosts(prev => {
         const next = new Set(prev);
@@ -90,11 +127,21 @@ export const useManualPublish = () => {
       });
 
       if (error) {
-        console.error('[MANUAL-PUBLISH] Error:', error);
+        console.error('[MANUAL-PUBLISH] Twitter invoke error:', error);
         throw error;
       }
 
-      console.log('[MANUAL-PUBLISH] Success:', data);
+      // Check for error in response data (edge function returns error in body)
+      if (data?.error) {
+        const errorObj = {
+          message: data.error,
+          code: data.code,
+          tip: data.tip
+        };
+        throw errorObj;
+      }
+
+      console.log('[MANUAL-PUBLISH] Twitter success:', data);
 
       // Update post status to published
       const { error: updateError } = await supabase
@@ -117,23 +164,34 @@ export const useManualPublish = () => {
 
       return { success: true, data };
     } catch (error: any) {
-      console.error('[MANUAL-PUBLISH] Failed:', error);
+      console.error('[MANUAL-PUBLISH] Twitter failed:', error);
       
+      // Build detailed error message
+      let errorMessage = error.message || 'Failed to post tweet';
+      let toastDescription = errorMessage;
+      
+      // If we have a tip, include it in the stored error
+      if (error.tip) {
+        errorMessage = `${error.message}. ${error.tip}`;
+        toastDescription = error.message; // Keep toast shorter
+      }
+
+      // Update post with detailed error message
       await supabase
         .from('posts')
         .update({ 
           status: 'failed',
-          error_message: error.message || 'Failed to publish'
+          error_message: errorMessage
         })
         .eq('id', postId);
 
       toast({
-        title: 'Post Failed',
-        description: error.message || 'Failed to post tweet',
+        title: 'Twitter Post Failed',
+        description: toastDescription,
         variant: 'destructive',
       });
 
-      return { success: false, error: error.message };
+      return { success: false, error: errorMessage };
     } finally {
       setPublishingPosts(prev => {
         const next = new Set(prev);

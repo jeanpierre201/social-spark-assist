@@ -51,12 +51,72 @@ function generateOAuthHeader(method: string, url: string, accessToken: string, a
   return "OAuth " + entries.map(([k, v]) => `${encodeURIComponent(k)}="${encodeURIComponent(v)}"`).join(", ");
 }
 
+// Parse Twitter API error response into user-friendly message
+function parseTwitterError(status: number, responseBody: string): { message: string; code: string; tip: string } {
+  console.log('[TWITTER-POST] Parsing error:', status, responseBody);
+  
+  let parsed: any = {};
+  try {
+    parsed = JSON.parse(responseBody);
+  } catch {
+    // Response wasn't JSON
+  }
+
+  switch (status) {
+    case 401:
+      return {
+        message: 'Twitter authentication failed',
+        code: 'AUTH_FAILED',
+        tip: 'Your Twitter access tokens may have expired. Please disconnect and reconnect your Twitter account.'
+      };
+    case 403:
+      // Check for specific 403 errors
+      if (parsed.detail?.includes('not permitted') || parsed.title === 'Forbidden') {
+        return {
+          message: 'Twitter app lacks write permissions',
+          code: 'PERMISSION_DENIED',
+          tip: 'Go to Twitter Developer Portal → Your App → User Authentication Settings → Enable "Read and Write" permissions → Regenerate Access Token & Secret → Then reconnect your Twitter account in the app.'
+        };
+      }
+      return {
+        message: 'Twitter rejected the request',
+        code: 'FORBIDDEN',
+        tip: 'Check your Twitter Developer Portal app permissions and regenerate your access tokens.'
+      };
+    case 429:
+      return {
+        message: 'Twitter rate limit exceeded',
+        code: 'RATE_LIMITED',
+        tip: 'You\'ve hit Twitter\'s posting limit. Please wait a few minutes and try again.'
+      };
+    case 400:
+      if (parsed.detail?.includes('duplicate')) {
+        return {
+          message: 'Duplicate tweet detected',
+          code: 'DUPLICATE',
+          tip: 'Twitter doesn\'t allow posting the same content twice. Try modifying your message.'
+        };
+      }
+      return {
+        message: 'Invalid tweet content',
+        code: 'BAD_REQUEST',
+        tip: 'Check if your tweet is too long (280 chars max) or contains invalid characters.'
+      };
+    default:
+      return {
+        message: `Twitter API error (${status})`,
+        code: 'UNKNOWN',
+        tip: 'An unexpected error occurred. Please try again later.'
+      };
+  }
+}
+
 async function sendTweet(tweetText: string, accessToken: string, accessTokenSecret: string): Promise<any> {
   const url = "https://api.x.com/2/tweets";
   const method = "POST";
   const oauthHeader = generateOAuthHeader(method, url, accessToken, accessTokenSecret);
 
-  console.log('[TWITTER-POST] Posting tweet');
+  console.log('[TWITTER-POST] Posting tweet, length:', tweetText.length);
 
   const response = await fetch(url, {
     method: method,
@@ -68,10 +128,16 @@ async function sendTweet(tweetText: string, accessToken: string, accessTokenSecr
   });
 
   const responseText = await response.text();
-  console.log('[TWITTER-POST] Response:', response.status, responseText);
+  console.log('[TWITTER-POST] Response status:', response.status);
+  console.log('[TWITTER-POST] Response body:', responseText);
 
   if (!response.ok) {
-    throw new Error(`Twitter API error: ${response.status} - ${responseText}`);
+    const errorInfo = parseTwitterError(response.status, responseText);
+    const error = new Error(errorInfo.message);
+    (error as any).code = errorInfo.code;
+    (error as any).tip = errorInfo.tip;
+    (error as any).status = response.status;
+    throw error;
   }
 
   return JSON.parse(responseText);
@@ -116,6 +182,7 @@ serve(async (req) => {
       .single();
 
     if (accountError || !account) {
+      console.error('[TWITTER-POST] Account error:', accountError);
       throw new Error('Twitter account not found or not connected');
     }
 
@@ -127,12 +194,15 @@ serve(async (req) => {
       .single();
 
     if (tokensError || !tokens || !tokens.encrypted_access_token || !tokens.encrypted_refresh_token) {
+      console.error('[TWITTER-POST] Tokens error:', tokensError);
       throw new Error('Twitter tokens not found. Please reconnect your account.');
     }
 
     console.log('[TWITTER-POST] Using tokens for account @' + account.username);
 
     const result = await sendTweet(message, tokens.encrypted_access_token, tokens.encrypted_refresh_token);
+
+    console.log('[TWITTER-POST] Tweet posted successfully:', result);
 
     return new Response(
       JSON.stringify({ 
@@ -146,10 +216,16 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('[TWITTER-POST] Error:', error);
+    console.error('[TWITTER-POST] Error:', error.message);
+    console.error('[TWITTER-POST] Error code:', error.code);
+    console.error('[TWITTER-POST] Error tip:', error.tip);
+    
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to post tweet' 
+        error: error.message || 'Failed to post tweet',
+        code: error.code || 'UNKNOWN',
+        tip: error.tip || 'Please try again later.',
+        status: error.status || 500
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
