@@ -236,14 +236,18 @@ serve(async (req) => {
           })
           .eq('id', existingAccount.id);
 
-        // Update tokens in vault
+        // Delete old tokens and insert new ones (no unique constraint on social_account_id)
         await supabaseClient
           .from('social_tokens_vault')
-          .upsert({
+          .delete()
+          .eq('social_account_id', existingAccount.id);
+
+        await supabaseClient
+          .from('social_tokens_vault')
+          .insert({
             social_account_id: existingAccount.id,
             encrypted_access_token: access_token,
-            encrypted_refresh_token: access_token_secret, // Store token secret here
-            updated_at: new Date().toISOString()
+            encrypted_refresh_token: access_token_secret
           });
       } else {
         // Create new social account
