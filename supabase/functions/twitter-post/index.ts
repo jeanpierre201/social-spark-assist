@@ -22,17 +22,13 @@ function generateOAuthSignature(
   consumerSecret: string,
   tokenSecret: string
 ): string {
-  // OAuth 1.0a spec requires percent-encoding both keys and values in the parameter string
-  const paramString = Object.entries(params)
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-    .join("&");
-    
-  const signatureBaseString = `${method}&${encodeURIComponent(url)}&${encodeURIComponent(paramString)}`;
+  const signatureBaseString = `${method}&${encodeURIComponent(url)}&${encodeURIComponent(
+    Object.entries(params)
+      .sort()
+      .map(([k, v]) => `${k}=${v}`)
+      .join("&")
+  )}`;
   const signingKey = `${encodeURIComponent(consumerSecret)}&${encodeURIComponent(tokenSecret)}`;
-  
-  console.log('[TWITTER-POST] Signature base string (first 200 chars):', signatureBaseString.substring(0, 200));
-  
   const hmacSha1 = createHmac("sha1", signingKey);
   const signature = hmacSha1.update(signatureBaseString).digest("base64");
   return signature;
