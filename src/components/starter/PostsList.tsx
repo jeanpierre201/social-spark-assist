@@ -29,6 +29,7 @@ interface Post {
   created_at: string;
   posted_at: string | null;
   error_message?: string | null;
+  social_platforms?: string[] | null;
 }
 
 interface PostsListProps {
@@ -120,6 +121,17 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   const isEditable = (status: string) => {
     // Failed posts should be editable so users can reschedule them
     return status === 'draft' || status === 'scheduled' || status === 'rescheduled' || status === 'failed';
+  };
+
+  // Check if post can have "Post Now" button (draft, scheduled, rescheduled - but NOT failed since it has Retry)
+  const canPostNow = (status: string) => {
+    return status === 'draft' || status === 'scheduled' || status === 'rescheduled';
+  };
+
+  // Get failed platforms from social_platforms array
+  const getFailedPlatforms = (post: Post) => {
+    if (post.status !== 'failed' && post.status !== 'rescheduled') return [];
+    return post.social_platforms || [];
   };
 
   // Check if a scheduled post is overdue
@@ -321,6 +333,16 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                         Retrying soon
                       </Badge>
                     )}
+                    {/* Show failed platforms */}
+                    {(post.status === 'failed' || post.status === 'rescheduled') && getFailedPlatforms(post).length > 0 && (
+                      <div className="flex items-center gap-1">
+                        {getFailedPlatforms(post).map((platform) => (
+                          <Badge key={platform} variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50 capitalize">
+                            {platform}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   
                   <h4 className="font-medium text-sm mb-1">
@@ -354,8 +376,8 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                 </div>
                 
                 <div className="flex gap-2 ml-4">
-                  {/* Post Now button for scheduled/failed/rescheduled posts */}
-                  {(post.status === 'scheduled' || post.status === 'failed' || post.status === 'rescheduled') && (
+                  {/* Post Now button for draft, scheduled, rescheduled posts (NOT failed - it has Retry in error section) */}
+                  {canPostNow(post.status) && (
                     <Button
                       variant="default"
                       size="sm"

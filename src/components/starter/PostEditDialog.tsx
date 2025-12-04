@@ -135,7 +135,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     { id: 'snapchat', name: 'Snapchat' }
   ];
 
-  const isEditable = (post?.status === 'draft' || post?.status === 'scheduled') && !isSubscriptionExpired;
+  const isEditable = (post?.status === 'draft' || post?.status === 'scheduled' || post?.status === 'rescheduled' || post?.status === 'failed') && !isSubscriptionExpired;
   const isReadOnly = !isEditable;
 
   // Calculate the maximum allowed scheduling date based on subscription period
