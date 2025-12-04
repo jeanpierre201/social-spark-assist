@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send, RefreshCw, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
 import { useManualPublish } from '@/hooks/useManualPublish';
@@ -291,11 +292,11 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
           {posts.map((post) => (
             <div
               key={post.id}
-              className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+              className={`border rounded-lg p-4 transition-colors ${post.status === 'failed' ? 'border-red-200 bg-red-50/30' : 'hover:bg-gray-50'}`}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Badge className={getStatusColor(post.status)}>
                       {post.status}
                     </Badge>
@@ -314,14 +315,10 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                         Overdue - Check connection
                       </Badge>
                     )}
-                    {post.status === 'rescheduled' && post.error_message && (
+                    {post.status === 'rescheduled' && (
                       <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-200 bg-yellow-50">
+                        <RefreshCw className="h-3 w-3 mr-1" />
                         Retrying soon
-                      </Badge>
-                    )}
-                    {post.status === 'failed' && post.error_message && (
-                      <Badge variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50">
-                        {post.error_message}
                       </Badge>
                     )}
                   </div>
@@ -357,7 +354,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                 </div>
                 
                 <div className="flex gap-2 ml-4">
-                  {/* Post Now button for scheduled/failed posts */}
+                  {/* Post Now button for scheduled/failed/rescheduled posts */}
                   {(post.status === 'scheduled' || post.status === 'failed' || post.status === 'rescheduled') && (
                     <Button
                       variant="default"
@@ -365,8 +362,13 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                       onClick={() => handleManualPublish(post)}
                       disabled={isPublishingPost(post.id)}
                       className="bg-green-600 hover:bg-green-700"
+                      title="Post Now"
                     >
-                      <Send className="h-4 w-4" />
+                      {isPublishingPost(post.id) ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
                   )}
                   
@@ -375,6 +377,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                       variant="outline"
                       size="sm"
                       onClick={() => onEditPost(post)}
+                      title="Edit Post"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -383,6 +386,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                       variant="outline"
                       size="sm"
                       onClick={() => onEditPost(post)}
+                      title="View Post"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -392,11 +396,46 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                     size="sm"
                     onClick={() => handleDeletePost(post)}
                     className="hover:bg-red-50 hover:border-red-200"
+                    title="Delete Post"
                   >
                     <Trash2 className="h-4 w-4 text-red-600" />
                   </Button>
                 </div>
               </div>
+
+              {/* Error Section - Displayed at bottom of card for failed posts */}
+              {(post.status === 'failed' || post.status === 'rescheduled') && post.error_message && (
+                <Alert variant="destructive" className="mt-4 bg-red-50 border-red-200">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="ml-2">
+                    <div className="font-medium text-red-800 mb-1">
+                      {post.status === 'failed' ? 'Publishing Failed' : 'Temporarily Failed - Will Retry'}
+                    </div>
+                    <p className="text-sm text-red-700 whitespace-pre-wrap">{post.error_message}</p>
+                    <div className="mt-2 flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-white border-red-300 text-red-700 hover:bg-red-100"
+                        onClick={() => handleManualPublish(post)}
+                        disabled={isPublishingPost(post.id)}
+                      >
+                        {isPublishingPost(post.id) ? (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                            Retrying...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Retry Now
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
           ))}
         </div>
