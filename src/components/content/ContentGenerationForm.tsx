@@ -226,10 +226,14 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         // Don't block the user, just log the error
       }
 
-      // Determine post status based on scheduling and social media selection
+      // Determine post status based on social media and scheduling
       let postStatus = 'draft';
-      if (scheduledDate && scheduledTime && selectedSocialPlatforms.length > 0) {
-        postStatus = 'scheduled';
+      if (selectedSocialPlatforms.length > 0) {
+        if (scheduledDate && scheduledTime) {
+          postStatus = 'scheduled';
+        } else {
+          postStatus = 'ready'; // Has platforms but no schedule
+        }
       }
 
       const newPost = {
@@ -243,6 +247,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         scheduled_time: scheduledTime || null,
         media_url: generatedImageUrl,
         status: postStatus,
+        social_platforms: selectedSocialPlatforms,
       };
 
       // Save post to database for all users (free users see posts for 24 hours only)
