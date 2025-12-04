@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send, RefreshCw, AlertCircle } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
 import { useManualPublish } from '@/hooks/useManualPublish';
@@ -132,6 +132,17 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   const getFailedPlatforms = (post: Post) => {
     if (post.status !== 'failed' && post.status !== 'rescheduled') return [];
     return post.social_platforms || [];
+  };
+
+  // Get platform icon component
+  const getPlatformIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'facebook': return Facebook;
+      case 'twitter': return Twitter;
+      case 'instagram': return Instagram;
+      case 'linkedin': return Linkedin;
+      default: return null;
+    }
   };
 
   // Check if a scheduled post is overdue
@@ -333,14 +344,17 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                         Retrying soon
                       </Badge>
                     )}
-                    {/* Show failed platforms */}
+                    {/* Show failed platforms with icons */}
                     {(post.status === 'failed' || post.status === 'rescheduled') && getFailedPlatforms(post).length > 0 && (
                       <div className="flex items-center gap-1">
-                        {getFailedPlatforms(post).map((platform) => (
-                          <Badge key={platform} variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50 capitalize">
-                            {platform}
-                          </Badge>
-                        ))}
+                        {getFailedPlatforms(post).map((platform) => {
+                          const IconComponent = getPlatformIcon(platform);
+                          return (
+                            <Badge key={platform} variant="outline" className="text-xs text-red-600 border-red-200 bg-red-50 px-1.5">
+                              {IconComponent ? <IconComponent className="h-3 w-3" /> : <span className="capitalize">{platform}</span>}
+                            </Badge>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
