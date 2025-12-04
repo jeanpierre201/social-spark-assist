@@ -303,13 +303,40 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
 
   // Manual publish to social platforms
   const handleManualPublish = async (post: Post) => {
-    const facebookAccount = accounts.find(acc => acc.platform === 'facebook' && acc.is_active);
-    const twitterAccount = accounts.find(acc => acc.platform === 'twitter' && acc.is_active);
+    // Get the platforms selected for this specific post
+    const selectedPlatforms = (post.social_platforms as string[]) || [];
     
-    if (!facebookAccount && !twitterAccount) {
+    if (selectedPlatforms.length === 0) {
       toast({
-        title: 'No Connected Accounts',
-        description: 'Please connect a Facebook or Twitter account first',
+        title: 'No Platforms Selected',
+        description: 'Please select at least one platform for this post',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Find connected accounts for selected platforms only
+    const facebookAccount = selectedPlatforms.includes('facebook') 
+      ? accounts.find(acc => acc.platform === 'facebook' && acc.is_active)
+      : null;
+    const twitterAccount = selectedPlatforms.includes('twitter')
+      ? accounts.find(acc => acc.platform === 'twitter' && acc.is_active)
+      : null;
+    
+    // Check if at least one selected platform has a connected account
+    const hasConnectedAccount = 
+      (selectedPlatforms.includes('facebook') && facebookAccount) ||
+      (selectedPlatforms.includes('twitter') && twitterAccount);
+    
+    if (!hasConnectedAccount) {
+      const missingPlatforms = selectedPlatforms.filter(p => {
+        if (p === 'facebook') return !facebookAccount;
+        if (p === 'twitter') return !twitterAccount;
+        return true;
+      });
+      toast({
+        title: 'Account Not Connected',
+        description: `Please connect your ${missingPlatforms.join(', ')} account(s) first`,
         variant: 'destructive',
       });
       return;
@@ -318,7 +345,8 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
     const message = `${post.generated_caption}\n\n${post.generated_hashtags.join(' ')}`;
     const results = [];
 
-    if (facebookAccount) {
+    // Only publish to platforms that are selected AND connected
+    if (facebookAccount && selectedPlatforms.includes('facebook')) {
       const result = await publishToFacebook(
         post.id,
         facebookAccount.id,
@@ -328,7 +356,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
       results.push({ platform: 'Facebook', ...result });
     }
 
-    if (twitterAccount) {
+    if (twitterAccount && selectedPlatforms.includes('twitter')) {
       const result = await publishToTwitter(
         post.id,
         twitterAccount.id,
@@ -337,14 +365,8 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
       results.push({ platform: 'Twitter', ...result });
     }
 
-    // Check if any succeeded
-    const anySuccess = results.some(r => r.success);
-    if (anySuccess) {
-      fetchPosts();
-    } else {
-      // Refresh to show error messages
-      fetchPosts();
-    }
+    // Refresh posts to show updated status/errors
+    fetchPosts();
   };
 
   if (loading) {
