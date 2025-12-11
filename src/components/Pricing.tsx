@@ -1,15 +1,25 @@
-
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Check, Star } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
+import PlatformIcon from '@/components/PlatformIcon';
+import { 
+  getFreePlatforms, 
+  getStarterPlatforms, 
+  getProPlatforms,
+  analyticsFeaturesByTier 
+} from '@/config/platforms';
 
 const Pricing = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier } = useSubscription();
   const navigate = useNavigate();
+
+  const freePlatforms = getFreePlatforms();
+  const starterPlatforms = getStarterPlatforms();
+  const proPlatforms = getProPlatforms();
 
   const handleGetStartedFree = () => {
     if (user) {
@@ -24,12 +34,9 @@ const Pricing = () => {
       navigate('/signup');
       return;
     }
-
-    // Check if user already has Starter plan or higher
     if (subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Pro')) {
       navigate('/dashboard');
     } else {
-      // Navigate to Starter Plan upgrade page
       navigate('/upgrade-starter');
     }
   };
@@ -39,12 +46,9 @@ const Pricing = () => {
       navigate('/signup');
       return;
     }
-    
-    // If user is already Pro, go to dashboard
     if (subscribed && subscriptionTier === 'Pro') {
       navigate('/dashboard');
     } else {
-      // Navigate to Pro Plan upgrade page (for both free and starter users)
       navigate('/upgrade-pro');
     }
   };
@@ -55,13 +59,15 @@ const Pricing = () => {
       price: "€0",
       period: "/month",
       description: "Perfect for getting started",
+      platforms: freePlatforms,
       features: [
         "1 post per month",
         "AI captions & content",
-        "Basic hashtags",
         "Manual posting only",
+        "Basic stats (post count)",
         "FAQ & help center access"
       ],
+      analyticsLevel: 'Free' as const,
       buttonText: "Get Started Free",
       popular: false,
       buttonVariant: "outline" as const,
@@ -72,15 +78,17 @@ const Pricing = () => {
       price: "€12",
       period: "/month",
       description: "Ideal for small businesses",
+      platforms: [...freePlatforms, ...starterPlatforms],
       features: [
         "Everything in Free Plan",
         "10 posts per month",
         "2 AI-generated images per post",
         "Post scheduling to all platforms",
         "Auto-create 10 posts at once",
-        "Basic analytics",
+        "Engagement & reach analytics",
         "Email support"
       ],
+      analyticsLevel: 'Starter' as const,
       buttonText: subscribed && (subscriptionTier === 'Starter' || subscriptionTier === 'Pro') 
         ? "Access Features" 
         : "Start Starter Plan",
@@ -93,17 +101,19 @@ const Pricing = () => {
       price: "€25",
       period: "/month",
       description: "For agencies and growing businesses",
+      platforms: [...freePlatforms, ...starterPlatforms, ...proPlatforms],
       features: [
         "Everything in Starter",
         "Unlimited posts per month",
         "Multiple content variations",
         "Advanced AI features",
         "Auto-posting to all platforms",
-        "Advanced analytics",
+        "Advanced analytics & insights",
         "Priority support",
         "Team collaboration",
         "Custom branding"
       ],
+      analyticsLevel: 'Pro' as const,
       buttonText: subscribed && subscriptionTier === 'Pro'
         ? "Access Pro Features"
         : subscriptionTier === 'Starter'
@@ -165,6 +175,24 @@ const Pricing = () => {
                   <span className="text-4xl font-display font-bold text-foreground">{plan.price}</span>
                   <span className="text-muted-foreground font-sans">{plan.period}</span>
                 </div>
+
+                {/* Platform icons */}
+                <div className="mt-4 pt-4 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground mb-2">Platforms included:</p>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {plan.platforms.map((platform) => (
+                      <PlatformIcon 
+                        key={platform.id} 
+                        platform={platform.id} 
+                        size={22}
+                        showBadge
+                        status={platform.status}
+                        tooltipText={`${platform.name}${platform.status === 'beta' ? ' (Beta)' : platform.status === 'coming' ? ' (Coming Soon)' : ''}`}
+                        disabled={platform.status === 'coming'}
+                      />
+                    ))}
+                  </div>
+                </div>
               </CardHeader>
               
               <CardContent>
@@ -187,7 +215,7 @@ const Pricing = () => {
                   {plan.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-center">
                       <Check className="h-5 w-5 text-primary mr-3 flex-shrink-0" />
-                      <span className="text-muted-foreground font-sans">{feature}</span>
+                      <span className="text-muted-foreground font-sans text-sm">{feature}</span>
                     </li>
                   ))}
                 </ul>
