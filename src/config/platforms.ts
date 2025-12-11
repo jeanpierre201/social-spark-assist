@@ -86,9 +86,9 @@ export const platforms: PlatformConfig[] = [
     description: 'Professional networking'
   },
   {
-    id: 'twitter',
-    name: 'X',
-    icon: 'twitter',
+    id: 'x',
+    name: 'X (Twitter)',
+    icon: 'x',
     tier: 'Pro',
     status: 'coming',
     supportsHashtags: true,

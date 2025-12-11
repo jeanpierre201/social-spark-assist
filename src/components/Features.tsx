@@ -10,13 +10,8 @@ import {
   Zap,
   Globe
 } from 'lucide-react';
-import PlatformIcon from '@/components/PlatformIcon';
-import { platforms, getFreePlatforms, getStarterPlatforms, getProPlatforms } from '@/config/platforms';
 
 const Features = () => {
-  const freePlatforms = getFreePlatforms();
-  const starterPlatforms = getStarterPlatforms();
-  const proPlatforms = getProPlatforms();
 
   const features = [
     {
@@ -32,56 +27,7 @@ const Features = () => {
     {
       icon: Share2,
       title: "Multi-Platform Posting",
-      description: "Post to multiple platforms from one dashboard. Platforms unlock as you upgrade.",
-      customContent: (
-        <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground w-14">Free:</span>
-            <div className="flex items-center gap-2">
-              {freePlatforms.map((p) => (
-                <PlatformIcon 
-                  key={p.id} 
-                  platform={p.id} 
-                  size={18} 
-                  showBadge 
-                  status={p.status}
-                  tooltipText={p.name}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground w-14">Starter:</span>
-            <div className="flex items-center gap-2">
-              {starterPlatforms.map((p) => (
-                <PlatformIcon 
-                  key={p.id} 
-                  platform={p.id} 
-                  size={18} 
-                  showBadge 
-                  status={p.status}
-                  tooltipText={`${p.name}${p.status === 'beta' ? ' (Beta)' : ''}`}
-                />
-              ))}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-muted-foreground w-14">Pro:</span>
-            <div className="flex items-center gap-2">
-              {proPlatforms.map((p) => (
-                <PlatformIcon 
-                  key={p.id} 
-                  platform={p.id} 
-                  size={18} 
-                  showBadge 
-                  status={p.status}
-                  tooltipText={`${p.name}${p.status === 'coming' ? ' (Coming Soon)' : ''}`}
-                />
-              ))}
-            </div>
-          </div>
-        </div>
-      ),
+      description: "Post to multiple platforms from one dashboard. Platforms unlock as you upgrade - from Mastodon & Telegram (Free) to Instagram, Facebook & TikTok (Starter) and LinkedIn & X (Pro).",
     },
     {
       icon: ImageIcon,
@@ -91,23 +37,7 @@ const Features = () => {
     {
       icon: BarChart3,
       title: "Analytics & Insights",
-      description: "Track performance and optimize your content strategy with tiered analytics.",
-      customContent: (
-        <div className="mt-4 space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium bg-muted/50 px-2 py-0.5 rounded">Free</span>
-            <span className="text-xs text-muted-foreground">Basic stats only</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium bg-primary/20 text-primary px-2 py-0.5 rounded">Starter</span>
-            <span className="text-xs text-muted-foreground">Engagement & reach</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-medium bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded">Pro</span>
-            <span className="text-xs text-muted-foreground">Advanced analytics</span>
-          </div>
-        </div>
-      ),
+      description: "Track performance with tiered analytics. Free gets basic stats, Starter unlocks engagement & reach metrics, Pro provides advanced insights & competitor analysis.",
     },
     {
       icon: Shield,
@@ -163,7 +93,7 @@ const Features = () => {
                   <CardDescription className="text-muted-foreground font-sans">
                     {feature.description}
                   </CardDescription>
-                  {feature.customContent}
+                  
                 </CardContent>
               </Card>
             );

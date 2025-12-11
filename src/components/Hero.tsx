@@ -27,11 +27,11 @@ const Hero = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="space-y-8 lg:order-1 order-2">
             <h1 className="text-5xl lg:text-6xl font-display font-bold text-foreground leading-tight">
-              AI-Powered
+              One AI-Powered
               <span className="block bg-gradient-primary bg-clip-text text-transparent">
-                Social Media
+                Content Studio
               </span>
-              Content Creation
+              for Creators & Brands
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl font-sans leading-relaxed">
