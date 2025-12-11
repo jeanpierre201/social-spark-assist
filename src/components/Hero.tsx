@@ -1,8 +1,23 @@
-
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import PlatformIcon from '@/components/PlatformIcon';
+import { getFreePlatforms } from '@/config/platforms';
 
 const Hero = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const freePlatforms = getFreePlatforms();
+
+  const handleStartCreating = () => {
+    if (user) {
+      navigate('/content-generator');
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return (
     <section className="relative py-20 lg:py-32 bg-gradient-accent overflow-hidden">
       {/* Background decoration */}
@@ -23,9 +38,31 @@ const Hero = () => {
               Transform your social media strategy with our AI assistant. Generate engaging content, 
               schedule posts, and grow your audience across all platforms - all in one place.
             </p>
+
+            {/* Free platforms highlight */}
+            <div className="flex items-center gap-4 p-4 bg-glass/40 backdrop-blur-sm rounded-xl border border-glass-border">
+              <div className="flex items-center gap-3">
+                {freePlatforms.map((platform) => (
+                  <PlatformIcon 
+                    key={platform.id} 
+                    platform={platform.id} 
+                    size={28}
+                    tooltipText={platform.name}
+                  />
+                ))}
+              </div>
+              <div className="border-l border-border/50 pl-4">
+                <p className="text-sm font-medium text-foreground">Start free with Mastodon & Telegram</p>
+                <p className="text-xs text-muted-foreground">No credit card required</p>
+              </div>
+            </div>
             
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-lg">
+              <Button 
+                size="lg" 
+                className="bg-gradient-primary hover:opacity-90 transition-opacity shadow-lg"
+                onClick={handleStartCreating}
+              >
                 Start Creating Free
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -38,11 +75,11 @@ const Hero = () => {
             <div className="flex items-center space-x-8 pt-4">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                <span className="text-sm text-muted-foreground">No credit card required</span>
+                <span className="text-sm text-muted-foreground">Free forever plan</span>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                <span className="text-sm text-muted-foreground">Free forever plan</span>
+                <span className="text-sm text-muted-foreground">Upgrade anytime</span>
               </div>
             </div>
           </div>
@@ -67,15 +104,22 @@ const Hero = () => {
                     <div className="mt-1 text-muted-foreground">Promote new product launch</div>
                   </div>
                   
-                  <Button className="w-full bg-gradient-primary hover:opacity-90 transition-opacity">
+                  <Button 
+                    className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
+                    onClick={handleStartCreating}
+                  >
                     Generate AI Content
                   </Button>
                   
                   <div className="bg-accent/30 border border-accent-foreground/20 rounded-lg p-4 backdrop-blur-sm">
                     <div className="text-sm text-foreground font-medium">
-                      "🚀 Exciting news! We're launching our revolutionary AI platform that will transform 
-                      how businesses create content. Join thousands of creators already using AI to scale their success! 
-                      #AI #Innovation #TechLaunch #Startup #Future"
+                      "🚀 Exciting news! We are launching our revolutionary AI platform that will transform 
+                      how businesses create content. Join thousands of creators already using AI to scale their success!"
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">Ready for:</span>
+                      <PlatformIcon platform="mastodon" size={14} />
+                      <PlatformIcon platform="telegram" size={14} />
                     </div>
                   </div>
                 </div>

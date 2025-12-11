@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Brain, 
@@ -11,62 +10,124 @@ import {
   Zap,
   Globe
 } from 'lucide-react';
+import PlatformIcon from '@/components/PlatformIcon';
+import { platforms, getFreePlatforms, getStarterPlatforms, getProPlatforms } from '@/config/platforms';
 
 const Features = () => {
+  const freePlatforms = getFreePlatforms();
+  const starterPlatforms = getStarterPlatforms();
+  const proPlatforms = getProPlatforms();
+
   const features = [
     {
       icon: Brain,
       title: "AI Content Generation",
-      description: "Generate engaging captions, hashtags, and content ideas tailored to your industry and goals.",
-      color: "text-purple-600"
+      description: "Generate engaging captions and content ideas tailored to your industry and goals.",
     },
     {
       icon: Calendar,
       title: "Smart Scheduling",
       description: "Create 30-day content calendars and schedule posts up to a month in advance.",
-      color: "text-blue-600"
     },
     {
       icon: Share2,
       title: "Multi-Platform Posting",
-      description: "Auto-post to Facebook, Instagram, LinkedIn, Twitter, and more from one dashboard.",
-      color: "text-green-600"
+      description: "Post to multiple platforms from one dashboard. Platforms unlock as you upgrade.",
+      customContent: (
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground w-14">Free:</span>
+            <div className="flex items-center gap-2">
+              {freePlatforms.map((p) => (
+                <PlatformIcon 
+                  key={p.id} 
+                  platform={p.id} 
+                  size={18} 
+                  showBadge 
+                  status={p.status}
+                  tooltipText={p.name}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground w-14">Starter:</span>
+            <div className="flex items-center gap-2">
+              {starterPlatforms.map((p) => (
+                <PlatformIcon 
+                  key={p.id} 
+                  platform={p.id} 
+                  size={18} 
+                  showBadge 
+                  status={p.status}
+                  tooltipText={`${p.name}${p.status === 'beta' ? ' (Beta)' : ''}`}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground w-14">Pro:</span>
+            <div className="flex items-center gap-2">
+              {proPlatforms.map((p) => (
+                <PlatformIcon 
+                  key={p.id} 
+                  platform={p.id} 
+                  size={18} 
+                  showBadge 
+                  status={p.status}
+                  tooltipText={`${p.name}${p.status === 'coming' ? ' (Coming Soon)' : ''}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      ),
     },
     {
       icon: ImageIcon,
       title: "AI Image Generation",
       description: "Create stunning visuals with AI-generated images perfectly matched to your content.",
-      color: "text-pink-600"
     },
     {
       icon: BarChart3,
       title: "Analytics & Insights",
-      description: "Track performance, engagement rates, and optimize your content strategy with detailed analytics.",
-      color: "text-orange-600"
+      description: "Track performance and optimize your content strategy with tiered analytics.",
+      customContent: (
+        <div className="mt-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium bg-muted/50 px-2 py-0.5 rounded">Free</span>
+            <span className="text-xs text-muted-foreground">Basic stats only</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium bg-primary/20 text-primary px-2 py-0.5 rounded">Starter</span>
+            <span className="text-xs text-muted-foreground">Engagement & reach</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium bg-gradient-primary text-primary-foreground px-2 py-0.5 rounded">Pro</span>
+            <span className="text-xs text-muted-foreground">Advanced analytics</span>
+          </div>
+        </div>
+      ),
     },
     {
       icon: Shield,
       title: "Secure & Reliable",
       description: "Enterprise-grade security with 99.9% uptime guarantee for your social media management.",
-      color: "text-red-600"
     },
     {
       icon: Clock,
       title: "Time-Saving Automation",
       description: "Save 10+ hours per week with automated content creation and scheduling workflows.",
-      color: "text-indigo-600"
     },
     {
       icon: Zap,
       title: "Instant Content Creation",
       description: "Generate months of content in minutes with our advanced AI algorithms.",
-      color: "text-yellow-600"
     },
     {
       icon: Globe,
-      title: "Global Reach",
-      description: "Optimize posting times for different time zones and maximize your global audience reach.",
-      color: "text-teal-600"
+      title: "Open & Decentralized First",
+      description: "Built with open-source platforms like Mastodon in mind. Own your social presence.",
     }
   ];
 
@@ -102,6 +163,7 @@ const Features = () => {
                   <CardDescription className="text-muted-foreground font-sans">
                     {feature.description}
                   </CardDescription>
+                  {feature.customContent}
                 </CardContent>
               </Card>
             );
