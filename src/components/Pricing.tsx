@@ -175,24 +175,6 @@ const Pricing = () => {
                   <span className="text-4xl font-display font-bold text-foreground">{plan.price}</span>
                   <span className="text-muted-foreground font-sans">{plan.period}</span>
                 </div>
-
-                {/* Platform icons */}
-                <div className="mt-4 pt-4 border-t border-border/50">
-                  <p className="text-xs text-muted-foreground mb-2">Platforms included:</p>
-                  <div className="flex items-center justify-center gap-2 flex-wrap">
-                    {plan.platforms.map((platform) => (
-                      <PlatformIcon 
-                        key={platform.id} 
-                        platform={platform.id} 
-                        size={22}
-                        showBadge
-                        status={platform.status}
-                        tooltipText={`${platform.name}${platform.status === 'beta' ? ' (Beta)' : platform.status === 'coming' ? ' (Coming Soon)' : ''}`}
-                        disabled={platform.status === 'coming'}
-                      />
-                    ))}
-                  </div>
-                </div>
               </CardHeader>
               
               <CardContent>
@@ -219,6 +201,24 @@ const Pricing = () => {
                     </li>
                   ))}
                 </ul>
+
+                {/* Platform icons at bottom */}
+                <div className="mt-6 pt-4 border-t border-border/50">
+                  <p className="text-xs text-muted-foreground mb-2">Platforms included:</p>
+                  <div className="flex items-center justify-center gap-2 flex-wrap">
+                    {plan.platforms.map((platform) => (
+                      <PlatformIcon 
+                        key={platform.id} 
+                        platform={platform.id} 
+                        size={22}
+                        showBadge
+                        status={platform.status}
+                        tooltipText={`${platform.name}${platform.status === 'beta' ? ' (Beta)' : platform.status === 'coming' ? ' (Coming Soon)' : ''}`}
+                        disabled={platform.status === 'coming'}
+                      />
+                    ))}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           ))}
