@@ -92,9 +92,18 @@ serve(async (req) => {
 
     console.log(`[MASTODON-POST] Using account @${mastodonAccount.username} on ${instanceUrl}`);
 
+    // Mastodon has a 500 character limit - truncate if needed
+    const MASTODON_CHAR_LIMIT = 500;
+    let statusText = message;
+    if (statusText.length > MASTODON_CHAR_LIMIT) {
+      // Truncate and add ellipsis
+      statusText = statusText.substring(0, MASTODON_CHAR_LIMIT - 3) + '...';
+      console.log(`[MASTODON-POST] Truncated message from ${message.length} to ${statusText.length} chars`);
+    }
+
     // Build form data for the status
     const formData = new FormData();
-    formData.append('status', message);
+    formData.append('status', statusText);
 
     // If there's a media URL, upload it first
     let mediaId = null;
