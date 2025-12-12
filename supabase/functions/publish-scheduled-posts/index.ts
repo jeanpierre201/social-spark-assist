@@ -51,6 +51,61 @@ async function postToFacebook(pageId: string, accessToken: string, message: stri
   }
 }
 
+// Post to Mastodon instance
+async function postToMastodon(instanceUrl: string, accessToken: string, message: string, imageUrl?: string) {
+  console.log('[MASTODON-POST] Posting to instance:', instanceUrl);
+  
+  try {
+    const formData = new FormData();
+    formData.append('status', message);
+
+    // Upload media if provided
+    let mediaId = null;
+    if (imageUrl) {
+      console.log('[MASTODON-POST] Uploading media...');
+      const imageResponse = await fetch(imageUrl);
+      const imageBlob = await imageResponse.blob();
+      
+      const mediaFormData = new FormData();
+      mediaFormData.append('file', imageBlob, 'image.jpg');
+      
+      const mediaResponse = await fetch(`${instanceUrl}/api/v2/media`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        body: mediaFormData,
+      });
+
+      if (mediaResponse.ok) {
+        const mediaData = await mediaResponse.json();
+        mediaId = mediaData.id;
+        console.log('[MASTODON-POST] Media uploaded, ID:', mediaId);
+      }
+    }
+
+    if (mediaId) {
+      formData.append('media_ids[]', mediaId);
+    }
+
+    const response = await fetch(`${instanceUrl}/api/v1/statuses`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Mastodon API error: ${response.status} ${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log('[MASTODON-POST] Success, status ID:', data.id);
+    return data;
+  } catch (error: any) {
+    console.error('[MASTODON-POST] Error:', error);
+    throw error;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -207,6 +262,33 @@ Deno.serve(async (req) => {
               
               publishResults.push({ platform: 'facebook', success: true });
               console.log(`[PUBLISH-SCHEDULED-POSTS] Successfully posted to Facebook`);
+            } else if (platform === 'mastodon') {
+              // Get access token from vault
+              const { data: tokenData, error: tokenError } = await supabaseClient
+                .from('social_tokens_vault')
+                .select('encrypted_access_token, encrypted_refresh_token')
+                .eq('social_account_id', account.id)
+                .single();
+
+              if (tokenError || !tokenData?.encrypted_access_token) {
+                console.error(`[PUBLISH-SCHEDULED-POSTS] Token fetch error for Mastodon account ${account.id}:`, tokenError);
+                throw new Error('Mastodon access token not found. Please reconnect your Mastodon account.');
+              }
+
+              // Instance URL is stored in encrypted_refresh_token or account_data
+              const instanceUrl = tokenData.encrypted_refresh_token || 
+                                  (account.account_data as any)?.instance_url;
+              
+              if (!instanceUrl) {
+                throw new Error('Mastodon instance URL not found. Please reconnect your account.');
+              }
+
+              // Post to Mastodon
+              const message = `${post.generated_caption}\n\n${post.generated_hashtags?.join(' ') || ''}`;
+              await postToMastodon(instanceUrl, tokenData.encrypted_access_token, message, post.media_url);
+              
+              publishResults.push({ platform: 'mastodon', success: true });
+              console.log(`[PUBLISH-SCHEDULED-POSTS] Successfully posted to Mastodon`);
             }
             // Add more platforms here
           } catch (platformError: any) {

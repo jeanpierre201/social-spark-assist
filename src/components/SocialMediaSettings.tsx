@@ -28,14 +28,10 @@ const SocialMediaSettings = () => {
   const { accounts, metrics, loading, connectAccount, disconnectAccount, refreshMetrics, refetchAccounts } = useSocialAccounts();
   const { connectFacebook, isConnecting: isFacebookConnecting } = useFacebookAuth();
   const { connectTwitter, isConnecting: isTwitterConnecting } = useTwitterAuth();
-  const { connectMastodon, isConnecting: isMastodonConnecting } = useMastodonAuth();
+  const { connectMastodon, isConnecting: isMastodonConnecting } = useMastodonAuth(refetchAccounts);
 
   const handleMastodonConnect = async () => {
-    const result = await connectMastodon();
-    if (result.success) {
-      // Refetch accounts to update the UI
-      await refetchAccounts();
-    }
+    await connectMastodon();
   };
 
   const platforms = [
