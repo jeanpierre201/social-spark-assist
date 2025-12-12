@@ -92,13 +92,73 @@ serve(async (req) => {
 
     console.log(`[MASTODON-POST] Using account @${mastodonAccount.username} on ${instanceUrl}`);
 
-    // Mastodon has a 500 character limit - truncate if needed
+    // Smart truncation function for natural breaks
+    const smartTruncate = (text: string, maxLength: number): string => {
+      if (text.length <= maxLength) return text;
+      
+      const reservedForEllipsis = 3;
+      const targetLength = maxLength - reservedForEllipsis;
+      
+      if (targetLength <= 0) return text.substring(0, maxLength);
+      
+      // First try: Find last complete sentence
+      const sentenceEndPattern = /[.!?。！？]\s/g;
+      let lastSentenceEnd = -1;
+      let match;
+      
+      while ((match = sentenceEndPattern.exec(text)) !== null) {
+        const endPos = match.index + match[0].length;
+        if (endPos <= targetLength) {
+          lastSentenceEnd = endPos;
+        } else {
+          break;
+        }
+      }
+      
+      if (lastSentenceEnd > targetLength * 0.4) {
+        console.log(`[MASTODON-POST] Truncating at sentence boundary: ${lastSentenceEnd} chars`);
+        return text.substring(0, lastSentenceEnd).trim();
+      }
+      
+      // Second try: Break at special characters or emojis
+      const breakPointPattern = /[,;:\-–—|•·]\s|[\u{1F300}-\u{1F9FF}][\s]?/gu;
+      let lastBreakPoint = -1;
+      
+      while ((match = breakPointPattern.exec(text)) !== null) {
+        const endPos = match.index + match[0].length;
+        if (endPos <= targetLength) {
+          lastBreakPoint = endPos;
+        } else {
+          break;
+        }
+      }
+      
+      if (lastBreakPoint > targetLength * 0.5) {
+        console.log(`[MASTODON-POST] Truncating at special char/emoji: ${lastBreakPoint} chars`);
+        return text.substring(0, lastBreakPoint).trim() + '...';
+      }
+      
+      // Third try: Break at last word boundary
+      const truncated = text.substring(0, targetLength);
+      const lastSpace = truncated.lastIndexOf(' ');
+      
+      if (lastSpace > targetLength * 0.6) {
+        console.log(`[MASTODON-POST] Truncating at word boundary: ${lastSpace} chars`);
+        return text.substring(0, lastSpace).trim() + '...';
+      }
+      
+      // Fallback: Hard cut
+      console.log(`[MASTODON-POST] Fallback truncation at: ${targetLength} chars`);
+      return text.substring(0, targetLength).trim() + '...';
+    };
+
+    // Mastodon has a 500 character limit - smart truncate if needed
     const MASTODON_CHAR_LIMIT = 500;
     let statusText = message;
     if (statusText.length > MASTODON_CHAR_LIMIT) {
-      // Truncate and add ellipsis
-      statusText = statusText.substring(0, MASTODON_CHAR_LIMIT - 3) + '...';
-      console.log(`[MASTODON-POST] Truncated message from ${message.length} to ${statusText.length} chars`);
+      const originalLength = statusText.length;
+      statusText = smartTruncate(statusText, MASTODON_CHAR_LIMIT);
+      console.log(`[MASTODON-POST] Smart truncated message from ${originalLength} to ${statusText.length} chars`);
     }
 
     // Build form data for the status

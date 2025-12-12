@@ -51,13 +51,87 @@ async function postToFacebook(pageId: string, accessToken: string, message: stri
   }
 }
 
-// Post to Mastodon instance
+// Smart truncation function for natural breaks
+function smartTruncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  
+  const reservedForEllipsis = 3;
+  const targetLength = maxLength - reservedForEllipsis;
+  
+  if (targetLength <= 0) return text.substring(0, maxLength);
+  
+  // First try: Find last complete sentence
+  const sentenceEndPattern = /[.!?。！？]\s/g;
+  let lastSentenceEnd = -1;
+  let match;
+  
+  while ((match = sentenceEndPattern.exec(text)) !== null) {
+    const endPos = match.index + match[0].length;
+    if (endPos <= targetLength) {
+      lastSentenceEnd = endPos;
+    } else {
+      break;
+    }
+  }
+  
+  if (lastSentenceEnd > targetLength * 0.4) {
+    return text.substring(0, lastSentenceEnd).trim();
+  }
+  
+  // Second try: Break at special characters or emojis
+  const breakPointPattern = /[,;:\-–—|•·]\s|[\u{1F300}-\u{1F9FF}][\s]?/gu;
+  let lastBreakPoint = -1;
+  
+  while ((match = breakPointPattern.exec(text)) !== null) {
+    const endPos = match.index + match[0].length;
+    if (endPos <= targetLength) {
+      lastBreakPoint = endPos;
+    } else {
+      break;
+    }
+  }
+  
+  if (lastBreakPoint > targetLength * 0.5) {
+    return text.substring(0, lastBreakPoint).trim() + '...';
+  }
+  
+  // Third try: Break at last word boundary
+  const truncated = text.substring(0, targetLength);
+  const lastSpace = truncated.lastIndexOf(' ');
+  
+  if (lastSpace > targetLength * 0.6) {
+    return text.substring(0, lastSpace).trim() + '...';
+  }
+  
+  // Fallback: Hard cut
+  return text.substring(0, targetLength).trim() + '...';
+}
+
+// Platform character limits
+const PLATFORM_LIMITS: Record<string, number> = {
+  twitter: 280,
+  x: 280,
+  mastodon: 500,
+  telegram: 4096,
+  instagram: 2200,
+  facebook: 63206,
+  linkedin: 3000,
+  tiktok: 2200
+};
+
+// Post to Mastodon instance with smart truncation
 async function postToMastodon(instanceUrl: string, accessToken: string, message: string, imageUrl?: string) {
   console.log('[MASTODON-POST] Posting to instance:', instanceUrl);
   
+  // Apply smart truncation for Mastodon's 500 char limit
+  const truncatedMessage = smartTruncate(message, PLATFORM_LIMITS.mastodon);
+  if (truncatedMessage.length !== message.length) {
+    console.log(`[MASTODON-POST] Smart truncated from ${message.length} to ${truncatedMessage.length} chars`);
+  }
+  
   try {
     const formData = new FormData();
-    formData.append('status', message);
+    formData.append('status', truncatedMessage);
 
     // Upload media if provided
     let mediaId = null;
