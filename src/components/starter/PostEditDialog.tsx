@@ -166,10 +166,12 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       let localDate = post.scheduled_date || '';
       let localTime = post.scheduled_time || '';
       
-      if (post.scheduled_date && post.scheduled_time && post.user_timezone) {
+      if (post.scheduled_date && post.scheduled_time) {
         try {
+          // Use stored timezone or fallback to browser timezone
+          const timezone = post.user_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
           const utcDateTimeStr = `${post.scheduled_date}T${post.scheduled_time}:00Z`;
-          const localDateTime = toZonedTime(utcDateTimeStr, post.user_timezone);
+          const localDateTime = toZonedTime(utcDateTimeStr, timezone);
           localDate = format(localDateTime, 'yyyy-MM-dd');
           localTime = format(localDateTime, 'HH:mm');
         } catch (error) {
@@ -712,7 +714,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               <div>
                 <Label className="text-sm font-medium">Posted</Label>
                 <p className="text-sm text-gray-700">
-                  {format(new Date(post.posted_at), 'MMM dd, yyyy HH:mm')}
+                  {(() => {
+                    const postedDate = new Date(post.posted_at);
+                    const localPostedDate = toZonedTime(postedDate, userTimezone);
+                    return format(localPostedDate, 'MMM dd, yyyy HH:mm');
+                  })()}
                 </p>
               </div>
             )}
@@ -1188,6 +1194,18 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                   />
                 </div>
               </div>
+              {/* Show UTC time when schedule is set */}
+              {formData.scheduled_date && formData.scheduled_time && (
+                <p className="text-xs text-muted-foreground">
+                  {(() => {
+                    const localDateTimeStr = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
+                    const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
+                    const utcDateStr = utcDate.toISOString().split('T')[0];
+                    const utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5);
+                    return `Publishing at UTC: ${utcDateStr} ${utcTimeStr}`;
+                  })()}
+                </p>
+              )}
               {/* Reset Schedule button when schedule is set */}
               {formData.scheduled_date && formData.scheduled_time && !schedulingDisabled && (
                 <Button

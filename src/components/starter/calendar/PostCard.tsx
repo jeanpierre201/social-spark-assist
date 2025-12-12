@@ -1,8 +1,8 @@
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Calendar, CheckCircle, Clock, AlertTriangle, RefreshCw, Send } from 'lucide-react';
 import { format, isAfter, startOfMonth } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { Facebook, Instagram, Linkedin } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -126,6 +126,18 @@ const PostCard = ({ post, onClick, onDelete }: PostCardProps) => {
     onDelete(post);
   };
 
+  // Convert UTC scheduled time to user's local time
+  const getDisplayTime = () => {
+    if (!post.scheduledDate || !post.scheduledTime) return null;
+    const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const utcDateTimeStr = `${post.scheduledDate}T${post.scheduledTime}:00Z`;
+    const utcDate = new Date(utcDateTimeStr);
+    const localDate = toZonedTime(utcDate, userTimezone);
+    const localTime = format(localDate, 'HH:mm');
+    return { local: localTime, utc: post.scheduledTime };
+  };
+
+  const displayTime = getDisplayTime();
   const statusConfig = getStatusConfig(post.status || 'draft');
   const StatusIcon = statusConfig.icon;
 
@@ -181,9 +193,9 @@ const PostCard = ({ post, onClick, onDelete }: PostCardProps) => {
             )}
           </div>
           <div className="flex items-center space-x-1">
-            {post.scheduledTime && (
+            {displayTime && (
               <span className="text-sm text-gray-500 mr-2">
-                {post.scheduledTime} UTC
+                {displayTime.local} <span className="text-xs text-gray-400">(UTC: {displayTime.utc})</span>
               </span>
             )}
             {post.status !== 'published' && (
