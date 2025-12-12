@@ -177,12 +177,17 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         }
       }
       
+      // Normalize platform IDs: 'twitter' -> 'x' for UI consistency
+      const normalizedPlatforms = (post.social_platforms || []).map(p => 
+        p === 'twitter' ? 'x' : p
+      );
+      
       setFormData({
         caption: post.generated_caption,
         hashtags: post.generated_hashtags.join(' '),
         scheduled_date: localDate,
         scheduled_time: localTime,
-        social_platforms: post.social_platforms || [],
+        social_platforms: normalizedPlatforms,
         status: post.status,
         media_url: post.media_url || '',
         uploaded_image_url: post.uploaded_image_url || '',
