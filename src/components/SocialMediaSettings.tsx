@@ -25,10 +25,18 @@ const MastodonIcon = () => (
 );
 
 const SocialMediaSettings = () => {
-  const { accounts, metrics, loading, connectAccount, disconnectAccount, refreshMetrics } = useSocialAccounts();
+  const { accounts, metrics, loading, connectAccount, disconnectAccount, refreshMetrics, refetchAccounts } = useSocialAccounts();
   const { connectFacebook, isConnecting: isFacebookConnecting } = useFacebookAuth();
   const { connectTwitter, isConnecting: isTwitterConnecting } = useTwitterAuth();
   const { connectMastodon, isConnecting: isMastodonConnecting } = useMastodonAuth();
+
+  const handleMastodonConnect = async () => {
+    const result = await connectMastodon();
+    if (result.success) {
+      // Refetch accounts to update the UI
+      await refetchAccounts();
+    }
+  };
 
   const platforms = [
     { id: 'mastodon', name: 'Mastodon', icon: MastodonIcon, color: 'bg-purple-600', tier: 'Free' },
@@ -148,7 +156,7 @@ const SocialMediaSettings = () => {
                       } else if (platform.id === 'twitter' || platform.id === 'x') {
                         connectTwitter();
                       } else if (platform.id === 'mastodon') {
-                        connectMastodon();
+                        handleMastodonConnect();
                       } else {
                         connectAccount(platform.id);
                       }
