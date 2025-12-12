@@ -28,6 +28,7 @@ interface SocialAccountsContextType {
   connectAccount: (platform: string) => Promise<void>;
   disconnectAccount: (accountId: string) => Promise<void>;
   refreshMetrics: () => Promise<void>;
+  refetchAccounts: () => Promise<void>;
 }
 
 const SocialAccountsContext = createContext<SocialAccountsContextType | undefined>(undefined);
@@ -214,7 +215,8 @@ export const SocialAccountsProvider = ({ children }: { children: React.ReactNode
       loading,
       connectAccount,
       disconnectAccount,
-      refreshMetrics
+      refreshMetrics,
+      refetchAccounts: fetchAccounts
     }}>
       {children}
     </SocialAccountsContext.Provider>
