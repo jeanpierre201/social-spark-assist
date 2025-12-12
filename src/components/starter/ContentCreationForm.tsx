@@ -312,13 +312,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       };
 
       // Convert local time to UTC for storage
-      let utcDateStr = null;
-      let utcTimeStr = null;
+      let utcDateStr: string | null = null;
+      let utcTimeStr: string | null = null;
       if (scheduledDate && scheduledTime) {
         const localDateTimeStr = `${scheduledDate}T${scheduledTime}:00`;
         const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
-        utcDateStr = format(utcDate, 'yyyy-MM-dd');
-        utcTimeStr = format(utcDate, 'HH:mm');
+        // Use toISOString() to correctly extract UTC components
+        utcDateStr = utcDate.toISOString().split('T')[0]; // YYYY-MM-DD in UTC
+        utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5); // HH:MM in UTC
       }
 
       // Determine post status based on social media and scheduling
