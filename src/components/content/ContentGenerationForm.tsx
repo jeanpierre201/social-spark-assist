@@ -46,12 +46,12 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const [customImagePrompt, setCustomImagePrompt] = useState('');
 
   const socialPlatforms = [
+    { id: 'mastodon', name: 'Mastodon' },
     { id: 'facebook', name: 'Facebook' },
     { id: 'instagram', name: 'Instagram' },
-    { id: 'twitter', name: 'X (Twitter)' },
+    { id: 'x', name: 'X (Twitter)' },
     { id: 'linkedin', name: 'LinkedIn' },
-    { id: 'tiktok', name: 'TikTok' },
-    { id: 'snapchat', name: 'Snapchat' }
+    { id: 'tiktok', name: 'TikTok' }
   ];
 
   const handleGenerateContent = async () => {

@@ -1,12 +1,13 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import CalendarDisplay from './calendar/CalendarDisplay';
 import PostsList from './calendar/PostsList';
-import PostEditDialog from './calendar/PostEditDialog';
+// Use the main PostEditDialog which has proper platform selection and timezone handling
+import PostEditDialog from './PostEditDialog';
 
 interface GeneratedContent {
   caption: string;
@@ -14,6 +15,7 @@ interface GeneratedContent {
   image?: string;
 }
 
+// PostData interface for calendar display
 interface PostData {
   id?: string;
   industry: string;
@@ -23,18 +25,44 @@ interface PostData {
   scheduledTime?: string;
   generatedContent?: GeneratedContent;
   created_at?: string;
+  status?: string;
+  social_platforms?: string[];
+}
+
+// Full Post interface matching the PostEditDialog requirements
+interface Post {
+  id: string;
+  industry: string;
+  goal: string;
+  niche_info: string | null;
+  generated_caption: string;
+  generated_hashtags: string[];
+  media_url: string | null;
+  uploaded_image_url: string | null;
+  ai_generated_image_1_url: string | null;
+  ai_generated_image_2_url: string | null;
+  selected_image_type: string | null;
+  scheduled_date: string | null;
+  scheduled_time: string | null;
+  user_timezone: string | null;
+  social_platforms: string[];
+  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
+  created_at: string;
+  posted_at: string | null;
+  error_message?: string | null;
 }
 
 interface CalendarViewProps {
   posts: PostData[];
   setViewMode: (mode: 'list' | 'calendar') => void;
   setPosts?: (posts: PostData[]) => void;
+  onRefresh?: () => void;
 }
 
-const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
+const CalendarView = ({ posts, setViewMode, setPosts, onRefresh }: CalendarViewProps) => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingPost, setEditingPost] = useState<PostData | null>(null);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [postToDelete, setPostToDelete] = useState<PostData | null>(null);
   const { toast } = useToast();
 
@@ -45,10 +73,29 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
     );
   };
 
-  // Handle post click for editing
-  const handlePostClick = (post: PostData) => {
-    setEditingPost({ ...post });
-    setIsEditDialogOpen(true);
+  // Handle post click for editing - fetch full post data from DB
+  const handlePostClick = async (post: PostData) => {
+    if (!post.id) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('id', post.id)
+        .single();
+      
+      if (error) throw error;
+      
+      setSelectedPost(data as Post);
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      console.error('Error fetching post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load post details",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle post deletion
@@ -72,6 +119,9 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
       if (setPosts) {
         setPosts(posts.filter(post => post.id !== postToDelete.id));
       }
+      
+      // Trigger refresh if provided
+      onRefresh?.();
 
       toast({
         title: "Success",
@@ -89,49 +139,12 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
     }
   };
 
-  // Handle saving post edits
-  const handleSavePost = async () => {
-    if (!editingPost || !editingPost.id) return;
-
-    try {
-      const { error } = await supabase
-        .from('posts')
-        .update({
-          industry: editingPost.industry,
-          goal: editingPost.goal,
-          niche_info: editingPost.nicheInfo,
-          scheduled_date: editingPost.scheduledDate,
-          scheduled_time: editingPost.scheduledTime,
-          generated_caption: editingPost.generatedContent?.caption,
-          generated_hashtags: editingPost.generatedContent?.hashtags,
-          media_url: editingPost.generatedContent?.image
-        })
-        .eq('id', editingPost.id);
-
-      if (error) throw error;
-
-      // Update the posts list if setPosts is provided
-      if (setPosts) {
-        setPosts(posts.map(post => 
-          post.id === editingPost.id ? editingPost : post
-        ));
-      }
-
-      toast({
-        title: "Success",
-        description: "Post updated successfully",
-      });
-
-      setIsEditDialogOpen(false);
-      setEditingPost(null);
-    } catch (error) {
-      console.error('Error updating post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update post",
-        variant: "destructive",
-      });
-    }
+  // Handle post updated callback
+  const handlePostUpdated = () => {
+    setIsEditDialogOpen(false);
+    setSelectedPost(null);
+    // Trigger refresh if provided
+    onRefresh?.();
   };
 
   const selectedDatePosts = selectedDate ? getPostsForDate(selectedDate) : [];
@@ -159,12 +172,12 @@ const CalendarView = ({ posts, setViewMode, setPosts }: CalendarViewProps) => {
         />
       </div>
 
+      {/* Use the main PostEditDialog with proper props */}
       <PostEditDialog
-        isOpen={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
-        editingPost={editingPost}
-        onPostChange={setEditingPost}
-        onSave={handleSavePost}
+        post={selectedPost}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        onPostUpdated={handlePostUpdated}
       />
 
       {/* Delete Confirmation Dialog */}

@@ -219,12 +219,15 @@ Deno.serve(async (req) => {
     }
 
     // Query for scheduled AND rescheduled posts that are due
+    // We need to check: (scheduled_date < currentDate) OR (scheduled_date = currentDate AND scheduled_time <= currentTime)
+    // Using a combined datetime comparison is more reliable
+    const currentDateTime = `${currentDate} ${currentTime}`;
+    
     const { data: scheduledPosts, error: queryError } = await supabaseClient
       .from('posts')
       .select('*')
       .in('status', ['scheduled', 'rescheduled'])
-      .lte('scheduled_date', currentDate)
-      .lte('scheduled_time', currentTime);
+      .or(`scheduled_date.lt.${currentDate},and(scheduled_date.eq.${currentDate},scheduled_time.lte.${currentTime})`);
 
     if (queryError) {
       console.error('[PUBLISH-SCHEDULED-POSTS] Error querying posts:', queryError);
