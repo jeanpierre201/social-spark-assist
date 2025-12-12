@@ -93,3 +93,9 @@ verify_jwt = false
 
 [functions.publish-scheduled-posts]
 verify_jwt = false
+
+[functions.mastodon-verify]
+verify_jwt = true
+
+[functions.mastodon-post]
+verify_jwt = true
