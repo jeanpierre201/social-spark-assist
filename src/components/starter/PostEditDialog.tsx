@@ -6,15 +6,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useManualPublish } from '@/hooks/useManualPublish';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2, RotateCcw, Sparkles, Palette } from 'lucide-react';
+import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2, RotateCcw, Sparkles, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
@@ -53,7 +54,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const { user } = useAuth();
   const { subscriptionEnd, subscriptionTier } = useSubscription();
   const { accounts } = useSocialAccounts();
-  
+  const { publishToMastodon, publishToFacebook, publishToTwitter, isPublishingPost } = useManualPublish();
   // Get subscription status based on tier
   const starterStatus = useStarterSubscriptionStatus();
   const proStatus = useProSubscriptionStatus();
@@ -127,12 +128,13 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   }, [userTimezone]);
 
   const socialPlatforms = [
-    { id: 'facebook', name: 'Facebook' },
-    { id: 'instagram', name: 'Instagram' },
-    { id: 'twitter', name: 'X (Twitter)' },
-    { id: 'linkedin', name: 'LinkedIn' },
-    { id: 'tiktok', name: 'TikTok' },
-    { id: 'snapchat', name: 'Snapchat' }
+    { id: 'mastodon', name: 'Mastodon', tier: 'Free' },
+    { id: 'telegram', name: 'Telegram', tier: 'Free', comingSoon: true },
+    { id: 'facebook', name: 'Facebook', tier: 'Starter' },
+    { id: 'instagram', name: 'Instagram', tier: 'Starter' },
+    { id: 'tiktok', name: 'TikTok', tier: 'Starter', beta: true },
+    { id: 'linkedin', name: 'LinkedIn', tier: 'Pro' },
+    { id: 'x', name: 'X (Twitter)', tier: 'Pro', comingSoon: true }
   ];
 
   const isEditable = (post?.status === 'draft' || post?.status === 'ready' || post?.status === 'scheduled' || post?.status === 'rescheduled' || post?.status === 'failed') && !isSubscriptionExpired;
@@ -1018,44 +1020,125 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
             <div>
               <Label className="text-sm font-medium mb-3 block">Social Media Platforms</Label>
               <div className="grid grid-cols-2 gap-3">
-                {socialPlatforms.map((platform) => {
-                  const isConnected = accounts.some(acc => acc.platform === platform.id);
-                  return (
-                    <div key={platform.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={platform.id}
-                        checked={formData.social_platforms.includes(platform.id)}
-                        disabled={!isConnected}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setFormData(prev => ({
-                              ...prev,
-                              social_platforms: [...prev.social_platforms, platform.id]
-                            }));
-                          } else {
-                            const newPlatforms = formData.social_platforms.filter(p => p !== platform.id);
-                            setFormData(prev => ({
-                              ...prev,
-                              social_platforms: newPlatforms,
-                              // Clear schedule if no platforms remain
-                              ...(newPlatforms.length === 0 && { scheduled_date: '', scheduled_time: '' })
-                            }));
-                          }
-                        }}
-                      />
-                      <Label 
-                        htmlFor={platform.id} 
-                        className={`text-sm ${!isConnected ? 'text-gray-400' : ''}`}
-                      >
-                        {platform.name} {!isConnected && '(Not connected)'}
-                      </Label>
-                    </div>
-                  );
-                })}
+                <TooltipProvider>
+                  {socialPlatforms.map((platform) => {
+                    const isConnected = accounts.some(acc => acc.platform === platform.id && acc.is_active);
+                    const isComingSoon = platform.comingSoon;
+                    const isBeta = platform.beta;
+                    const isDisabled = !isConnected || isComingSoon;
+                    
+                    return (
+                      <div key={platform.id} className="flex items-center space-x-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center space-x-2">
+                              <Checkbox
+                                id={platform.id}
+                                checked={formData.social_platforms.includes(platform.id)}
+                                disabled={isDisabled}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      social_platforms: [...prev.social_platforms, platform.id]
+                                    }));
+                                  } else {
+                                    const newPlatforms = formData.social_platforms.filter(p => p !== platform.id);
+                                    setFormData(prev => ({
+                                      ...prev,
+                                      social_platforms: newPlatforms,
+                                      // Clear schedule if no platforms remain
+                                      ...(newPlatforms.length === 0 && { scheduled_date: '', scheduled_time: '' })
+                                    }));
+                                  }
+                                }}
+                              />
+                              <Label 
+                                htmlFor={platform.id} 
+                                className={`text-sm flex items-center gap-1.5 ${isDisabled ? 'text-muted-foreground' : ''}`}
+                              >
+                                {platform.name}
+                                <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                  {platform.tier}
+                                </Badge>
+                                {isBeta && (
+                                  <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-amber-100 text-amber-800">
+                                    β
+                                  </Badge>
+                                )}
+                                {isComingSoon && (
+                                  <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                    Soon
+                                  </Badge>
+                                )}
+                              </Label>
+                            </div>
+                          </TooltipTrigger>
+                          {isDisabled && (
+                            <TooltipContent>
+                              {isComingSoon ? 'Coming soon' : 'Connect this account in Social Settings'}
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </div>
+                    );
+                  })}
+                </TooltipProvider>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
                 Connect <Link to="/dashboard" className="text-primary hover:underline">Social Accounts</Link> in the Social Media Accounts section to enable posting.
               </p>
+              
+              {/* Post Now Button */}
+              {formData.social_platforms.length > 0 && post?.status !== 'published' && (
+                <div className="mt-4 pt-4 border-t">
+                  <Button 
+                    onClick={async () => {
+                      if (!post) return;
+                      
+                      const selectedPlatforms = formData.social_platforms;
+                      const message = formData.caption + (formData.hashtags ? '\n\n' + formData.hashtags : '');
+                      const imageUrl = formData.media_url || undefined;
+                      
+                      for (const platformId of selectedPlatforms) {
+                        if (platformId === 'mastodon') {
+                          const mastodonAccount = accounts.find(acc => acc.platform === 'mastodon' && acc.is_active);
+                          if (mastodonAccount) {
+                            await publishToMastodon(post.id, message, imageUrl);
+                          }
+                        } else if (platformId === 'facebook') {
+                          const fbAccount = accounts.find(acc => acc.platform === 'facebook' && acc.is_active);
+                          if (fbAccount) {
+                            await publishToFacebook(post.id, fbAccount.id, message, imageUrl);
+                          }
+                        } else if (platformId === 'twitter' || platformId === 'x') {
+                          const twitterAccount = accounts.find(acc => (acc.platform === 'twitter' || acc.platform === 'x') && acc.is_active);
+                          if (twitterAccount) {
+                            await publishToTwitter(post.id, twitterAccount.id, message);
+                          }
+                        }
+                      }
+                      
+                      onPostUpdated();
+                    }}
+                    disabled={isPublishingPost(post?.id || '')}
+                    className="w-full"
+                    variant="default"
+                  >
+                    {isPublishingPost(post?.id || '') ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Publishing...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Post Now to {formData.social_platforms.length} platform{formData.social_platforms.length > 1 ? 's' : ''}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
             </div>
           )}
 

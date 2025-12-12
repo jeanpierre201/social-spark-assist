@@ -34,6 +34,85 @@ export const useManualPublish = () => {
   const [publishingPosts, setPublishingPosts] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
+  const publishToMastodon = async (postId: string, message: string, imageUrl?: string) => {
+    setPublishingPosts(prev => new Set(prev).add(postId));
+
+    try {
+      console.log('[MANUAL-PUBLISH] Publishing to Mastodon:', { postId });
+
+      const { data, error } = await supabase.functions.invoke('mastodon-post', {
+        body: {
+          message,
+          postId,
+          mediaUrl: imageUrl
+        }
+      });
+
+      if (error) {
+        console.error('[MANUAL-PUBLISH] Mastodon error:', error);
+        throw error;
+      }
+
+      // Check for error in response data
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      console.log('[MANUAL-PUBLISH] Mastodon success:', data);
+
+      // Update post status to published
+      const { error: updateError } = await supabase
+        .from('posts')
+        .update({ 
+          status: 'published',
+          posted_at: new Date().toISOString(),
+          error_message: null
+        })
+        .eq('id', postId);
+
+      if (updateError) {
+        console.error('[MANUAL-PUBLISH] Failed to update post status:', updateError);
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Post published to Mastodon successfully!',
+      });
+
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('[MANUAL-PUBLISH] Mastodon failed:', error);
+      
+      const parsedError = parseErrorResponse(error);
+      const errorMessage = parsedError.tip 
+        ? `${parsedError.message}. ${parsedError.tip}`
+        : parsedError.message;
+
+      // Update post with detailed error message
+      await supabase
+        .from('posts')
+        .update({ 
+          status: 'failed',
+          error_message: errorMessage
+        })
+        .eq('id', postId);
+
+      toast({
+        title: 'Mastodon Post Failed',
+        description: parsedError.message,
+        variant: 'destructive',
+      });
+
+      return { success: false, error: errorMessage };
+    } finally {
+      setPublishingPosts(prev => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  };
+
   const publishToFacebook = async (postId: string, accountId: string, message: string, imageUrl?: string) => {
     setPublishingPosts(prev => new Set(prev).add(postId));
 
@@ -204,6 +283,7 @@ export const useManualPublish = () => {
   const isPublishingPost = (postId: string) => publishingPosts.has(postId);
 
   return {
+    publishToMastodon,
     publishToFacebook,
     publishToTwitter,
     isPublishingPost
