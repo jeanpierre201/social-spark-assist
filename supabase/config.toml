@@ -99,3 +99,9 @@ verify_jwt = true
 
 [functions.mastodon-post]
 verify_jwt = true
+
+[functions.mastodon-oauth]
+verify_jwt = false
+
+[functions.twitter-post]
+verify_jwt = true

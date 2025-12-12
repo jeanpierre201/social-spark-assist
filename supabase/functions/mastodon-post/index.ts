@@ -13,13 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    const MASTODON_INSTANCE_URL = Deno.env.get('MASTODON_INSTANCE_URL');
-    const MASTODON_ACCESS_TOKEN = Deno.env.get('MASTODON_ACCESS_TOKEN');
-
-    if (!MASTODON_INSTANCE_URL || !MASTODON_ACCESS_TOKEN) {
-      throw new Error('Missing Mastodon configuration');
-    }
-
     // Verify user authentication
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -38,13 +31,66 @@ serve(async (req) => {
       throw new Error('Unauthorized');
     }
 
-    const { message, postId, mediaUrl } = await req.json();
+    const { message, postId, mediaUrl, accountId } = await req.json();
 
     if (!message) {
       throw new Error('Message is required');
     }
 
-    console.log(`Posting to Mastodon for user ${user.id}:`, message.substring(0, 50) + '...');
+    console.log(`[MASTODON-POST] Posting for user ${user.id}:`, message.substring(0, 50) + '...');
+
+    // Get user's Mastodon account
+    let mastodonAccount;
+    if (accountId) {
+      const { data, error } = await supabase
+        .from('social_accounts')
+        .select('*')
+        .eq('id', accountId)
+        .eq('user_id', user.id)
+        .eq('platform', 'mastodon')
+        .eq('is_active', true)
+        .single();
+      
+      if (error || !data) {
+        throw new Error('Mastodon account not found');
+      }
+      mastodonAccount = data;
+    } else {
+      const { data, error } = await supabase
+        .from('social_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('platform', 'mastodon')
+        .eq('is_active', true)
+        .single();
+      
+      if (error || !data) {
+        throw new Error('No Mastodon account connected. Please connect your Mastodon account first.');
+      }
+      mastodonAccount = data;
+    }
+
+    // Get access token from vault
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('social_tokens_vault')
+      .select('encrypted_access_token, encrypted_refresh_token')
+      .eq('social_account_id', mastodonAccount.id)
+      .single();
+
+    if (tokenError || !tokenData?.encrypted_access_token) {
+      throw new Error('Mastodon access token not found. Please reconnect your account.');
+    }
+
+    const accessToken = tokenData.encrypted_access_token;
+    // Instance URL is stored in encrypted_refresh_token field or account_data
+    const instanceUrl = tokenData.encrypted_refresh_token || 
+                        (mastodonAccount.account_data as any)?.instance_url;
+    
+    if (!instanceUrl) {
+      throw new Error('Mastodon instance URL not found. Please reconnect your account.');
+    }
+
+    console.log(`[MASTODON-POST] Using account @${mastodonAccount.username} on ${instanceUrl}`);
 
     // Build form data for the status
     const formData = new FormData();
@@ -53,7 +99,7 @@ serve(async (req) => {
     // If there's a media URL, upload it first
     let mediaId = null;
     if (mediaUrl) {
-      console.log('Uploading media to Mastodon:', mediaUrl);
+      console.log('[MASTODON-POST] Uploading media:', mediaUrl);
       
       // Fetch the image
       const imageResponse = await fetch(mediaUrl);
@@ -62,21 +108,21 @@ serve(async (req) => {
       const mediaFormData = new FormData();
       mediaFormData.append('file', imageBlob, 'image.jpg');
       
-      const mediaResponse = await fetch(`${MASTODON_INSTANCE_URL}/api/v2/media`, {
+      const mediaResponse = await fetch(`${instanceUrl}/api/v2/media`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${MASTODON_ACCESS_TOKEN}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: mediaFormData,
       });
 
       if (!mediaResponse.ok) {
         const errorText = await mediaResponse.text();
-        console.error('Failed to upload media:', errorText);
+        console.error('[MASTODON-POST] Failed to upload media:', errorText);
       } else {
         const mediaData = await mediaResponse.json();
         mediaId = mediaData.id;
-        console.log('Media uploaded successfully, ID:', mediaId);
+        console.log('[MASTODON-POST] Media uploaded successfully, ID:', mediaId);
       }
     }
 
@@ -86,22 +132,22 @@ serve(async (req) => {
     }
 
     // Post the status
-    const response = await fetch(`${MASTODON_INSTANCE_URL}/api/v1/statuses`, {
+    const response = await fetch(`${instanceUrl}/api/v1/statuses`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${MASTODON_ACCESS_TOKEN}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
       body: formData,
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Mastodon API error:', errorText);
+      console.error('[MASTODON-POST] API error:', errorText);
       throw new Error(`Failed to post to Mastodon: ${response.status} ${errorText}`);
     }
 
     const result = await response.json();
-    console.log('Posted successfully to Mastodon, status ID:', result.id);
+    console.log('[MASTODON-POST] Posted successfully, status ID:', result.id);
 
     // Update post status if postId provided
     if (postId) {
@@ -115,7 +161,7 @@ serve(async (req) => {
         .eq('id', postId);
 
       if (updateError) {
-        console.error('Failed to update post status:', updateError);
+        console.error('[MASTODON-POST] Failed to update post status:', updateError);
       }
     }
 
@@ -129,7 +175,7 @@ serve(async (req) => {
     );
 
   } catch (error: any) {
-    console.error('Error posting to Mastodon:', error);
+    console.error('[MASTODON-POST] Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 

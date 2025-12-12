@@ -36,7 +36,7 @@ import TestUtilityPage from "./pages/TestUtilityPage";
 import StarterPlanTestPage from "./pages/StarterPlanTestPage";
 import LogoPreviewPage from "./pages/LogoPreviewPage";
 import TwitterCallbackPage from "./pages/TwitterCallbackPage";
-
+import MastodonCallbackPage from "./pages/MastodonCallbackPage";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -61,6 +61,7 @@ const App = () => (
                   <Route path="/data-deletion" element={<DataDeletionPage />} />
                   <Route path="/logo-preview" element={<LogoPreviewPage />} />
                   <Route path="/auth/twitter/callback" element={<TwitterCallbackPage />} />
+                  <Route path="/auth/mastodon/callback" element={<MastodonCallbackPage />} />
                   
                   {/* Admin Routes */}
                   <Route path="/admin/login" element={<AdminLoginPage />} />
