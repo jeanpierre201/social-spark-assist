@@ -75,23 +75,47 @@ export const useMastodonAuth = (onSuccess?: () => void) => {
   }, [toast, onSuccess]);
 
   const connectMastodon = useCallback(async (instanceUrl?: string) => {
+    // Prompt for instance URL BEFORE any async operations
+    const instance = instanceUrl || prompt(
+      'Enter your Mastodon instance URL (e.g., mastodon.social, fosstodon.org):',
+      'mastodon.social'
+    );
+    
+    if (!instance) {
+      return { success: false, error: 'Instance URL is required' };
+    }
+
+    // Open popup IMMEDIATELY on user action to avoid browser blocking
+    const width = 600;
+    const height = 700;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    
+    const popup = window.open(
+      'about:blank',
+      'mastodon-oauth',
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
+    );
+
+    if (!popup) {
+      toast({
+        title: 'Popup Blocked',
+        description: 'Please allow popups for this site and try again.',
+        variant: 'destructive',
+      });
+      return { success: false, error: 'Popup was blocked' };
+    }
+
+    // Show loading state in popup
+    popup.document.write('<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:system-ui;"><p>Connecting to Mastodon...</p></body></html>');
+
     setIsConnecting(true);
     
     try {
-      // Prompt for instance URL if not provided
-      const instance = instanceUrl || prompt(
-        'Enter your Mastodon instance URL (e.g., mastodon.social, fosstodon.org):',
-        'mastodon.social'
-      );
-      
-      if (!instance) {
-        setIsConnecting(false);
-        return { success: false, error: 'Instance URL is required' };
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session?.access_token) {
+        popup.close();
         throw new Error('You must be logged in to connect Mastodon');
       }
 
@@ -106,28 +130,16 @@ export const useMastodonAuth = (onSuccess?: () => void) => {
       });
 
       if (error) {
+        popup.close();
         throw new Error(error.message || 'Failed to start Mastodon OAuth');
       }
 
       if (data?.authUrl) {
-        // Open popup for OAuth
-        const width = 600;
-        const height = 700;
-        const left = window.screenX + (window.outerWidth - width) / 2;
-        const top = window.screenY + (window.outerHeight - height) / 2;
-        
-        const popup = window.open(
-          data.authUrl,
-          'mastodon-oauth',
-          `width=${width},height=${height},left=${left},top=${top},scrollbars=yes`
-        );
-
-        if (!popup) {
-          throw new Error('Popup was blocked. Please allow popups for this site.');
-        }
-
+        // Navigate popup to auth URL
+        popup.location.href = data.authUrl;
         return { success: true };
       } else {
+        popup.close();
         throw new Error('No authorization URL received');
       }
     } catch (error: any) {
