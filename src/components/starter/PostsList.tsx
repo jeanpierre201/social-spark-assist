@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
 import { useManualPublish } from '@/hooks/useManualPublish';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useMastodonPublish } from '@/hooks/useMastodonPublish';
 
 interface Post {
   id: string;
@@ -43,16 +44,53 @@ interface PostsListProps {
 const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreatePosts }: PostsListProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { publishToFacebook, publishToTwitter, isPublishingPost } = useManualPublish();
+  const { publishToFacebook, publishToTwitter, publishToMastodon, isPublishingPost } = useManualPublish();
   const { accounts } = useSocialAccounts();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [postToDelete, setPostToDelete] = useState<Post | null>(null);
   const postsPerPage = 10;
+
+  // Real-time subscription for post status updates
+  useEffect(() => {
+    if (!user) return;
+    
+    const channel = supabase
+      .channel('posts-status-changes')
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'posts',
+          filter: `user_id=eq.${user.id}`
+        }, 
+        (payload) => {
+          // Update single post in local state instead of full refresh
+          setPosts(prev => prev.map(p => 
+            p.id === payload.new.id ? { ...p, ...payload.new as Post } : p
+          ));
+        }
+      )
+      .subscribe();
+      
+    return () => { 
+      supabase.removeChannel(channel); 
+    };
+  }, [user]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
+    toast({
+      description: "Posts refreshed",
+    });
+  };
 
   useEffect(() => {
     if (user) {
@@ -264,19 +302,24 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     const facebookAccount = selectedPlatforms.includes('facebook') 
       ? accounts.find(acc => acc.platform === 'facebook' && acc.is_active)
       : null;
-    const twitterAccount = selectedPlatforms.includes('twitter')
+    const twitterAccount = (selectedPlatforms.includes('twitter') || selectedPlatforms.includes('x'))
       ? accounts.find(acc => acc.platform === 'twitter' && acc.is_active)
+      : null;
+    const mastodonAccount = selectedPlatforms.includes('mastodon')
+      ? accounts.find(acc => acc.platform === 'mastodon' && acc.is_active)
       : null;
     
     // Check if at least one selected platform has a connected account
     const hasConnectedAccount = 
       (selectedPlatforms.includes('facebook') && facebookAccount) ||
-      (selectedPlatforms.includes('twitter') && twitterAccount);
+      ((selectedPlatforms.includes('twitter') || selectedPlatforms.includes('x')) && twitterAccount) ||
+      (selectedPlatforms.includes('mastodon') && mastodonAccount);
     
     if (!hasConnectedAccount) {
       const missingPlatforms = selectedPlatforms.filter(p => {
         if (p === 'facebook') return !facebookAccount;
-        if (p === 'twitter') return !twitterAccount;
+        if (p === 'twitter' || p === 'x') return !twitterAccount;
+        if (p === 'mastodon') return !mastodonAccount;
         return true;
       });
       toast({
@@ -301,13 +344,22 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
       results.push({ platform: 'Facebook', ...result });
     }
 
-    if (twitterAccount && selectedPlatforms.includes('twitter')) {
+    if (twitterAccount && (selectedPlatforms.includes('twitter') || selectedPlatforms.includes('x'))) {
       const result = await publishToTwitter(
         post.id,
         twitterAccount.id,
         message
       );
       results.push({ platform: 'Twitter', ...result });
+    }
+
+    if (mastodonAccount && selectedPlatforms.includes('mastodon')) {
+      const result = await publishToMastodon(
+        post.id,
+        message,
+        post.media_url || undefined
+      );
+      results.push({ platform: 'Mastodon', ...result });
     }
 
     // Refresh posts to show updated status/errors
@@ -365,6 +417,15 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
               <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="shrink-0"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
 
         {/* Posts List */}

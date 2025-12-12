@@ -1,8 +1,10 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { isSameDay } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import CalendarDisplay from './calendar/CalendarDisplay';
 import PostsList from './calendar/PostsList';
@@ -64,7 +66,17 @@ const CalendarView = ({ posts, setViewMode, setPosts, onRefresh }: CalendarViewP
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [postToDelete, setPostToDelete] = useState<PostData | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const { toast } = useToast();
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await onRefresh?.();
+    setRefreshing(false);
+    toast({
+      description: "Calendar refreshed",
+    });
+  };
 
   // Get posts for a specific date
   const getPostsForDate = (date: Date) => {
@@ -153,6 +165,15 @@ const CalendarView = ({ posts, setViewMode, setPosts, onRefresh }: CalendarViewP
     <div className="space-y-6 w-full">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-foreground">Calendar View</h3>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       <div className="w-full max-w-4xl mx-auto">

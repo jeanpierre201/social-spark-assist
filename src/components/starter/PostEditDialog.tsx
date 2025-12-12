@@ -567,14 +567,15 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       setLoading(true);
       
       // Convert local time to UTC for storage
-      let utcDateStr = formData.scheduled_date;
-      let utcTimeStr = formData.scheduled_time;
+      let utcDateStr: string | null = formData.scheduled_date;
+      let utcTimeStr: string | null = formData.scheduled_time;
       
       if (formData.scheduled_date && formData.scheduled_time) {
         const localDateTimeStr = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
         const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
-        utcDateStr = format(utcDate, 'yyyy-MM-dd');
-        utcTimeStr = format(utcDate, 'HH:mm');
+        // Use toISOString() to correctly extract UTC components
+        utcDateStr = utcDate.toISOString().split('T')[0]; // YYYY-MM-DD in UTC
+        utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5); // HH:MM in UTC
       }
       
       // Determine status based on social media and scheduling
