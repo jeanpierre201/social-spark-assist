@@ -543,7 +543,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
               />
             </div>
             <div>
-              <Label htmlFor="time">Scheduled Time (UTC)</Label>
+              <Label htmlFor="time">Scheduled Time</Label>
               <Input
                 id="time"
                 type="time"
@@ -553,6 +553,11 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
                   scheduledTime: e.target.value
                 })}
               />
+              {editingPost.scheduledDate && editingPost.scheduledTime && (
+                <p className="text-xs text-gray-500 mt-1">
+                  UTC: {editingPost.scheduledTime} (this is the time when the post will be published)
+                </p>
+              )}
             </div>
           </div>
 

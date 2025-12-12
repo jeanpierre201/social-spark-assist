@@ -12,6 +12,7 @@ import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2,
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import { useManualPublish } from '@/hooks/useManualPublish';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useMastodonPublish } from '@/hooks/useMastodonPublish';
@@ -500,14 +501,28 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                     </div>
                   )}
                   
-                  <div className="flex items-center gap-4 text-xs text-gray-500">
+                  <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
                     <span>Created: {format(new Date(post.created_at), 'MMM dd, yyyy')}</span>
-                    {post.scheduled_date && (
-                      <span>Scheduled: {format(new Date(post.scheduled_date), 'MMM dd, yyyy')} at {post.scheduled_time || '00:00'}</span>
-                    )}
-                    {post.posted_at && (
-                      <span>Posted: {format(new Date(post.posted_at), 'MMM dd, yyyy')}</span>
-                    )}
+                    {post.scheduled_date && post.scheduled_time && (() => {
+                      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                      const utcDateTimeStr = `${post.scheduled_date}T${post.scheduled_time}:00Z`;
+                      const utcDate = new Date(utcDateTimeStr);
+                      const localDate = toZonedTime(utcDate, userTimezone);
+                      return (
+                        <span>
+                          Scheduled: {format(localDate, 'MMM dd, yyyy')} at {format(localDate, 'HH:mm')}{' '}
+                          <span className="text-gray-400">(UTC: {post.scheduled_time})</span>
+                        </span>
+                      );
+                    })()}
+                    {post.posted_at && (() => {
+                      const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                      const postedDate = new Date(post.posted_at);
+                      const localPostedDate = toZonedTime(postedDate, userTimezone);
+                      return (
+                        <span>Posted: {format(localPostedDate, 'MMM dd, yyyy')} at {format(localPostedDate, 'HH:mm')}</span>
+                      );
+                    })()}
                   </div>
                 </div>
                 
