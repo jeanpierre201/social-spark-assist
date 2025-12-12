@@ -3,11 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Save, X, Upload, ImageIcon, Wand2, Edit, Trash2, RotateCcw, CheckCircle, Layers } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Save, X, Upload, ImageIcon, Wand2, Edit, Trash2, RotateCcw, CheckCircle, Layers, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePostsManager } from '@/hooks/usePostsManager';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { getLowestLimit, getLimitingPlatform, hasDifferentLimits, getCharacterCountColor, PLATFORM_CHARACTER_LIMITS } from '@/config/characterLimits';
 
 interface GeneratedContent {
   caption: string;
@@ -33,6 +35,7 @@ interface PostData {
   scheduledTime?: string;
   generatedContent?: GeneratedContent;
   created_at?: string;
+  social_platforms?: string[];
 }
 
 interface PostEditDialogProps {
@@ -553,20 +556,53 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             </div>
           </div>
 
+          {/* Caption with Character Counter */}
           <div>
             <Label htmlFor="caption">Caption</Label>
-            <Textarea
-              id="caption"
-              rows={4}
-              value={content?.caption || ''}
-              onChange={(e) => onPostChange({
-                ...editingPost,
-                generatedContent: {
-                  ...content!,
-                  caption: e.target.value
-                }
-              })}
-            />
+            {(() => {
+              const platforms = editingPost.social_platforms || [];
+              const captionLength = (content?.caption || '').length + (content?.hashtags?.join(' ').length || 0);
+              const limitInfo = getLimitingPlatform(platforms);
+              const limit = limitInfo?.limit || 63206;
+              const colorClass = getCharacterCountColor(captionLength, limit);
+              const showWarning = hasDifferentLimits(platforms);
+              
+              return (
+                <>
+                  {showWarning && (
+                    <Alert className="mb-2 py-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Selected platforms have different character limits. Content will be automatically truncated for platforms with lower limits.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  <Textarea
+                    id="caption"
+                    rows={4}
+                    value={content?.caption || ''}
+                    onChange={(e) => onPostChange({
+                      ...editingPost,
+                      generatedContent: {
+                        ...content!,
+                        caption: e.target.value
+                      }
+                    })}
+                  />
+                  <div className="flex justify-between items-center mt-1">
+                    <span className={`text-xs ${colorClass}`}>
+                      {captionLength} / {limit} characters
+                      {limitInfo && platforms.length > 1 && (
+                        <span className="text-gray-500 ml-1">(limited by {limitInfo.name})</span>
+                      )}
+                    </span>
+                    {captionLength > limit && (
+                      <span className="text-xs text-red-600">Content will be truncated</span>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           <div>

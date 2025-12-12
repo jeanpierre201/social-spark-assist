@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import { Calendar as CalendarIcon, CheckCircle, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { isSameDay } from 'date-fns';
 
 interface GeneratedContent {
@@ -19,6 +19,7 @@ interface PostData {
   scheduledTime?: string;
   generatedContent?: GeneratedContent;
   created_at?: string;
+  status?: string;
 }
 
 interface CalendarDisplayProps {
@@ -26,6 +27,19 @@ interface CalendarDisplayProps {
   selectedDate: Date | undefined;
   onDateSelect: (date: Date | undefined) => void;
 }
+
+// Get status dot color
+const getStatusDotColor = (status: string) => {
+  switch (status) {
+    case 'draft': return 'bg-gray-400';
+    case 'ready': return 'bg-purple-500';
+    case 'scheduled': return 'bg-blue-500';
+    case 'published': return 'bg-green-500';
+    case 'failed': return 'bg-red-500';
+    case 'rescheduled': return 'bg-yellow-500';
+    default: return 'bg-gray-400';
+  }
+};
 
 const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayProps) => {
   // Get posts for a specific date
@@ -42,16 +56,32 @@ const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayP
       .map(post => new Date(post.scheduledDate!));
   };
 
-  // Custom day content to show post indicators
+  // Custom day content to show post indicators with status colors
   const renderDayContent = (date: Date) => {
     const dayPosts = getPostsForDate(date);
+    
+    // Group posts by status for display
+    const statusCounts: Record<string, number> = {};
+    dayPosts.forEach(post => {
+      const status = post.status || 'draft';
+      statusCounts[status] = (statusCounts[status] || 0) + 1;
+    });
     
     return (
       <div className="w-full h-full relative flex flex-col items-center justify-center">
         <span className="text-sm font-medium">{date.getDate()}</span>
         {dayPosts.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 flex justify-center">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+          <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-0.5">
+            {Object.entries(statusCounts).slice(0, 4).map(([status, count], idx) => (
+              <div
+                key={idx}
+                className={`w-2 h-2 rounded-full ${getStatusDotColor(status)}`}
+                title={`${count} ${status}`}
+              />
+            ))}
+            {Object.keys(statusCounts).length > 4 && (
+              <div className="w-2 h-2 rounded-full bg-gray-300" title="More posts" />
+            )}
           </div>
         )}
       </div>
@@ -88,7 +118,7 @@ const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayP
             }}
             modifiersStyles={{
               hasPost: { 
-                backgroundColor: '#e0f2fe', 
+                backgroundColor: '#f0f9ff', 
                 fontWeight: 'bold'
               }
             }}
@@ -97,12 +127,32 @@ const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayP
             }}
           />
         </div>
-        <div className="mt-4 text-sm text-gray-600 flex justify-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-blue-100 rounded border"></div>
-            <span>Days with scheduled posts</span>
-            <div className="w-2 h-2 bg-blue-500 rounded-full ml-4"></div>
-            <span>Post indicator</span>
+        <div className="mt-4 text-xs text-gray-600">
+          <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-gray-400 rounded-full"></div>
+              <span>Draft</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-purple-500 rounded-full"></div>
+              <span>Ready</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-blue-500 rounded-full"></div>
+              <span>Scheduled</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+              <span>Published</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+              <span>Failed</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-yellow-500 rounded-full"></div>
+              <span>Retrying</span>
+            </div>
           </div>
         </div>
       </CardContent>
