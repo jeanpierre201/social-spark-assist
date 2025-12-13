@@ -10,6 +10,7 @@ import DashboardHeader from './dashboard/DashboardHeader';
 import QuickStats from './dashboard/QuickStats';
 import ActionCards from './dashboard/ActionCards';
 import UpgradePrompt from './dashboard/UpgradePrompt';
+import FreeSocialMediaSettings from './FreeSocialMediaSettings';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -199,6 +200,9 @@ const Dashboard = () => {
                   else if (tab === 'team') navigate('/dashboard/team');
                 }}
               />
+              
+              {/* Social accounts for free users - only Mastodon & Telegram */}
+              <FreeSocialMediaSettings />
               
               <UpgradePrompt />
             </>
