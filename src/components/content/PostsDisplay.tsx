@@ -152,15 +152,21 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
                   </CardTitle>
                   <CardDescription className="space-y-1">
                     {post.created_at ? (
-                      <>
-                        <div>Created on {format(new Date(post.created_at), 'MMM dd, yyyy')}</div>
-                        {isFreeUser && timeRemaining && (
-                          <div className={`flex items-center ${expiringSoon ? 'text-orange-600 font-semibold' : 'text-blue-600'}`}>
-                            <Clock className="h-3 w-3 mr-1" />
-                            {timeRemaining}
-                          </div>
-                        )}
-                      </>
+                      (() => {
+                        const created = new Date(post.created_at);
+                        if (isNaN(created.getTime())) return <div>Created: N/A</div>;
+                        return (
+                          <>
+                            <div>Created on {format(created, 'MMM dd, yyyy')}</div>
+                            {isFreeUser && timeRemaining && (
+                              <div className={`flex items-center ${expiringSoon ? 'text-orange-600 font-semibold' : 'text-blue-600'}`}>
+                                <Clock className="h-3 w-3 mr-1" />
+                                {timeRemaining}
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()
                     ) : (
                       'Recently created'
                     )}
@@ -180,15 +186,18 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
                   {post.media_url && (
                     <img src={post.media_url} alt="Post" className="max-h-48 w-full object-cover rounded-md mt-2" />
                   )}
-                  {post.scheduled_date && post.scheduled_time && (
-                    <p className="text-sm text-muted-foreground">
-                      <Calendar className="inline-block h-4 w-4 mr-1" />
-                      Scheduled:{' '}
-                      {format(new Date(post.scheduled_date), 'MMM dd, yyyy')}{' '}
-                      <Clock className="inline-block h-4 w-4 mr-1" />
-                      {format(new Date(`2000-01-01T${post.scheduled_time}`), 'h:mm a')}
-                    </p>
-                  )}
+                  {post.scheduled_date && post.scheduled_time && (() => {
+                    const dateOnly = new Date(post.scheduled_date);
+                    const timeOnly = new Date(`2000-01-01T${post.scheduled_time}`);
+                    if (isNaN(dateOnly.getTime()) || isNaN(timeOnly.getTime())) return null;
+                    return (
+                      <p className="text-sm text-muted-foreground">
+                        <Calendar className="inline-block h-4 w-4 mr-1" />
+                        Scheduled: {format(dateOnly, 'MMM dd, yyyy')} <Clock className="inline-block h-4 w-4 mr-1" />
+                        {format(timeOnly, 'h:mm a')}
+                      </p>
+                    );
+                  })()}
                   {/* Platform badges and status */}
                   <div className="flex items-center gap-2 mt-2">
                     {post.social_platforms && post.social_platforms.length > 0 && (
