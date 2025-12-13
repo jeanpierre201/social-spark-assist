@@ -162,6 +162,7 @@ const ContentGeneratorStarter = () => {
   // Show upgrade prompt if user doesn't have access
   // Only check canCreatePosts for subscribed users (Starter/Pro have time-based access)
   // Free users will have subscribed=false
+  console.log('Starter page access check:', { subscribed, canCreatePosts, isLoading, isLoadingPosts });
   if (!subscribed) {
     return <UpgradePrompt subscribed={subscribed} canCreatePosts={canCreatePosts} />;
   }
