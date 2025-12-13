@@ -153,11 +153,15 @@ const GeneratedPostsPreview = ({ posts, setPosts }: GeneratedPostsPreviewProps) 
                   <CardTitle className="text-base font-medium">
                     {post.industry} - {post.goal}
                   </CardTitle>
-                  {post.created_at && (
-                    <CardDescription className="text-sm text-gray-500">
-                      Created {format(new Date(post.created_at), 'MMM d, yyyy')}
-                    </CardDescription>
-                  )}
+                  {post.created_at && (() => {
+                    const created = new Date(post.created_at);
+                    if (isNaN(created.getTime())) return null;
+                    return (
+                      <CardDescription className="text-sm text-gray-500">
+                        Created {format(created, 'MMM d, yyyy')}
+                      </CardDescription>
+                    );
+                  })()}
                 </div>
                 {post.id && (
                   <div className="flex items-center space-x-1">
@@ -258,12 +262,16 @@ const GeneratedPostsPreview = ({ posts, setPosts }: GeneratedPostsPreviewProps) 
               {(post.scheduledDate || post.scheduledTime) && (
                 <div className="bg-blue-50 p-3 rounded">
                   <div className="flex items-center space-x-4 text-sm">
-                    {post.scheduledDate && (
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1 text-blue-600" />
-                        <span>{format(new Date(post.scheduledDate), 'MMM d, yyyy')}</span>
-                      </div>
-                    )}
+                    {post.scheduledDate && (() => {
+                      const d = new Date(post.scheduledDate);
+                      if (isNaN(d.getTime())) return null;
+                      return (
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1 text-blue-600" />
+                          <span>{format(d, 'MMM d, yyyy')}</span>
+                        </div>
+                      );
+                    })()}
                     {post.scheduledTime && (
                       <div className="flex items-center">
                         <Clock className="h-4 w-4 mr-1 text-blue-600" />

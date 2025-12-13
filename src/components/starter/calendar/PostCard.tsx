@@ -132,6 +132,7 @@ const PostCard = ({ post, onClick, onDelete }: PostCardProps) => {
     const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const utcDateTimeStr = `${post.scheduledDate}T${post.scheduledTime}:00Z`;
     const utcDate = new Date(utcDateTimeStr);
+    if (isNaN(utcDate.getTime())) return null;
     const localDate = toZonedTime(utcDate, userTimezone);
     const localTime = format(localDate, 'HH:mm');
     return { local: localTime, utc: post.scheduledTime };

@@ -34,7 +34,7 @@ const PostsList = ({ selectedDate, posts, onPostClick, onPostDelete }: PostsList
       <CardHeader>
         <CardTitle className="flex items-center">
           <Clock className="h-5 w-5 mr-2 text-green-600" />
-          Posts for {selectedDate ? format(selectedDate, 'MMMM d, yyyy') : 'Selected Date'}
+          Posts for {selectedDate && !isNaN(selectedDate.getTime()) ? format(selectedDate, 'MMMM d, yyyy') : 'Selected Date'}
         </CardTitle>
       </CardHeader>
       <CardContent>

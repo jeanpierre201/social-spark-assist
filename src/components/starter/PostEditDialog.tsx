@@ -719,7 +719,8 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                 <Label className="text-sm font-medium">Posted</Label>
                 <p className="text-sm text-gray-700">
                   {(() => {
-                    const postedDate = new Date(post.posted_at);
+                    const postedDate = post.posted_at ? new Date(post.posted_at) : null;
+                    if (!postedDate || isNaN(postedDate.getTime())) return 'N/A';
                     const localPostedDate = toZonedTime(postedDate, userTimezone);
                     return format(localPostedDate, 'MMM dd, yyyy HH:mm');
                   })()}
