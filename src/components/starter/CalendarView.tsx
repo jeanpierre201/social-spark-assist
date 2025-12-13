@@ -80,9 +80,12 @@ const CalendarView = ({ posts, setViewMode, setPosts, onRefresh }: CalendarViewP
 
   // Get posts for a specific date
   const getPostsForDate = (date: Date) => {
-    return posts.filter(post => 
-      post.scheduledDate && isSameDay(new Date(post.scheduledDate), date)
-    );
+    return posts.filter(post => {
+      if (!post.scheduledDate) return false;
+      const scheduledDate = new Date(post.scheduledDate);
+      if (isNaN(scheduledDate.getTime())) return false;
+      return isSameDay(scheduledDate, date);
+    });
   };
 
   // Handle post click for editing - fetch full post data from DB
