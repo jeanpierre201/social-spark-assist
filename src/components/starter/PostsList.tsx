@@ -502,11 +502,18 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                   )}
                   
                   <div className="flex items-center gap-4 text-xs text-gray-500 flex-wrap">
-                    <span>Created: {format(new Date(post.created_at), 'MMM dd, yyyy')}</span>
+                    <span>
+                      {(() => {
+                        const created = post.created_at ? new Date(post.created_at) : null;
+                        if (!created || isNaN(created.getTime())) return 'Created: N/A';
+                        return `Created: ${format(created, 'MMM dd, yyyy')}`;
+                      })()}
+                    </span>
                     {post.scheduled_date && post.scheduled_time && (() => {
                       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
                       const utcDateTimeStr = `${post.scheduled_date}T${post.scheduled_time}:00Z`;
                       const utcDate = new Date(utcDateTimeStr);
+                      if (isNaN(utcDate.getTime())) return null;
                       const localDate = toZonedTime(utcDate, userTimezone);
                       return (
                         <span>
@@ -518,6 +525,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                     {post.posted_at && (() => {
                       const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
                       const postedDate = new Date(post.posted_at);
+                      if (isNaN(postedDate.getTime())) return null;
                       const localPostedDate = toZonedTime(postedDate, userTimezone);
                       return (
                         <span>Posted: {format(localPostedDate, 'MMM dd, yyyy')} at {format(localPostedDate, 'HH:mm')}</span>

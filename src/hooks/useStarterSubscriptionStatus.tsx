@@ -47,20 +47,24 @@ export const useStarterSubscriptionStatus = () => {
           setSubscriptionStartDate(subscriptionStart);
 
           // Calculate if we're within 30 days of subscription start
-          const startDate = new Date(subscriptionStart);
-          const currentDate = new Date();
-          const daysDifference = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          isWithinCreationWindow = daysDifference <= 30;
-          remainingDays = Math.max(0, 30 - daysDifference);
-          
-          console.log('Starter subscription check:', {
-            startDate: startDate.toISOString(),
-            currentDate: currentDate.toISOString(),
-            daysDifference,
-            isWithinCreationWindow,
-            remainingDays,
-          });
+          const startDate = subscriptionStart ? new Date(subscriptionStart) : null;
+          if (startDate && !isNaN(startDate.getTime())) {
+            const currentDate = new Date();
+            const daysDifference = Math.floor((currentDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+            
+            isWithinCreationWindow = daysDifference <= 30;
+            remainingDays = Math.max(0, 30 - daysDifference);
+            
+            console.log('Starter subscription check:', {
+              startDate: startDate.toISOString(),
+              currentDate: currentDate.toISOString(),
+              daysDifference,
+              isWithinCreationWindow,
+              remainingDays,
+            });
+          } else {
+            console.warn('Starter subscription has invalid start date', subscriptionStart);
+          }
         }
 
         setCanCreatePosts(isWithinCreationWindow);
