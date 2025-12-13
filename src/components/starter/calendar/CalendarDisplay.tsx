@@ -44,16 +44,20 @@ const getStatusDotColor = (status: string) => {
 const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayProps) => {
   // Get posts for a specific date
   const getPostsForDate = (date: Date) => {
-    return posts.filter(post => 
-      post.scheduledDate && isSameDay(new Date(post.scheduledDate), date)
-    );
+    return posts.filter(post => {
+      if (!post.scheduledDate) return false;
+      const scheduledDate = new Date(post.scheduledDate);
+      if (isNaN(scheduledDate.getTime())) return false;
+      return isSameDay(scheduledDate, date);
+    });
   };
 
   // Get dates that have scheduled posts
   const getDatesWithPosts = () => {
     return posts
       .filter(post => post.scheduledDate)
-      .map(post => new Date(post.scheduledDate!));
+      .map(post => new Date(post.scheduledDate!))
+      .filter(d => !isNaN(d.getTime()));
   };
 
   // Custom day content to show post indicators with status colors

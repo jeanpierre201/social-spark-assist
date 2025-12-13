@@ -112,6 +112,7 @@ const PostCard = ({ post, onClick, onDelete }: PostCardProps) => {
   const isFromPreviousPeriod = () => {
     if (!post.created_at) return false;
     const postCreatedDate = new Date(post.created_at);
+    if (isNaN(postCreatedDate.getTime())) return false;
     const currentMonthStart = startOfMonth(new Date());
     return isAfter(currentMonthStart, postCreatedDate);
   };
