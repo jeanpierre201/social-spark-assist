@@ -131,7 +131,7 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
       {posts.length === 0 ? (
         <p className="text-muted-foreground">No posts generated yet.</p>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {posts.map((post) => {
             const timeRemaining = isFreeUser ? getTimeRemaining(post.created_at) : null;
             const expiringSoon = isFreeUser ? isExpiringSoon(post.created_at) : false;
