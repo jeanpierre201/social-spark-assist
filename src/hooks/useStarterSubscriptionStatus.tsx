@@ -54,12 +54,12 @@ export const useStarterSubscriptionStatus = () => {
           isWithinCreationWindow = daysDifference <= 30;
           remainingDays = Math.max(0, 30 - daysDifference);
           
-          console.log('Subscription check:', {
+          console.log('Starter subscription check:', {
             startDate: startDate.toISOString(),
             currentDate: currentDate.toISOString(),
             daysDifference,
             isWithinCreationWindow,
-            remainingDays
+            remainingDays,
           });
         }
 
