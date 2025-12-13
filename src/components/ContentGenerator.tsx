@@ -9,6 +9,11 @@ import ContentGeneratorHeader from './content/ContentGeneratorHeader';
 import NavigationTabs from './content/NavigationTabs';
 import ContentGenerationForm from './content/ContentGenerationForm';
 import PostsDisplay from './content/PostsDisplay';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 const ContentGenerator = () => {
   const [activeTab, setActiveTab] = useState('content');
@@ -16,6 +21,9 @@ const ContentGenerator = () => {
   const [selectedPlatform, setSelectedPlatform] = useState('twitter');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [scheduledTime, setScheduledTime] = useState('');
+  const [editingPost, setEditingPost] = useState<any>(null);
+  const [editedCaption, setEditedCaption] = useState('');
+  const { toast } = useToast();
 
   const {
     posts,
@@ -29,18 +37,32 @@ const ContentGenerator = () => {
   } = usePostsManager();
 
   const handleEditPost = (post: any) => {
-    setPrompt(post.content);
-    setSelectedPlatform(post.platform);
-    setScheduledDate(post.scheduled_date ? new Date(post.scheduled_date) : null);
-    setScheduledTime(post.scheduled_time || '');
+    setEditingPost(post);
+    setEditedCaption(post.generated_caption || '');
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingPost) return;
+    
+    updatePostMutation.mutate({
+      id: editingPost.id,
+      content: editedCaption,
+    }, {
+      onSuccess: () => {
+        toast({ description: 'Post updated successfully!' });
+        setEditingPost(null);
+        setEditedCaption('');
+      },
+      onError: () => {
+        toast({ title: 'Error', description: 'Failed to update post', variant: 'destructive' });
+      }
+    });
   };
 
   const handleUpdatePost = async (post: any, newContent: string) => {
     updatePostMutation.mutate({ 
       id: post.id, 
       content: newContent,
-      scheduled_date: post.scheduled_date,
-      scheduled_time: post.scheduled_time
     });
   };
 
@@ -112,6 +134,47 @@ const ContentGenerator = () => {
           </>
         )}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingPost} onOpenChange={(open) => !open && setEditingPost(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Post</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="caption">Caption</Label>
+              <Textarea
+                id="caption"
+                value={editedCaption}
+                onChange={(e) => setEditedCaption(e.target.value)}
+                rows={6}
+                className="resize-none"
+              />
+            </div>
+            {editingPost?.generated_hashtags && editingPost.generated_hashtags.length > 0 && (
+              <div className="space-y-2">
+                <Label>Hashtags</Label>
+                <div className="flex flex-wrap gap-1">
+                  {editingPost.generated_hashtags.map((hashtag: string, index: number) => (
+                    <span key={index} className="text-primary text-sm">
+                      #{hashtag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingPost(null)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={updatePostMutation.isPending}>
+              {updatePostMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
