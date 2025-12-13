@@ -189,16 +189,23 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
                       {format(new Date(`2000-01-01T${post.scheduled_time}`), 'h:mm a')}
                     </p>
                   )}
-                  {/* Platform badges for free users */}
-                  {post.social_platforms && post.social_platforms.length > 0 && (
-                    <div className="flex gap-1 mt-2">
-                      {post.social_platforms.map((platform: string) => (
-                        <Badge key={platform} variant="secondary" className="text-xs">
-                          {platform}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+                  {/* Platform badges and status */}
+                  <div className="flex items-center gap-2 mt-2">
+                    {post.social_platforms && post.social_platforms.length > 0 && (
+                      <div className="flex gap-1">
+                        {post.social_platforms.map((platform: string) => (
+                          <Badge key={platform} variant="secondary" className="text-xs">
+                            {platform}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    {post.status === 'published' && (
+                      <Badge className="bg-green-500 text-white">
+                        ✓ Published
+                      </Badge>
+                    )}
+                  </div>
                   <div className="flex justify-end space-x-2 mt-2">
                     {post.status !== 'published' && canPostNow(post) && (
                       <Button 
@@ -212,14 +219,16 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
                         {isPublishingPost(post.id) ? 'Posting...' : 'Post Now'}
                       </Button>
                     )}
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => onEditPost(post)}
-                    >
-                      <Edit2 className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
+                    {post.status !== 'published' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => onEditPost(post)}
+                      >
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                    )}
                     <Button 
                       variant="destructive" 
                       size="sm"
