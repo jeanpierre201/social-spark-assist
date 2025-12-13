@@ -707,7 +707,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
             <div>
               <Label className="text-sm font-medium">Created</Label>
               <p className="text-sm text-gray-700">
-                {format(new Date(post.created_at), 'MMM dd, yyyy HH:mm')}
+                {(() => {
+                  const created = post.created_at ? new Date(post.created_at) : null;
+                  if (!created || isNaN(created.getTime())) return 'N/A';
+                  return format(created, 'MMM dd, yyyy HH:mm');
+                })()}
               </p>
             </div>
             {post.posted_at && (

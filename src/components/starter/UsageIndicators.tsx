@@ -47,6 +47,10 @@ const UsageIndicators = ({ monthlyPosts, previousPeriodPosts, daysRemaining, max
       if (subscriptionStartDate && user && isPeriodExpired) {
         try {
           const subscriptionStart = new Date(subscriptionStartDate);
+          if (isNaN(subscriptionStart.getTime())) {
+            console.warn('UsageIndicators: invalid subscriptionStartDate', subscriptionStartDate);
+            return;
+          }
           const previousPeriodStart = new Date(subscriptionStart);
           previousPeriodStart.setDate(previousPeriodStart.getDate() - 30);
           
@@ -201,6 +205,7 @@ const UsageIndicators = ({ monthlyPosts, previousPeriodPosts, daysRemaining, max
                 {(() => {
                   if (!subscriptionStartDate) return 'N/A';
                   const startDate = new Date(subscriptionStartDate);
+                  if (isNaN(startDate.getTime())) return 'N/A';
                   const resetDate = new Date(startDate);
                   resetDate.setDate(resetDate.getDate() + 30);
                   return resetDate.toLocaleDateString('en-US', { 
