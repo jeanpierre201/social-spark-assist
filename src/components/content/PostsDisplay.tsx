@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useManualPublish } from '@/hooks/useManualPublish';
 import { 
   Calendar,
   Clock,
@@ -11,6 +13,7 @@ import {
   Edit2,
   Trash2,
   AlertCircle,
+  Send,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
@@ -25,6 +28,8 @@ interface PostsDisplayProps {
 const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDisplayProps) => {
   const { toast } = useToast();
   const { subscribed } = useSubscription();
+  const { accounts } = useSocialAccounts();
+  const { publishToMastodon, isPublishingPost } = useManualPublish();
   const isFreeUser = !subscribed;
   
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -75,6 +80,41 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
     element.download = "social-post.txt";
     document.body.appendChild(element);
     element.click();
+  };
+
+  const handlePostNow = async (post: any) => {
+    const selectedPlatforms = post.social_platforms || [];
+    
+    // Check for Mastodon
+    const hasMastodon = selectedPlatforms.includes('mastodon');
+    const mastodonAccount = accounts.find(acc => acc.platform === 'mastodon' && acc.is_active);
+
+    if (hasMastodon && mastodonAccount) {
+      const message = `${post.generated_caption}\n\n${(post.generated_hashtags || []).map((h: string) => `#${h}`).join(' ')}`;
+      await publishToMastodon(post.id, message, post.media_url);
+    } else if (hasMastodon && !mastodonAccount) {
+      toast({
+        title: 'Mastodon not connected',
+        description: 'Please connect your Mastodon account first',
+        variant: 'destructive',
+      });
+    }
+
+    // Telegram would need a separate edge function - placeholder for now
+    if (selectedPlatforms.includes('telegram')) {
+      toast({
+        title: 'Telegram',
+        description: 'Telegram posting coming soon!',
+      });
+    }
+  };
+
+  const canPostNow = (post: any) => {
+    const platforms = post.social_platforms || [];
+    return platforms.some((p: string) => {
+      if (p === 'mastodon') return accounts.some(acc => acc.platform === 'mastodon' && acc.is_active);
+      return false;
+    });
   };
 
   return (
@@ -149,7 +189,29 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
                       {format(new Date(`2000-01-01T${post.scheduled_time}`), 'h:mm a')}
                     </p>
                   )}
-                  <div className="flex justify-end space-x-2">
+                  {/* Platform badges for free users */}
+                  {post.social_platforms && post.social_platforms.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      {post.social_platforms.map((platform: string) => (
+                        <Badge key={platform} variant="secondary" className="text-xs">
+                          {platform}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex justify-end space-x-2 mt-2">
+                    {post.status !== 'published' && canPostNow(post) && (
+                      <Button 
+                        variant="default" 
+                        size="sm"
+                        onClick={() => handlePostNow(post)}
+                        disabled={isPublishingPost(post.id)}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600"
+                      >
+                        <Send className="h-4 w-4 mr-2" />
+                        {isPublishingPost(post.id) ? 'Posting...' : 'Post Now'}
+                      </Button>
+                    )}
                     <Button 
                       variant="outline" 
                       size="sm"

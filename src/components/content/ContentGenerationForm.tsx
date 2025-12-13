@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useManualPublish } from '@/hooks/useManualPublish';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate, Link } from 'react-router-dom';
-import { Sparkles, Calendar, Clock } from 'lucide-react';
+import { Sparkles, Calendar, Clock, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,6 +28,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const { user } = useAuth();
   const { subscribed } = useSubscription();
   const { accounts } = useSocialAccounts();
+  const { publishToMastodon, isPublishingPost } = useManualPublish();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -44,9 +46,17 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const [includeEmojis, setIncludeEmojis] = useState(true);
   const [selectedSocialPlatforms, setSelectedSocialPlatforms] = useState<string[]>([]);
   const [customImagePrompt, setCustomImagePrompt] = useState('');
+  const [isPostingNow, setIsPostingNow] = useState(false);
+  const [lastGeneratedPost, setLastGeneratedPost] = useState<any>(null);
+  // Free tier platforms - only Mastodon and Telegram
+  const freePlatforms = [
+    { id: 'mastodon', name: 'Mastodon' },
+    { id: 'telegram', name: 'Telegram' }
+  ];
 
   const socialPlatforms = [
     { id: 'mastodon', name: 'Mastodon' },
+    { id: 'telegram', name: 'Telegram' },
     { id: 'facebook', name: 'Facebook' },
     { id: 'instagram', name: 'Instagram' },
     { id: 'x', name: 'X (Twitter)' },
@@ -251,6 +261,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       };
 
       // Save post to database for all users (free users see posts for 24 hours only)
+      setLastGeneratedPost(newPost);
       onPostCreated(newPost);
       
       setIndustry('');
@@ -547,13 +558,47 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
           </>
         )}
 
-        {/* Upgrade prompt for free users */}
+        {/* Free user platform selection and Post Now */}
         {isFreeUser && (
-          <div className="border-t pt-4">
+          <div className="border-t pt-4 space-y-4">
+            <div>
+              <h4 className="text-sm font-medium mb-3">Post to (Free Tier)</h4>
+              <div className="grid grid-cols-2 gap-3">
+                {freePlatforms.map((platform) => {
+                  const isConnected = accounts.some(account => account.platform === platform.id && account.is_active);
+                  return (
+                    <div key={platform.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`free-${platform.id}`}
+                        checked={selectedSocialPlatforms.includes(platform.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedSocialPlatforms(prev => [...prev, platform.id]);
+                          } else {
+                            setSelectedSocialPlatforms(prev => prev.filter(id => id !== platform.id));
+                          }
+                        }}
+                        disabled={!isConnected}
+                      />
+                      <Label 
+                        htmlFor={`free-${platform.id}`} 
+                        className={`text-sm ${!isConnected ? 'text-muted-foreground' : ''}`}
+                      >
+                        {platform.name} {!isConnected && '(Not connected)'}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Connect <Link to="/dashboard" className="text-primary hover:underline">social accounts</Link> to enable posting.
+              </p>
+            </div>
+
             <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
               <h4 className="text-sm font-medium text-blue-900 mb-2">Want more features?</h4>
               <p className="text-sm text-blue-700 mb-3">
-                Upgrade to unlock scheduling, platform selection, image uploads, and more posts per month!
+                Upgrade to unlock scheduling, more platforms, image uploads, and more posts per month!
               </p>
               <Button 
                 onClick={() => navigate('/#pricing')}
