@@ -150,7 +150,8 @@ const ContentGeneratorStarter = () => {
     setPostsRefreshTrigger(prev => prev + 1);
   };
 
-  if (isLoading) {
+  // Wait for all loading states to complete
+  if (isLoading || isLoadingPosts) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -159,7 +160,14 @@ const ContentGeneratorStarter = () => {
   }
 
   // Show upgrade prompt if user doesn't have access
-  if (!subscribed || !canCreatePosts) {
+  // Only check canCreatePosts for subscribed users (Starter/Pro have time-based access)
+  // Free users will have subscribed=false
+  if (!subscribed) {
+    return <UpgradePrompt subscribed={subscribed} canCreatePosts={canCreatePosts} />;
+  }
+  
+  // For subscribed users, check if they can still create posts (within 30-day window)
+  if (!canCreatePosts) {
     return <UpgradePrompt subscribed={subscribed} canCreatePosts={canCreatePosts} />;
   }
 

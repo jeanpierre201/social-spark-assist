@@ -18,7 +18,10 @@ export const useStarterSubscriptionStatus = () => {
 
   useEffect(() => {
     const checkSubscriptionAndLimits = async () => {
-      if (!user) return;
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
       
       try {
         // Check subscription status and get subscription details
