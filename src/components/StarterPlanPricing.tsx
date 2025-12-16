@@ -62,19 +62,19 @@ const StarterPlanPricing = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Starter Plan</h1>
-            <p className="text-muted-foreground">Perfect for getting started with social media</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Starter Plan</h1>
+            <p className="text-muted-foreground text-sm sm:text-base">Perfect for getting started with social media</p>
           </div>
-          <div className="flex items-center space-x-3">
-            <Button variant="outline" onClick={handleGoBack} className="flex items-center space-x-2">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button variant="outline" onClick={handleGoBack} size="sm" className="flex items-center gap-1 sm:gap-2">
               <ArrowLeft className="h-4 w-4" />
-              <span>Dashboard</span>
+              <span className="hidden sm:inline">Dashboard</span>
             </Button>
-            <Button variant="outline" onClick={handleGoHome} className="flex items-center space-x-2">
+            <Button variant="outline" onClick={handleGoHome} size="sm" className="flex items-center gap-1 sm:gap-2">
               <Home className="h-4 w-4" />
-              <span>Home</span>
+              <span className="hidden sm:inline">Home</span>
             </Button>
           </div>
         </div>
