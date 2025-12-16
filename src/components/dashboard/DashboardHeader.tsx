@@ -28,17 +28,15 @@ const DashboardHeader = ({
     <div className="mb-6 md:mb-8">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between sm:justify-start gap-3 mb-2">
+          <div className="flex items-center justify-between gap-3 mb-2">
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
               {title}
             </h1>
             <div className="flex items-center gap-2 sm:hidden">
-              <ProfileAvatar />
               <Button
                 onClick={() => navigate('/')}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-1"
               >
                 <Home className="h-4 w-4" />
               </Button>
@@ -54,6 +52,8 @@ const DashboardHeader = ({
                   <LogOut className="h-4 w-4" />
                 </Button>
               )}
+              <div className="h-6 w-px bg-border" />
+              <ProfileAvatar />
             </div>
           </div>
           <div className="text-muted-foreground text-sm sm:text-base">
