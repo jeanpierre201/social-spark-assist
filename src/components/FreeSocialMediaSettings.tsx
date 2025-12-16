@@ -54,12 +54,12 @@ const FreeSocialMediaSettings = () => {
           const IconComponent = platform.icon;
 
           return (
-            <div key={platform.id} className="flex items-center justify-between p-3 border rounded-lg">
+            <div key={platform.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-3">
               <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg ${platform.color}`}>
+                <div className={`p-2 rounded-lg ${platform.color} shrink-0`}>
                   <IconComponent className="h-5 w-5 text-white" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-medium text-sm">{platform.name}</h3>
                     {platform.comingSoon && (
@@ -69,12 +69,12 @@ const FreeSocialMediaSettings = () => {
                     )}
                   </div>
                   {account ? (
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center flex-wrap gap-1">
                       <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
                         Connected
                       </Badge>
                       {account.username && (
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground truncate max-w-[120px]">
                           @{account.username}
                         </span>
                       )}
@@ -84,7 +84,7 @@ const FreeSocialMediaSettings = () => {
                   )}
                 </div>
               </div>
-              <div>
+              <div className="flex justify-end sm:shrink-0">
                 {account ? (
                   <Button 
                     variant="outline" 
