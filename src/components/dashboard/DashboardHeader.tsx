@@ -33,6 +33,7 @@ const DashboardHeader = ({
               {title}
             </h1>
             <div className="flex items-center gap-2 sm:hidden">
+              <ProfileAvatar />
               <Button
                 onClick={() => navigate('/')}
                 variant="outline"
@@ -40,7 +41,6 @@ const DashboardHeader = ({
                 className="flex items-center gap-1"
               >
                 <Home className="h-4 w-4" />
-                <span className="hidden xs:inline">Home</span>
               </Button>
               {showLogout && (
                 <Button
