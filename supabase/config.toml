@@ -1,5 +1,8 @@
 project_id = "bmkwrzrcefgoqsgiorek"
 
+[functions.telegram-connect]
+verify_jwt = true
+
 [api]
 enabled = true
 port = 54321

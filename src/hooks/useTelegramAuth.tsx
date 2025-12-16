@@ -67,84 +67,22 @@ export const useTelegramAuth = (onSuccess?: () => void) => {
         }
       }
 
-      // Check if account already exists
-      const { data: existingAccount } = await supabase
-        .from('social_accounts')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('platform', 'telegram')
-        .single();
-
-      let accountId: string;
-
-      if (existingAccount) {
-        // Update existing account
-        const { error: updateError } = await supabase
-          .from('social_accounts')
-          .update({
-            platform_user_id: channelId,
-            username: credentials.channelName || validation.botInfo?.username,
-            is_active: true,
-            account_data: {
-              bot_username: validation.botInfo?.username,
-              bot_id: validation.botInfo?.id,
-              channel_name: credentials.channelName
-            },
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingAccount.id);
-
-        if (updateError) {
-          throw updateError;
+      // Call edge function to securely store credentials (bypasses RLS)
+      const { data, error } = await supabase.functions.invoke('telegram-connect', {
+        body: {
+          botToken: credentials.botToken,
+          channelId,
+          channelName: credentials.channelName,
+          botInfo: validation.botInfo
         }
+      });
 
-        accountId = existingAccount.id;
-
-        // Delete old token and insert new one
-        await supabase
-          .from('social_tokens_vault')
-          .delete()
-          .eq('social_account_id', accountId);
-      } else {
-        // Create new account
-        const { data: newAccount, error: insertError } = await supabase
-          .from('social_accounts')
-          .insert({
-            user_id: user.id,
-            platform: 'telegram',
-            platform_user_id: channelId,
-            username: credentials.channelName || validation.botInfo?.username,
-            is_active: true,
-            account_data: {
-              bot_username: validation.botInfo?.username,
-              bot_id: validation.botInfo?.id,
-              channel_name: credentials.channelName
-            }
-          })
-          .select('id')
-          .single();
-
-        if (insertError || !newAccount) {
-          throw insertError || new Error('Failed to create account');
-        }
-
-        accountId = newAccount.id;
+      if (error) {
+        throw error;
       }
 
-      // Store bot token in vault
-      const { error: vaultError } = await supabase
-        .from('social_tokens_vault')
-        .insert({
-          social_account_id: accountId,
-          encrypted_access_token: credentials.botToken,
-          encryption_key_id: 'telegram-bot-token'
-        });
-
-      if (vaultError) {
-        console.error('[TELEGRAM-AUTH] Vault error:', vaultError);
-        // Clean up the account if vault insert fails
-        await supabase.from('social_accounts').delete().eq('id', accountId);
-        throw new Error('Failed to securely store bot token');
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       console.log('[TELEGRAM-AUTH] Successfully connected');
