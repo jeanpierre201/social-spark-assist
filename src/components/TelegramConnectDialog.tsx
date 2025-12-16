@@ -87,7 +87,7 @@ const TelegramConnectDialog = ({ open, onClose, onConnect, isConnecting }: Teleg
                 <li>Create a bot via <a href="https://t.me/BotFather" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline inline-flex items-center gap-1">@BotFather <ExternalLink className="h-3 w-3" /></a></li>
                 <li>Copy your Bot Token from BotFather</li>
                 <li>Add your bot as admin to your channel</li>
-                <li>Get your Channel ID (e.g., @yourchannel or -1001234567890)</li>
+                <li>Get your Channel ID (see below)</li>
               </ol>
             </AlertDescription>
           </Alert>
@@ -116,10 +116,19 @@ const TelegramConnectDialog = ({ open, onClose, onConnect, isConnecting }: Teleg
               onChange={(e) => setChannelId(e.target.value)}
               disabled={isConnecting}
             />
-            <p className="text-xs text-muted-foreground">
-              For public channels: @channelname<br />
-              For private channels: numeric ID (e.g., -1001234567890)
-            </p>
+            <div className="text-xs text-muted-foreground space-y-2">
+              <p><strong>Public channels:</strong> Use @channelname (e.g., @mychannel)</p>
+              <p><strong>Private channels:</strong> Use numeric ID starting with -100</p>
+              <Alert className="mt-2 py-2">
+                <AlertDescription className="text-xs">
+                  <strong>💡 How to get private channel ID:</strong><br />
+                  <span className="text-muted-foreground">
+                    Invite links like <code className="bg-muted px-1 rounded">t.me/+xxx</code> won't work. 
+                    Forward any message from your channel to <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@userinfobot</a> to get the numeric ID (e.g., -1001234567890)
+                  </span>
+                </AlertDescription>
+              </Alert>
+            </div>
           </div>
 
           <div className="space-y-2">
