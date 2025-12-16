@@ -29,7 +29,7 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
   const { toast } = useToast();
   const { subscribed } = useSubscription();
   const { accounts } = useSocialAccounts();
-  const { publishToMastodon, isPublishingPost } = useManualPublish();
+  const { publishToMastodon, publishToTelegram, isPublishingPost } = useManualPublish();
   const isFreeUser = !subscribed;
   
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -100,11 +100,19 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
       });
     }
 
-    // Telegram would need a separate edge function - placeholder for now
-    if (selectedPlatforms.includes('telegram')) {
+    // Check for Telegram
+    const hasTelegram = selectedPlatforms.includes('telegram');
+    const telegramAccount = accounts.find(acc => acc.platform === 'telegram' && acc.is_active);
+
+    if (hasTelegram && telegramAccount) {
+      // Telegram doesn't support hashtags, just send caption
+      const message = post.generated_caption;
+      await publishToTelegram(post.id, message, post.media_url);
+    } else if (hasTelegram && !telegramAccount) {
       toast({
-        title: 'Telegram',
-        description: 'Telegram posting coming soon!',
+        title: 'Telegram not connected',
+        description: 'Please connect your Telegram channel first',
+        variant: 'destructive',
       });
     }
   };
@@ -113,6 +121,7 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
     const platforms = post.social_platforms || [];
     return platforms.some((p: string) => {
       if (p === 'mastodon') return accounts.some(acc => acc.platform === 'mastodon' && acc.is_active);
+      if (p === 'telegram') return accounts.some(acc => acc.platform === 'telegram' && acc.is_active);
       return false;
     });
   };

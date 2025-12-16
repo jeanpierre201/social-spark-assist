@@ -129,7 +129,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
 
   const socialPlatforms = [
     { id: 'mastodon', name: 'Mastodon', tier: 'Free' },
-    { id: 'telegram', name: 'Telegram', tier: 'Free', comingSoon: true },
+    { id: 'telegram', name: 'Telegram', tier: 'Free' },
     { id: 'facebook', name: 'Facebook', tier: 'Starter' },
     { id: 'instagram', name: 'Instagram', tier: 'Starter' },
     { id: 'tiktok', name: 'TikTok', tier: 'Starter', beta: true },

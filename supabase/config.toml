@@ -105,3 +105,6 @@ verify_jwt = false
 
 [functions.twitter-post]
 verify_jwt = true
+
+[functions.telegram-post]
+verify_jwt = true

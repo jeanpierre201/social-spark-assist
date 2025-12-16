@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useMastodonAuth } from '@/hooks/useMastodonAuth';
+import { useTelegramAuth } from '@/hooks/useTelegramAuth';
+import TelegramConnectDialog from '@/components/TelegramConnectDialog';
 import { Send, Plus, Unlink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -16,6 +18,13 @@ const MastodonIcon = () => (
 const FreeSocialMediaSettings = () => {
   const { accounts, loading, disconnectAccount, refetchAccounts } = useSocialAccounts();
   const { connectMastodon, isConnecting: isMastodonConnecting } = useMastodonAuth(refetchAccounts);
+  const { 
+    connectTelegram, 
+    isConnecting: isTelegramConnecting, 
+    showDialog: showTelegramDialog,
+    openConnectionDialog: openTelegramDialog,
+    closeConnectionDialog: closeTelegramDialog
+  } = useTelegramAuth(refetchAccounts);
 
   const handleMastodonConnect = async () => {
     await connectMastodon();
@@ -23,7 +32,7 @@ const FreeSocialMediaSettings = () => {
 
   const freePlatforms = [
     { id: 'mastodon', name: 'Mastodon', icon: MastodonIcon, color: 'bg-purple-600' },
-    { id: 'telegram', name: 'Telegram', icon: Send, color: 'bg-blue-400', comingSoon: true },
+    { id: 'telegram', name: 'Telegram', icon: Send, color: 'bg-blue-400' },
   ];
 
   const getAccountByPlatform = (platform: string) => {
@@ -41,96 +50,100 @@ const FreeSocialMediaSettings = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Connect Social Accounts</CardTitle>
-        <CardDescription>
-          Connect Mastodon or Telegram to post your content (Free tier)
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {freePlatforms.map((platform) => {
-          const account = getAccountByPlatform(platform.id);
-          const IconComponent = platform.icon;
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Connect Social Accounts</CardTitle>
+          <CardDescription>
+            Connect Mastodon or Telegram to post your content (Free tier)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {freePlatforms.map((platform) => {
+            const account = getAccountByPlatform(platform.id);
+            const IconComponent = platform.icon;
+            const isConnecting = platform.id === 'mastodon' ? isMastodonConnecting : isTelegramConnecting;
 
-          return (
-            <div key={platform.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-3">
+            return (
+              <div key={platform.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-3">
               <div className="flex items-center space-x-3">
-                <div className={`p-2 rounded-lg ${platform.color} shrink-0`}>
-                  <IconComponent className="h-5 w-5 text-white" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-medium text-sm">{platform.name}</h3>
-                    {platform.comingSoon && (
-                      <Badge variant="secondary" className="text-xs">
-                        Soon
-                      </Badge>
+                  <div className={`p-2 rounded-lg ${platform.color} shrink-0`}>
+                    {platform.id === 'mastodon' ? (
+                      <MastodonIcon />
+                    ) : (
+                      <Send className="h-5 w-5 text-white" />
                     )}
                   </div>
-                  {account ? (
-                    <div className="flex items-center flex-wrap gap-1">
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
-                        Connected
-                      </Badge>
-                      {account.username && (
-                        <span className="text-xs text-muted-foreground truncate max-w-[120px]">
-                          @{account.username}
-                        </span>
-                      )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-medium text-sm">{platform.name}</h3>
                     </div>
+                    {account ? (
+                      <div className="flex items-center flex-wrap gap-1">
+                        <Badge variant="secondary" className="bg-green-100 text-green-800 text-xs">
+                          Connected
+                        </Badge>
+                        {account.username && (
+                          <span className="text-xs text-muted-foreground truncate max-w-[120px]">
+                            {platform.id === 'telegram' ? account.username : `@${account.username}`}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Not connected</p>
+                    )}
+                  </div>
+                </div>
+                <div className="flex justify-end sm:shrink-0">
+                  {account ? (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => disconnectAccount(account.id)}
+                    >
+                      <Unlink className="h-4 w-4 mr-1" />
+                      Disconnect
+                    </Button>
                   ) : (
-                    <p className="text-xs text-muted-foreground">Not connected</p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => {
+                        if (platform.id === 'mastodon') {
+                          handleMastodonConnect();
+                        } else if (platform.id === 'telegram') {
+                          openTelegramDialog();
+                        }
+                      }}
+                      disabled={isConnecting}
+                    >
+                      <Plus className="h-4 w-4 mr-1" />
+                      {isConnecting ? 'Connecting...' : 'Connect'}
+                    </Button>
                   )}
                 </div>
               </div>
-              <div className="flex justify-end sm:shrink-0">
-                {account ? (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => disconnectAccount(account.id)}
-                  >
-                    <Unlink className="h-4 w-4 mr-1" />
-                    Disconnect
-                  </Button>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      if (platform.id === 'mastodon') {
-                        handleMastodonConnect();
-                      }
-                    }}
-                    disabled={
-                      (platform.id === 'mastodon' && isMastodonConnecting) ||
-                      platform.comingSoon
-                    }
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    {platform.id === 'mastodon' && isMastodonConnecting
-                      ? 'Connecting...' 
-                      : platform.comingSoon 
-                        ? 'Coming Soon'
-                        : 'Connect'}
-                  </Button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
 
-        <div className="pt-2 text-center">
-          <p className="text-xs text-muted-foreground">
-            Want more platforms?{' '}
-            <Link to="/#pricing" className="text-primary hover:underline">
-              Upgrade your plan
-            </Link>
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="pt-2 text-center">
+            <p className="text-xs text-muted-foreground">
+              Want more platforms?{' '}
+              <Link to="/#pricing" className="text-primary hover:underline">
+                Upgrade your plan
+              </Link>
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <TelegramConnectDialog
+        open={showTelegramDialog}
+        onClose={closeTelegramDialog}
+        onConnect={connectTelegram}
+        isConnecting={isTelegramConnecting}
+      />
+    </>
   );
 };
 
