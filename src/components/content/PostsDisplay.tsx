@@ -131,21 +131,21 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
       {posts.length === 0 ? (
         <p className="text-muted-foreground">No posts generated yet.</p>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6">
           {posts.map((post) => {
             const timeRemaining = isFreeUser ? getTimeRemaining(post.created_at) : null;
             const expiringSoon = isFreeUser ? isExpiringSoon(post.created_at) : false;
             
             return (
               <Card key={post.id} className={expiringSoon ? 'border-orange-300 bg-orange-50/30' : ''}>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    {post.industry || 'Social Media Post'}
-                    <div className="flex space-x-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleCopyToClipboard(post.generated_caption || '')}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <span className="text-base sm:text-lg truncate">{post.industry || 'Social Media Post'}</span>
+                    <div className="flex space-x-2 flex-shrink-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCopyToClipboard(post.generated_caption || '')}>
                         <Copy className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDownloadPost(post.generated_caption || '')}>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownloadPost(post.generated_caption || '')}>
                         <Download className="h-4 w-4" />
                       </Button>
                     </div>
@@ -215,7 +215,7 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
                       </Badge>
                     )}
                   </div>
-                  <div className="flex justify-end space-x-2 mt-2">
+                  <div className="flex flex-wrap justify-end gap-2 mt-3 pt-3 border-t">
                     {post.status !== 'published' && canPostNow(post) && (
                       <Button 
                         variant="default" 
