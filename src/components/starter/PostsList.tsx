@@ -434,9 +434,9 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
           {posts.map((post) => (
             <div
               key={post.id}
-              className={`border rounded-lg p-4 transition-colors ${post.status === 'failed' ? 'border-red-200 bg-red-50/30' : 'hover:bg-gray-50'}`}
+              className={`border rounded-lg p-3 sm:p-4 transition-colors ${post.status === 'failed' ? 'border-red-200 bg-red-50/30' : 'hover:bg-gray-50'}`}
             >
-              <div className="flex items-start justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Badge className={getStatusColor(post.status)}>
@@ -534,7 +534,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                   </div>
                 </div>
                 
-                <div className="flex gap-2 ml-4">
+                <div className="flex flex-wrap gap-2 pt-2 sm:pt-0 sm:ml-4 border-t sm:border-t-0 mt-2 sm:mt-0">
                   {/* Post Now button for ready/scheduled posts with platforms */}
                   {canPostNow(post) && (
                     <Button
