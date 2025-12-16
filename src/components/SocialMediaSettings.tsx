@@ -65,14 +65,14 @@ const SocialMediaSettings = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <CardTitle>Social Media Accounts</CardTitle>
             <CardDescription>
               Connect your social media accounts to get real-time analytics
             </CardDescription>
           </div>
-          <Button variant="outline" onClick={refreshMetrics}>
+          <Button variant="outline" onClick={refreshMetrics} className="w-full sm:w-auto">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Data
           </Button>
@@ -85,7 +85,7 @@ const SocialMediaSettings = () => {
           const IconComponent = platform.icon;
 
           return (
-            <div key={platform.id} className="flex items-center justify-between p-4 border rounded-lg">
+            <div key={platform.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3">
               <div className="flex items-center space-x-4">
                 <div className={`p-2 rounded-lg ${platform.color}`}>
                   <IconComponent className="h-5 w-5 text-white" />
@@ -132,12 +132,13 @@ const SocialMediaSettings = () => {
                   )}
                 </div>
               </div>
-              <div>
+              <div className="w-full sm:w-auto">
                 {account ? (
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => disconnectAccount(account.id)}
+                    className="w-full sm:w-auto"
                   >
                     <Unlink className="h-4 w-4 mr-2" />
                     Disconnect
@@ -163,6 +164,7 @@ const SocialMediaSettings = () => {
                       (platform.id === 'mastodon' && isMastodonConnecting) ||
                       platform.comingSoon
                     }
+                    className="w-full sm:w-auto"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     {(platform.id === 'facebook' && isFacebookConnecting) || 
