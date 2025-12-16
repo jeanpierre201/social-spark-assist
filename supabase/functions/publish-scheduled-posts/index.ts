@@ -180,6 +180,70 @@ async function postToMastodon(instanceUrl: string, accessToken: string, message:
   }
 }
 
+// Post to Telegram channel
+async function postToTelegram(botToken: string, channelId: string, message: string, imageUrl?: string) {
+  console.log('[TELEGRAM-POST] Posting to channel:', channelId);
+  
+  // Apply smart truncation for Telegram's 4096 char limit
+  const truncatedMessage = smartTruncate(message, PLATFORM_LIMITS.telegram);
+  if (truncatedMessage.length !== message.length) {
+    console.log(`[TELEGRAM-POST] Smart truncated from ${message.length} to ${truncatedMessage.length} chars`);
+  }
+
+  const baseUrl = `https://api.telegram.org/bot${botToken}`;
+  
+  try {
+    let response: Response;
+    
+    if (imageUrl) {
+      // Send photo with caption
+      response = await fetch(`${baseUrl}/sendPhoto`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: channelId,
+          photo: imageUrl,
+          caption: truncatedMessage,
+          parse_mode: 'HTML'
+        })
+      });
+    } else {
+      // Send text message
+      response = await fetch(`${baseUrl}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: channelId,
+          text: truncatedMessage,
+          parse_mode: 'HTML'
+        })
+      });
+    }
+
+    const data = await response.json();
+    
+    if (!data.ok) {
+      let errorMessage = data.description || 'Unknown Telegram error';
+      
+      if (data.error_code === 401) {
+        errorMessage = 'Invalid bot token. Please reconnect your Telegram channel.';
+      } else if (data.error_code === 400 && data.description?.includes('chat not found')) {
+        errorMessage = 'Channel not found. Make sure the bot is added as admin.';
+      } else if (data.error_code === 403) {
+        errorMessage = 'Bot was blocked or kicked from the channel.';
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    console.log('[TELEGRAM-POST] Success, message ID:', data.result?.message_id);
+    return data;
+  } catch (error: any) {
+    console.error('[TELEGRAM-POST] Error:', error);
+    throw error;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -366,6 +430,31 @@ Deno.serve(async (req) => {
               
               publishResults.push({ platform: 'mastodon', success: true });
               console.log(`[PUBLISH-SCHEDULED-POSTS] Successfully posted to Mastodon`);
+            } else if (platform === 'telegram') {
+              // Get bot token from vault
+              const { data: tokenData, error: tokenError } = await supabaseClient
+                .from('social_tokens_vault')
+                .select('encrypted_access_token')
+                .eq('social_account_id', account.id)
+                .single();
+
+              if (tokenError || !tokenData?.encrypted_access_token) {
+                console.error(`[PUBLISH-SCHEDULED-POSTS] Token fetch error for Telegram account ${account.id}:`, tokenError);
+                throw new Error('Telegram bot token not found. Please reconnect your Telegram channel.');
+              }
+
+              // Channel ID is stored in platform_user_id
+              const channelId = account.platform_user_id;
+              if (!channelId) {
+                throw new Error('Telegram channel ID not found. Please reconnect your channel.');
+              }
+
+              // Post to Telegram - no hashtags for Telegram
+              const telegramMessage = post.generated_caption;
+              await postToTelegram(tokenData.encrypted_access_token, channelId, telegramMessage, post.media_url);
+              
+              publishResults.push({ platform: 'telegram', success: true });
+              console.log(`[PUBLISH-SCHEDULED-POSTS] Successfully posted to Telegram`);
             }
             // Add more platforms here
           } catch (platformError: any) {

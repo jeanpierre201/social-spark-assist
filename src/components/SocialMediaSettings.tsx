@@ -5,6 +5,8 @@ import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useFacebookAuth } from '@/hooks/useFacebookAuth';
 import { useTwitterAuth } from '@/hooks/useTwitterAuth';
 import { useMastodonAuth } from '@/hooks/useMastodonAuth';
+import { useTelegramAuth } from '@/hooks/useTelegramAuth';
+import TelegramConnectDialog from '@/components/TelegramConnectDialog';
 import { 
   Instagram, 
   Facebook, 
@@ -29,6 +31,13 @@ const SocialMediaSettings = () => {
   const { connectFacebook, isConnecting: isFacebookConnecting } = useFacebookAuth();
   const { connectTwitter, isConnecting: isTwitterConnecting } = useTwitterAuth();
   const { connectMastodon, isConnecting: isMastodonConnecting } = useMastodonAuth(refetchAccounts);
+  const { 
+    connectTelegram, 
+    isConnecting: isTelegramConnecting, 
+    showDialog: showTelegramDialog,
+    openConnectionDialog: openTelegramDialog,
+    closeConnectionDialog: closeTelegramDialog
+  } = useTelegramAuth(refetchAccounts);
 
   const handleMastodonConnect = async () => {
     await connectMastodon();
@@ -36,7 +45,7 @@ const SocialMediaSettings = () => {
 
   const platforms = [
     { id: 'mastodon', name: 'Mastodon', icon: MastodonIcon, color: 'bg-purple-600', tier: 'Free' },
-    { id: 'telegram', name: 'Telegram', icon: Send, color: 'bg-blue-400', tier: 'Free', comingSoon: true },
+    { id: 'telegram', name: 'Telegram', icon: Send, color: 'bg-blue-400', tier: 'Free' },
     { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500', tier: 'Starter' },
     { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600', tier: 'Starter' },
     { id: 'tiktok', name: 'TikTok', icon: Music, color: 'bg-black', tier: 'Starter', beta: true },
@@ -63,6 +72,7 @@ const SocialMediaSettings = () => {
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -154,6 +164,8 @@ const SocialMediaSettings = () => {
                         connectTwitter();
                       } else if (platform.id === 'mastodon') {
                         handleMastodonConnect();
+                      } else if (platform.id === 'telegram') {
+                        openTelegramDialog();
                       } else {
                         connectAccount(platform.id);
                       }
@@ -162,6 +174,7 @@ const SocialMediaSettings = () => {
                       (platform.id === 'facebook' && isFacebookConnecting) ||
                       ((platform.id === 'twitter' || platform.id === 'x') && isTwitterConnecting) ||
                       (platform.id === 'mastodon' && isMastodonConnecting) ||
+                      (platform.id === 'telegram' && isTelegramConnecting) ||
                       platform.comingSoon
                     }
                     className="w-full sm:w-auto"
@@ -169,7 +182,8 @@ const SocialMediaSettings = () => {
                     <Plus className="h-4 w-4 mr-2" />
                     {(platform.id === 'facebook' && isFacebookConnecting) || 
                      ((platform.id === 'twitter' || platform.id === 'x') && isTwitterConnecting) ||
-                     (platform.id === 'mastodon' && isMastodonConnecting)
+                     (platform.id === 'mastodon' && isMastodonConnecting) ||
+                     (platform.id === 'telegram' && isTelegramConnecting)
                       ? 'Connecting...' 
                       : platform.comingSoon 
                         ? 'Coming Soon'
@@ -195,6 +209,14 @@ const SocialMediaSettings = () => {
         )}
       </CardContent>
     </Card>
+
+    <TelegramConnectDialog
+      open={showTelegramDialog}
+      onClose={closeTelegramDialog}
+      onConnect={connectTelegram}
+      isConnecting={isTelegramConnecting}
+    />
+    </>
   );
 };
 
