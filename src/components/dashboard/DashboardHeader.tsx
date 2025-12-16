@@ -33,6 +33,15 @@ const DashboardHeader = ({
               {title}
             </h1>
             <div className="flex items-center gap-2 sm:hidden">
+              {showDashboardButton && (
+                <Button
+                  onClick={() => navigate('/dashboard')}
+                  variant="outline"
+                  size="sm"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 onClick={() => navigate('/')}
                 variant="outline"
