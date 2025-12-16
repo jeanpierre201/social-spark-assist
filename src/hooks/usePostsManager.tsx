@@ -46,13 +46,44 @@ export const usePostsManager = () => {
     enabled: !!user,
   });
 
+  // Separate query to count posts in the current 30-day period (for free users)
+  // This ensures we count ALL posts, not just visible ones
+  const postCountQuery = useQuery({
+    queryKey: ['posts-count', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      
+      // Count posts from the last 30 days for free users
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { count, error } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gte('created_at', thirtyDaysAgo.toISOString());
+      
+      if (error) {
+        console.error('Error counting posts:', error);
+        return 0;
+      }
+      
+      return count || 0;
+    },
+    enabled: !!user && isFreeUser,
+  });
+
   // Get current month's posts count
-  const currentMonthPosts = postsQuery.data?.filter(post => {
-    const postDate = new Date(post.created_at || '');
-    const now = new Date();
-    return postDate.getMonth() === now.getMonth() && 
-           postDate.getFullYear() === now.getFullYear();
-  }).length || 0;
+  // For free users, use the dedicated count query (counts last 30 days)
+  // For paid users, count from the fetched posts
+  const currentMonthPosts = isFreeUser 
+    ? (postCountQuery.data || 0)
+    : (postsQuery.data?.filter(post => {
+        const postDate = new Date(post.created_at || '');
+        const now = new Date();
+        return postDate.getMonth() === now.getMonth() && 
+               postDate.getFullYear() === now.getFullYear();
+      }).length || 0);
 
   // Determine post limit based on subscription
   const getPostLimit = () => {
