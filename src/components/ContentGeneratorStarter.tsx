@@ -173,10 +173,37 @@ const ContentGeneratorStarter = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex justify-between items-center">
+        {/* Header - Mobile */}
+        <div className="mb-6 md:mb-8 md:hidden">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-foreground">Content Generator</h1>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-px bg-border" />
+              <ProfileAvatar />
+            </div>
+          </div>
+          <p className="text-muted-foreground text-sm mb-4">Generate up to 10 posts per month with AI assistance</p>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Dashboard
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleGoHome} className="flex items-center gap-2">
+              <Home className="h-4 w-4" />
+              Home
+            </Button>
+          </div>
+        </div>
+
+        {/* Header - Desktop */}
+        <div className="mb-8 hidden md:flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Content Generator</h1>
             <p className="text-muted-foreground">Generate up to 10 posts per month with AI assistance</p>
@@ -209,8 +236,8 @@ const ContentGeneratorStarter = () => {
           canCreatePosts={canCreatePosts}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <ContentCreationForm 
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+          <ContentCreationForm
             monthlyPosts={monthlyPosts}
             setMonthlyPosts={setMonthlyPosts}
             canCreatePosts={canCreatePosts}
