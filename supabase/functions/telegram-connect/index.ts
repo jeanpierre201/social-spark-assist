@@ -38,6 +38,19 @@ serve(async (req) => {
       throw new Error('Bot token and channel ID are required');
     }
 
+    // Validate channel ID format - reject invite links
+    if (channelId.includes('t.me/') || channelId.includes('telegram.me/') || channelId.includes('+')) {
+      throw new Error('Invite links are not supported. Use @channelname for public channels or numeric ID (e.g., -1001234567890) for private channels.');
+    }
+
+    // Must be either @username format or numeric ID starting with -100
+    const isPublicChannel = channelId.startsWith('@');
+    const isPrivateChannel = /^-100\d+$/.test(channelId);
+    
+    if (!isPublicChannel && !isPrivateChannel) {
+      throw new Error('Invalid Channel ID format. Use @channelname for public channels or -100xxxxxxxxxx for private channels.');
+    }
+
     console.log(`[TELEGRAM-CONNECT] Connecting user ${user.id} to channel ${channelId}`);
 
     // Check if account already exists

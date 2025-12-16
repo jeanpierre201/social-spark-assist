@@ -40,6 +40,23 @@ const TelegramConnectDialog = ({ open, onClose, onConnect, isConnecting }: Teleg
       return;
     }
 
+    const trimmedChannelId = channelId.trim();
+    
+    // Validate channel ID format - reject invite links
+    if (trimmedChannelId.includes('t.me/') || trimmedChannelId.includes('telegram.me/') || trimmedChannelId.includes('+')) {
+      setError('Invite links are not supported. Please use @channelname for public channels or numeric ID (e.g., -1001234567890) for private channels. Forward a message from your channel to @userinfobot to get the numeric ID.');
+      return;
+    }
+
+    // Must be either @username format or numeric ID starting with -100
+    const isPublicChannel = trimmedChannelId.startsWith('@');
+    const isPrivateChannel = /^-100\d+$/.test(trimmedChannelId);
+    
+    if (!isPublicChannel && !isPrivateChannel) {
+      setError('Invalid Channel ID format. Use @channelname for public channels or -100xxxxxxxxxx for private channels.');
+      return;
+    }
+
     const result = await onConnect({
       botToken: botToken.trim(),
       channelId: channelId.trim(),
