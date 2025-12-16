@@ -82,18 +82,18 @@ const SubscriptionManagement = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
-              Subscription Management
+      <CardHeader className="pb-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+              <CreditCard className="h-5 w-5 flex-shrink-0" />
+              <span>Subscription Management</span>
             </CardTitle>
-            <CardDescription>Manage your subscription and billing</CardDescription>
+            <CardDescription className="text-sm">Manage your subscription and billing</CardDescription>
           </div>
           <Badge 
             variant="secondary" 
-            className={`bg-${tierColor}-100 text-${tierColor}-800`}
+            className={`bg-${tierColor}-100 text-${tierColor}-800 w-fit`}
           >
             {subscriptionTier} Plan
           </Badge>
