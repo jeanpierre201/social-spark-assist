@@ -54,7 +54,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const { user } = useAuth();
   const { subscriptionEnd, subscriptionTier } = useSubscription();
   const { accounts } = useSocialAccounts();
-  const { publishToMastodon, publishToFacebook, publishToTwitter, isPublishingPost } = useManualPublish();
+  const { publishToMastodon, publishToFacebook, publishToTwitter, publishToTelegram, isPublishingPost } = useManualPublish();
   // Get subscription status based on tier
   const starterStatus = useStarterSubscriptionStatus();
   const proStatus = useProSubscriptionStatus();
@@ -1117,26 +1117,61 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                       const message = formData.caption + (formData.hashtags ? '\n\n' + formData.hashtags : '');
                       const imageUrl = formData.media_url || undefined;
                       
+                      let publishedCount = 0;
+                      let failedCount = 0;
+                      const missingAccounts: string[] = [];
+                      
                       for (const platformId of selectedPlatforms) {
                         if (platformId === 'mastodon') {
                           const mastodonAccount = accounts.find(acc => acc.platform === 'mastodon' && acc.is_active);
                           if (mastodonAccount) {
-                            await publishToMastodon(post.id, message, imageUrl);
+                            const result = await publishToMastodon(post.id, message, imageUrl);
+                            if (result.success) publishedCount++; else failedCount++;
+                          } else {
+                            missingAccounts.push('Mastodon');
+                          }
+                        } else if (platformId === 'telegram') {
+                          const telegramAccount = accounts.find(acc => acc.platform === 'telegram' && acc.is_active);
+                          if (telegramAccount) {
+                            const result = await publishToTelegram(post.id, message, imageUrl);
+                            if (result.success) publishedCount++; else failedCount++;
+                          } else {
+                            missingAccounts.push('Telegram');
                           }
                         } else if (platformId === 'facebook') {
                           const fbAccount = accounts.find(acc => acc.platform === 'facebook' && acc.is_active);
                           if (fbAccount) {
-                            await publishToFacebook(post.id, fbAccount.id, message, imageUrl);
+                            const result = await publishToFacebook(post.id, fbAccount.id, message, imageUrl);
+                            if (result.success) publishedCount++; else failedCount++;
+                          } else {
+                            missingAccounts.push('Facebook');
                           }
                         } else if (platformId === 'twitter' || platformId === 'x') {
                           const twitterAccount = accounts.find(acc => (acc.platform === 'twitter' || acc.platform === 'x') && acc.is_active);
                           if (twitterAccount) {
-                            await publishToTwitter(post.id, twitterAccount.id, message);
+                            const result = await publishToTwitter(post.id, twitterAccount.id, message);
+                            if (result.success) publishedCount++; else failedCount++;
+                          } else {
+                            missingAccounts.push('X (Twitter)');
                           }
                         }
                       }
                       
+                      // Show feedback
+                      if (missingAccounts.length > 0) {
+                        toast({
+                          title: 'Account not connected',
+                          description: `Please connect ${missingAccounts.join(', ')} in Social Media Settings`,
+                          variant: 'destructive',
+                        });
+                      }
+                      
                       onPostUpdated();
+                      
+                      // Close dialog if at least one platform succeeded
+                      if (publishedCount > 0) {
+                        onOpenChange(false);
+                      }
                     }}
                     disabled={isPublishingPost(post?.id || '')}
                     className="w-full"

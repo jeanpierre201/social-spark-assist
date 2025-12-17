@@ -51,6 +51,34 @@ serve(async (req) => {
       throw new Error('Invalid Channel ID format. Use @channelname for public channels or -100xxxxxxxxxx for private channels.');
     }
 
+    // Verify the bot can access the channel by calling getChat
+    console.log(`[TELEGRAM-CONNECT] Testing channel access for ${channelId}...`);
+    const testResponse = await fetch(`https://api.telegram.org/bot${botToken}/getChat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: channelId })
+    });
+    
+    const testData = await testResponse.json();
+    
+    if (!testData.ok) {
+      console.error('[TELEGRAM-CONNECT] Channel test failed:', testData);
+      
+      let errorMessage = testData.description || 'Failed to access channel';
+      
+      if (testData.error_code === 400 && testData.description?.includes('chat not found')) {
+        errorMessage = 'Channel not found. Make sure the Channel ID is correct and the bot is added as admin to the channel.';
+      } else if (testData.error_code === 403) {
+        errorMessage = 'Bot cannot access this channel. Please add the bot as admin to the channel first.';
+      } else if (testData.error_code === 401) {
+        errorMessage = 'Invalid Bot Token. Please check your token is correct.';
+      }
+      
+      throw new Error(errorMessage);
+    }
+    
+    console.log(`[TELEGRAM-CONNECT] Channel verified: ${testData.result?.title || channelId}`);
+
     console.log(`[TELEGRAM-CONNECT] Connecting user ${user.id} to channel ${channelId}`);
 
     // Check if account already exists
