@@ -58,13 +58,19 @@ export const useTelegramAuth = (onSuccess?: () => void) => {
 
       console.log('[TELEGRAM-AUTH] Bot validated:', validation.botInfo?.username);
 
-      // Format channel ID - add @ prefix for public channels if needed
+      // Format channel ID - add @ prefix for public channels or -100 for private channels
       let channelId = credentials.channelId.trim();
       if (!channelId.startsWith('@') && !channelId.startsWith('-')) {
-        // If it looks like a username without @, add it
-        if (!/^\d+$/.test(channelId)) {
+        // If it's a pure numeric ID, add -100 prefix for private channels
+        if (/^\d+$/.test(channelId)) {
+          channelId = '-100' + channelId;
+        } else {
+          // Otherwise treat as username and add @
           channelId = '@' + channelId;
         }
+      } else if (channelId.startsWith('-') && !channelId.startsWith('-100')) {
+        // If starts with - but not -100, fix it
+        channelId = '-100' + channelId.substring(1);
       }
 
       // Call edge function to securely store credentials (bypasses RLS)
