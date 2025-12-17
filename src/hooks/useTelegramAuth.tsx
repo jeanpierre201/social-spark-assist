@@ -60,17 +60,25 @@ export const useTelegramAuth = (onSuccess?: () => void) => {
 
       // Format channel ID - add @ prefix for public channels or -100 for private channels
       let channelId = credentials.channelId.trim();
-      if (!channelId.startsWith('@') && !channelId.startsWith('-')) {
-        // If it's a pure numeric ID, add -100 prefix for private channels
-        if (/^\d+$/.test(channelId)) {
-          channelId = '-100' + channelId;
+      
+      // For private channels: user should enter ONLY the numeric ID from @userinfobot
+      // We always add the -100 prefix ourselves
+      const isPublicChannel = channelId.startsWith('@') || /^[a-zA-Z]/.test(channelId);
+      
+      if (!isPublicChannel) {
+        // Extract just the digits (remove any dashes or prefixes the user may have added)
+        const digits = channelId.replace(/\D/g, '');
+        if (digits.length >= 10) {
+          // Valid numeric ID - add -100 prefix
+          channelId = '-100' + digits;
+          console.log('[TELEGRAM-AUTH] Formatted numeric channel ID:', channelId);
         } else {
-          // Otherwise treat as username and add @
-          channelId = '@' + channelId;
+          throw new Error('Invalid Channel ID. Please enter the numeric ID from @userinfobot (at least 10 digits).');
         }
-      } else if (channelId.startsWith('-') && !channelId.startsWith('-100')) {
-        // If starts with - but not -100, fix it
-        channelId = '-100' + channelId.substring(1);
+      } else {
+        // Public channel - ensure @ prefix
+        channelId = channelId.startsWith('@') ? channelId : '@' + channelId;
+        console.log('[TELEGRAM-AUTH] Formatted as public channel:', channelId);
       }
 
       // Call edge function to securely store credentials (bypasses RLS)

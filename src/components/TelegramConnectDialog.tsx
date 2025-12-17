@@ -44,16 +44,16 @@ const TelegramConnectDialog = ({ open, onClose, onConnect, isConnecting }: Teleg
     
     // Validate channel ID format - reject invite links
     if (trimmedChannelId.includes('t.me/') || trimmedChannelId.includes('telegram.me/') || trimmedChannelId.includes('+')) {
-      setError('Invite links are not supported. Please use @channelname for public channels or numeric ID (e.g., -1001234567890) for private channels. Forward a message from your channel to @userinfobot to get the numeric ID.');
+      setError('Invite links are not supported. Please use @channelname for public channels or the numeric ID from @userinfobot for private channels.');
       return;
     }
 
-    // Must be either @username format or numeric ID starting with -100
-    const isPublicChannel = trimmedChannelId.startsWith('@');
-    const isPrivateChannel = /^-100\d+$/.test(trimmedChannelId);
+    // Allow: @username format OR numeric ID (with or without -100 prefix)
+    const isPublicChannel = trimmedChannelId.startsWith('@') || /^[a-zA-Z]/.test(trimmedChannelId);
+    const hasNumericId = /\d{10,}/.test(trimmedChannelId); // At least 10 digits somewhere
     
-    if (!isPublicChannel && !isPrivateChannel) {
-      setError('Invalid Channel ID format. Use @channelname for public channels or -100xxxxxxxxxx for private channels.');
+    if (!isPublicChannel && !hasNumericId) {
+      setError('Invalid Channel ID. Use @channelname for public channels, or enter the numeric ID from @userinfobot for private channels.');
       return;
     }
 
@@ -128,20 +128,20 @@ const TelegramConnectDialog = ({ open, onClose, onConnect, isConnecting }: Teleg
             <Label htmlFor="channelId">Channel ID *</Label>
             <Input
               id="channelId"
-              placeholder="@yourchannel or -1001234567890"
+              placeholder="@yourchannel or 1234567890"
               value={channelId}
               onChange={(e) => setChannelId(e.target.value)}
               disabled={isConnecting}
             />
             <div className="text-xs text-muted-foreground space-y-2">
               <p><strong>Public channels:</strong> Use @channelname (e.g., @mychannel)</p>
-              <p><strong>Private channels:</strong> Use numeric ID starting with -100</p>
+              <p><strong>Private channels:</strong> Enter the numeric ID from @userinfobot</p>
               <Alert className="mt-2 py-2">
                 <AlertDescription className="text-xs">
                   <strong>💡 How to get private channel ID:</strong><br />
                   <span className="text-muted-foreground">
-                    Invite links like <code className="bg-muted px-1 rounded">t.me/+xxx</code> won't work. 
-                    Forward any message from your channel to <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@userinfobot</a> to get the numeric ID (e.g., -1001234567890)
+                    Forward any message from your channel to <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@userinfobot</a>. 
+                    Enter ONLY the numeric ID it gives you (e.g., 1234567890). We'll format it correctly.
                   </span>
                 </AlertDescription>
               </Alert>
