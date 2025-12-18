@@ -16,13 +16,15 @@ import {
   Crown,
   Zap,
   BarChart3,
-  RefreshCw
+  RefreshCw,
+  Gift
 } from 'lucide-react';
 import SubscriptionAnalytics from './analytics/SubscriptionAnalytics';
 import IncomeAnalytics from './analytics/IncomeAnalytics';
 import UserActivityAnalytics from './analytics/UserActivityAnalytics';
 import ContentAnalytics from './analytics/ContentAnalytics';
 import PerformanceMetrics from './analytics/PerformanceMetrics';
+import PromoCodesManagement from './analytics/PromoCodesManagement';
 
 const AdminDashboard = () => {
   const { userRole, loading: roleLoading, isAdmin } = useUserRole();
@@ -194,7 +196,7 @@ const AdminDashboard = () => {
 
         {/* Analytics Tabs */}
         <Tabs defaultValue="subscriptions" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="subscriptions" className="flex items-center gap-2">
               <Crown className="h-4 w-4" />
               Subscriptions
@@ -214,6 +216,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="performance" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Performance
+            </TabsTrigger>
+            <TabsTrigger value="promo-codes" className="flex items-center gap-2">
+              <Gift className="h-4 w-4" />
+              Promo Codes
             </TabsTrigger>
           </TabsList>
 
@@ -235,6 +241,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="performance">
             <PerformanceMetrics />
+          </TabsContent>
+
+          <TabsContent value="promo-codes">
+            <PromoCodesManagement loading={loading} />
           </TabsContent>
         </Tabs>
       </div>

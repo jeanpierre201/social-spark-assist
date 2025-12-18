@@ -111,3 +111,6 @@ verify_jwt = true
 
 [functions.telegram-post]
 verify_jwt = true
+
+[functions.redeem-promo-code]
+verify_jwt = true

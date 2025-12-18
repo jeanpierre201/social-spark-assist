@@ -7,6 +7,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useProUpgrade } from '@/hooks/useProUpgrade';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import PromoCodeRedemption from '@/components/PromoCodeRedemption';
 
 const ProPlanPricing = () => {
   const { user } = useAuth();
@@ -142,6 +143,13 @@ const ProPlanPricing = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Promo Code Section */}
+        {!isProUser && (
+          <div className="mt-8 max-w-lg mx-auto">
+            <PromoCodeRedemption onSuccess={() => window.location.reload()} />
+          </div>
+        )}
       </div>
     </div>
   );

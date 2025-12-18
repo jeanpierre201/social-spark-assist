@@ -6,6 +6,7 @@ import { Check, Crown, Settings, Home, ArrowLeft, Zap, Calendar, Image, Clock, B
 import { useSubscription } from '@/hooks/useSubscription';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import PromoCodeRedemption from '@/components/PromoCodeRedemption';
 
 const StarterPlanPricing = () => {
   const { user } = useAuth();
@@ -161,6 +162,13 @@ const StarterPlanPricing = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Promo Code Section */}
+        {!isStarterUser && !isProUser && (
+          <div className="mt-8 max-w-lg mx-auto">
+            <PromoCodeRedemption onSuccess={() => window.location.reload()} />
+          </div>
+        )}
       </div>
     </div>
   );
