@@ -564,6 +564,54 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          max_uses: number
+          redeemed_at: string | null
+          redeemed_by_email: string | null
+          redeemed_by_user_id: string | null
+          subscription_tier: string
+          updated_at: string
+          used_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          redeemed_at?: string | null
+          redeemed_by_email?: string | null
+          redeemed_by_user_id?: string | null
+          subscription_tier: string
+          updated_at?: string
+          used_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number
+          redeemed_at?: string | null
+          redeemed_by_email?: string | null
+          redeemed_by_user_id?: string | null
+          subscription_tier?: string
+          updated_at?: string
+          used_count?: number
+        }
+        Relationships: []
+      }
       social_accounts: {
         Row: {
           account_data: Json | null
@@ -859,6 +907,7 @@ export type Database = {
         Args: { extension_days?: number; user_uuid: string }
         Returns: boolean
       }
+      generate_promo_code: { Args: never; Returns: string }
       get_current_period_posts_count: {
         Args: { subscription_start: string; user_uuid: string }
         Returns: number
@@ -894,6 +943,14 @@ export type Database = {
       is_campaign_member: { Args: { campaign_uuid: string }; Returns: boolean }
       is_campaign_owner: { Args: { campaign_uuid: string }; Returns: boolean }
       is_free_user: { Args: { user_uuid: string }; Returns: boolean }
+      redeem_promo_code: {
+        Args: {
+          promo_code_input: string
+          user_email_input: string
+          user_uuid: string
+        }
+        Returns: Json
+      }
       user_can_access_campaign: {
         Args: { campaign_uuid: string }
         Returns: boolean
