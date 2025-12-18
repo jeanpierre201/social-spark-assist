@@ -136,8 +136,9 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Line type="monotone" dataKey="Pro_active" stroke="#8B5CF6" strokeWidth={2} />
-                <Line type="monotone" dataKey="Starter_active" stroke="#3B82F6" strokeWidth={2} />
+                <Line type="monotone" dataKey="Pro_active" stroke="#8B5CF6" strokeWidth={2} name="Pro" />
+                <Line type="monotone" dataKey="Starter_active" stroke="#3B82F6" strokeWidth={2} name="Starter" />
+                <Line type="monotone" dataKey="Free_active" stroke="#10B981" strokeWidth={2} name="Free" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -185,8 +186,9 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
                 <XAxis dataKey="date" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="Pro_new" fill="#8B5CF6" />
-                <Bar dataKey="Starter_new" fill="#3B82F6" />
+                <Bar dataKey="Pro_new" fill="#8B5CF6" name="Pro" />
+                <Bar dataKey="Starter_new" fill="#3B82F6" name="Starter" />
+                <Bar dataKey="Free_new" fill="#10B981" name="Free" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
