@@ -114,3 +114,9 @@ verify_jwt = true
 
 [functions.redeem-promo-code]
 verify_jwt = true
+
+[functions.instagram-oauth]
+verify_jwt = true
+
+[functions.instagram-post]
+verify_jwt = true

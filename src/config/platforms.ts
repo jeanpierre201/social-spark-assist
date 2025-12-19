@@ -67,7 +67,7 @@ export const platforms: PlatformConfig[] = [
     name: 'TikTok',
     icon: 'tiktok',
     tier: 'Starter',
-    status: 'beta',
+    status: 'coming',
     supportsHashtags: true,
     supportsAnalytics: true,
     color: '#000000',

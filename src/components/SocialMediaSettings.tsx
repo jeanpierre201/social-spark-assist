@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useFacebookAuth } from '@/hooks/useFacebookAuth';
+import { useInstagramAuth } from '@/hooks/useInstagramAuth';
 import { useTwitterAuth } from '@/hooks/useTwitterAuth';
 import { useMastodonAuth } from '@/hooks/useMastodonAuth';
 import { useTelegramAuth } from '@/hooks/useTelegramAuth';
+import { useSubscription } from '@/hooks/useSubscription';
 import TelegramConnectDialog from '@/components/TelegramConnectDialog';
 import { 
   Instagram, 
@@ -15,9 +17,11 @@ import {
   Send,
   Plus,
   Unlink,
-  RefreshCw 
+  RefreshCw,
+  Lock
 } from 'lucide-react';
 import PlatformIcon from '@/components/PlatformIcon';
+import { Link } from 'react-router-dom';
 
 // Custom Mastodon icon
 const MastodonIcon = () => (
@@ -26,9 +30,12 @@ const MastodonIcon = () => (
   </svg>
 );
 
+type SubscriptionTier = 'Free' | 'Starter' | 'Pro';
+
 const SocialMediaSettings = () => {
   const { accounts, metrics, loading, connectAccount, disconnectAccount, refreshMetrics, refetchAccounts } = useSocialAccounts();
   const { connectFacebook, isConnecting: isFacebookConnecting } = useFacebookAuth();
+  const { connectInstagram, isConnecting: isInstagramConnecting } = useInstagramAuth();
   const { connectTwitter, isConnecting: isTwitterConnecting } = useTwitterAuth();
   const { connectMastodon, isConnecting: isMastodonConnecting } = useMastodonAuth(refetchAccounts);
   const { 
@@ -38,19 +45,45 @@ const SocialMediaSettings = () => {
     openConnectionDialog: openTelegramDialog,
     closeConnectionDialog: closeTelegramDialog
   } = useTelegramAuth(refetchAccounts);
+  const { subscriptionTier, subscribed } = useSubscription();
 
   const handleMastodonConnect = async () => {
     await connectMastodon();
   };
 
+  // Determine user's effective tier
+  const getUserTier = (): SubscriptionTier => {
+    if (!subscribed || !subscriptionTier) return 'Free';
+    if (subscriptionTier === 'Pro') return 'Pro';
+    if (subscriptionTier === 'Starter') return 'Starter';
+    return 'Free';
+  };
+
+  const userTier = getUserTier();
+
+  // Check if user can access a platform based on tier
+  const canAccessPlatform = (platformTier: SubscriptionTier): boolean => {
+    const tierOrder: SubscriptionTier[] = ['Free', 'Starter', 'Pro'];
+    const userTierIndex = tierOrder.indexOf(userTier);
+    const platformTierIndex = tierOrder.indexOf(platformTier);
+    return userTierIndex >= platformTierIndex;
+  };
+
+  // Get upgrade link based on required tier
+  const getUpgradeLink = (tier: SubscriptionTier): string => {
+    if (tier === 'Starter') return '/upgrade/starter';
+    if (tier === 'Pro') return '/upgrade/pro';
+    return '/upgrade/starter';
+  };
+
   const platforms = [
-    { id: 'mastodon', name: 'Mastodon', icon: MastodonIcon, color: 'bg-purple-600', tier: 'Free' },
-    { id: 'telegram', name: 'Telegram', icon: Send, color: 'bg-blue-400', tier: 'Free' },
-    { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500', tier: 'Starter' },
-    { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600', tier: 'Starter' },
-    { id: 'tiktok', name: 'TikTok', icon: Music, color: 'bg-black', tier: 'Starter', beta: true },
-    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700', tier: 'Pro' },
-    { id: 'x', name: 'X (Twitter)', icon: () => <PlatformIcon platform="x" size={20} className="text-white" />, color: 'bg-black', tier: 'Pro', comingSoon: true },
+    { id: 'mastodon', name: 'Mastodon', icon: MastodonIcon, color: 'bg-purple-600', tier: 'Free' as SubscriptionTier },
+    { id: 'telegram', name: 'Telegram', icon: Send, color: 'bg-blue-400', tier: 'Free' as SubscriptionTier },
+    { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'bg-pink-500', tier: 'Starter' as SubscriptionTier },
+    { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'bg-blue-600', tier: 'Starter' as SubscriptionTier },
+    { id: 'tiktok', name: 'TikTok', icon: Music, color: 'bg-black', tier: 'Starter' as SubscriptionTier, comingSoon: true },
+    { id: 'linkedin', name: 'LinkedIn', icon: Linkedin, color: 'bg-blue-700', tier: 'Pro' as SubscriptionTier },
+    { id: 'x', name: 'X (Twitter)', icon: () => <PlatformIcon platform="x" size={20} className="text-white" />, color: 'bg-black', tier: 'Pro' as SubscriptionTier, comingSoon: true },
   ];
 
   const getAccountByPlatform = (platform: string) => {
@@ -93,11 +126,16 @@ const SocialMediaSettings = () => {
           const account = getAccountByPlatform(platform.id);
           const platformMetrics = getMetricsByPlatform(platform.id);
           const IconComponent = platform.icon;
+          const hasAccess = canAccessPlatform(platform.tier);
+          const isLocked = !hasAccess;
 
           return (
-            <div key={platform.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3">
+            <div 
+              key={platform.id} 
+              className={`flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg gap-3 ${isLocked ? 'opacity-60 bg-muted/30' : ''}`}
+            >
               <div className="flex items-center space-x-4">
-                <div className={`p-2 rounded-lg ${platform.color}`}>
+                <div className={`p-2 rounded-lg ${platform.color} ${isLocked ? 'opacity-50' : ''}`}>
                   <IconComponent className="h-5 w-5 text-white" />
                 </div>
                 <div>
@@ -108,18 +146,20 @@ const SocialMediaSettings = () => {
                         {platform.tier}
                       </Badge>
                     )}
-                    {platform.beta && (
-                      <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">
-                        Beta
-                      </Badge>
-                    )}
                     {platform.comingSoon && (
                       <Badge variant="secondary" className="text-xs">
                         Soon
                       </Badge>
                     )}
+                    {isLocked && (
+                      <Lock className="h-3 w-3 text-muted-foreground" />
+                    )}
                   </div>
-                  {account ? (
+                  {isLocked ? (
+                    <p className="text-sm text-muted-foreground">
+                      Upgrade to {platform.tier} to unlock
+                    </p>
+                  ) : account ? (
                     <div className="flex items-center space-x-2 mt-1">
                       <Badge variant="secondary" className="bg-green-100 text-green-800">
                         Connected
@@ -133,7 +173,7 @@ const SocialMediaSettings = () => {
                   ) : (
                     <p className="text-sm text-muted-foreground">Not connected</p>
                   )}
-                  {platformMetrics && (
+                  {platformMetrics && !isLocked && (
                     <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
                       <span>{platformMetrics.followers_count} followers</span>
                       <span>{platformMetrics.engagement_rate}% engagement</span>
@@ -143,7 +183,19 @@ const SocialMediaSettings = () => {
                 </div>
               </div>
               <div className="w-full sm:w-auto">
-                {account ? (
+                {isLocked ? (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    asChild
+                  >
+                    <Link to={getUpgradeLink(platform.tier)}>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Upgrade
+                    </Link>
+                  </Button>
+                ) : account ? (
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -160,6 +212,8 @@ const SocialMediaSettings = () => {
                     onClick={() => {
                       if (platform.id === 'facebook') {
                         connectFacebook();
+                      } else if (platform.id === 'instagram') {
+                        connectInstagram();
                       } else if (platform.id === 'twitter' || platform.id === 'x') {
                         connectTwitter();
                       } else if (platform.id === 'mastodon') {
@@ -172,6 +226,7 @@ const SocialMediaSettings = () => {
                     }}
                     disabled={
                       (platform.id === 'facebook' && isFacebookConnecting) ||
+                      (platform.id === 'instagram' && isInstagramConnecting) ||
                       ((platform.id === 'twitter' || platform.id === 'x') && isTwitterConnecting) ||
                       (platform.id === 'mastodon' && isMastodonConnecting) ||
                       (platform.id === 'telegram' && isTelegramConnecting) ||
@@ -181,6 +236,7 @@ const SocialMediaSettings = () => {
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     {(platform.id === 'facebook' && isFacebookConnecting) || 
+                     (platform.id === 'instagram' && isInstagramConnecting) ||
                      ((platform.id === 'twitter' || platform.id === 'x') && isTwitterConnecting) ||
                      (platform.id === 'mastodon' && isMastodonConnecting) ||
                      (platform.id === 'telegram' && isTelegramConnecting)
