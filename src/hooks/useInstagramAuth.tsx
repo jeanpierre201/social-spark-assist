@@ -71,39 +71,44 @@ export const useInstagramAuth = () => {
     }
 
     function doFacebookLogin() {
-      window.FB.login(
-        (response: any) => {
-          console.log('[INSTAGRAM-AUTH] Login response:', response);
-          
-          if (response.authResponse) {
-            console.log('[INSTAGRAM-AUTH] Login successful, granted scopes:', response.authResponse.grantedScopes);
+      // Force logout first to clear any cached permissions from previous auth attempts
+      console.log('[INSTAGRAM-AUTH] Forcing logout to clear cached permissions...');
+      window.FB.logout(() => {
+        console.log('[INSTAGRAM-AUTH] Logged out, starting fresh login...');
+        window.FB.login(
+          (response: any) => {
+            console.log('[INSTAGRAM-AUTH] Login response:', response);
             
-            const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
-            
-            // Check for required page permissions
-            if (!grantedScopes.includes('pages_show_list')) {
-              showToast(
-                'Insufficient Permissions',
-                'Please grant access to Facebook Pages to connect Instagram',
-                'destructive'
-              );
+            if (response.authResponse) {
+              console.log('[INSTAGRAM-AUTH] Login successful, granted scopes:', response.authResponse.grantedScopes);
+              
+              const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
+              
+              // Check for required page permissions
+              if (!grantedScopes.includes('pages_show_list')) {
+                showToast(
+                  'Insufficient Permissions',
+                  'Please grant access to Facebook Pages to connect Instagram',
+                  'destructive'
+                );
+                setIsConnecting(false);
+                return;
+              }
+              
+              fetchInstagramAccounts(response.authResponse.accessToken);
+            } else {
+              console.log('[INSTAGRAM-AUTH] Login cancelled or failed');
+              showToast('Connection Cancelled', 'Instagram connection was cancelled', 'destructive');
               setIsConnecting(false);
-              return;
             }
-            
-            fetchInstagramAccounts(response.authResponse.accessToken);
-          } else {
-            console.log('[INSTAGRAM-AUTH] Login cancelled or failed');
-            showToast('Connection Cancelled', 'Instagram connection was cancelled', 'destructive');
-            setIsConnecting(false);
+          },
+          { 
+            scope: 'pages_show_list,pages_manage_posts',
+            auth_type: 'reauthorize', // Force fresh permission prompt
+            return_scopes: true 
           }
-        },
-        { 
-          // Use only pages_show_list for development - Instagram access comes through page token
-          scope: 'pages_show_list,pages_manage_posts',
-          return_scopes: true 
-        }
-      );
+        );
+      });
     }
 
     function fetchInstagramAccounts(userAccessToken: string) {
