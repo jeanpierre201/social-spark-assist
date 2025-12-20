@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -13,8 +13,33 @@ export const useFacebookAuth = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const { toast } = useToast();
 
+  // Watchdog so the UI never gets stuck in "Connecting..." forever
+  const watchdogRef = useRef<number | null>(null);
+
+  const stopWatchdog = useCallback(() => {
+    if (watchdogRef.current) {
+      window.clearTimeout(watchdogRef.current);
+      watchdogRef.current = null;
+    }
+  }, []);
+
+  const startWatchdog = useCallback(() => {
+    stopWatchdog();
+    watchdogRef.current = window.setTimeout(() => {
+      console.warn('[FACEBOOK-AUTH] Connection watchdog timeout fired');
+      toast({
+        title: 'Connection Timed Out',
+        description: 'The Facebook login did not complete. Please disable popup blockers and try again.',
+        variant: 'destructive',
+      });
+      setIsConnecting(false);
+      watchdogRef.current = null;
+    }, 15000);
+  }, [stopWatchdog, toast]);
+
   const connectFacebook = async () => {
     setIsConnecting(true);
+    startWatchdog();
 
     try {
       // Check if FB SDK is loaded
@@ -38,6 +63,7 @@ export const useFacebookAuth = () => {
       });
     } catch (error: any) {
       console.error('Facebook connection error:', error);
+      stopWatchdog();
       toast({
         title: 'Connection Failed',
         description: error.message || 'Failed to connect to Facebook',
@@ -62,6 +88,7 @@ export const useFacebookAuth = () => {
             console.log('[FACEBOOK-AUTH] Granted scopes:', grantedScopes);
 
             if (!grantedScopes.includes('pages_show_list')) {
+              stopWatchdog();
               toast({
                 title: 'Insufficient Permissions',
                 description: 'Please grant access to view your Facebook Pages',
@@ -73,6 +100,7 @@ export const useFacebookAuth = () => {
 
             handleFacebookPages(response.authResponse.accessToken);
           } else {
+            stopWatchdog();
             console.log('[FACEBOOK-AUTH] Login cancelled or failed');
             toast({
               title: 'Connection Cancelled',
@@ -119,11 +147,12 @@ export const useFacebookAuth = () => {
 
   const handleFacebookPages = (userAccessToken: string) => {
     console.log('[FACEBOOK-AUTH] Fetching user pages...');
-    
+
     // Get user's pages with their access tokens
     window.FB.api('/me/accounts', (pagesResponse: any) => {
       if (pagesResponse.error) {
         console.error('[FACEBOOK-AUTH] Error fetching pages:', pagesResponse.error);
+        stopWatchdog();
         toast({
           title: 'Error',
           description: pagesResponse.error.message,
@@ -135,6 +164,7 @@ export const useFacebookAuth = () => {
 
       if (!pagesResponse.data || pagesResponse.data.length === 0) {
         console.log('[FACEBOOK-AUTH] No pages found for user');
+        stopWatchdog();
         toast({
           title: 'No Pages Found',
           description: 'You need to have a Facebook Page to connect. Please create one first.',
@@ -145,7 +175,7 @@ export const useFacebookAuth = () => {
       }
 
       console.log('[FACEBOOK-AUTH] Found pages:', pagesResponse.data.length);
-      
+
       // Use the first page (you can add page selection UI later)
       const page = pagesResponse.data[0];
       const pageAccessToken = page.access_token;
@@ -155,6 +185,7 @@ export const useFacebookAuth = () => {
       // Call our backend to store the connection
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
+          stopWatchdog();
           toast({
             title: 'Error',
             description: 'Not authenticated',
@@ -172,6 +203,7 @@ export const useFacebookAuth = () => {
           }
         }).then(({ data, error }) => {
           if (error) {
+            stopWatchdog();
             toast({
               title: 'Error',
               description: error.message,
@@ -181,6 +213,7 @@ export const useFacebookAuth = () => {
             return;
           }
 
+          stopWatchdog();
           toast({
             title: 'Success',
             description: `Connected to Facebook Page: ${page.name}`,
