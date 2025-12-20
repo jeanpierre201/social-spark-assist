@@ -80,11 +80,11 @@ export const useInstagramAuth = () => {
             
             const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
             
-            // Check for required Instagram permissions
-            if (!grantedScopes.includes('instagram_basic') || !grantedScopes.includes('pages_show_list')) {
+            // Check for required page permissions
+            if (!grantedScopes.includes('pages_show_list')) {
               showToast(
                 'Insufficient Permissions',
-                'Please grant access to Instagram Business account and Facebook Pages',
+                'Please grant access to Facebook Pages to connect Instagram',
                 'destructive'
               );
               setIsConnecting(false);
@@ -99,7 +99,8 @@ export const useInstagramAuth = () => {
           }
         },
         { 
-          scope: 'instagram_basic,instagram_content_publish,pages_show_list,pages_read_engagement',
+          // Use only pages_show_list for development - Instagram access comes through page token
+          scope: 'pages_show_list,pages_manage_posts',
           return_scopes: true 
         }
       );
