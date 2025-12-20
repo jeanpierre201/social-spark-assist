@@ -233,10 +233,12 @@ export const useSocialAccounts = () => {
 
 const getOAuthScopes = (platform: string): string => {
   const scopes = {
-    // Facebook Pages posting permissions (requires Business Verification + App Review)
-    facebook: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish',
-    // Instagram uses Facebook permissions (Business accounts only)
-    instagram: 'pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish',
+    // Facebook Pages permissions
+    // Note: advanced scopes like pages_read_engagement/instagram_* require App Review;
+    // we keep the minimal set that works in dev.
+    facebook: 'pages_show_list,pages_manage_posts',
+    // Instagram is accessed via the connected Facebook Page token
+    instagram: 'pages_show_list,pages_manage_posts',
     // Twitter/X posting
     twitter: 'tweet.read,tweet.write,users.read,offline.access',
     // LinkedIn posting
