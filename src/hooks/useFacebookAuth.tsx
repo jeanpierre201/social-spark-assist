@@ -48,43 +48,49 @@ export const useFacebookAuth = () => {
   };
 
   const promptFacebookLogin = () => {
-    window.FB.login(
-      (response: any) => {
-        console.log('[FACEBOOK-AUTH] Login response:', response);
-        
-        if (response.authResponse) {
-          console.log('[FACEBOOK-AUTH] Login successful, granted scopes:', response.authResponse.grantedScopes);
+    // Force logout first to clear any cached permissions from previous auth attempts
+    console.log('[FACEBOOK-AUTH] Forcing logout to clear cached permissions...');
+    window.FB.logout(() => {
+      console.log('[FACEBOOK-AUTH] Logged out, starting fresh login...');
+      window.FB.login(
+        (response: any) => {
+          console.log('[FACEBOOK-AUTH] Login response:', response);
           
-          // Check if we got the required permissions
-          const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
-          console.log('[FACEBOOK-AUTH] Granted scopes:', grantedScopes);
-          
-          if (!grantedScopes.includes('pages_show_list')) {
+          if (response.authResponse) {
+            console.log('[FACEBOOK-AUTH] Login successful, granted scopes:', response.authResponse.grantedScopes);
+            
+            // Check if we got the required permissions
+            const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
+            console.log('[FACEBOOK-AUTH] Granted scopes:', grantedScopes);
+            
+            if (!grantedScopes.includes('pages_show_list')) {
+              toast({
+                title: 'Insufficient Permissions',
+                description: 'Please grant access to view your Facebook Pages',
+                variant: 'destructive',
+              });
+              setIsConnecting(false);
+              return;
+            }
+            
+            handleFacebookPages(response.authResponse.accessToken);
+          } else {
+            console.log('[FACEBOOK-AUTH] Login cancelled or failed');
             toast({
-              title: 'Insufficient Permissions',
-              description: 'Please grant access to view your Facebook Pages',
+              title: 'Connection Cancelled',
+              description: 'Facebook connection was cancelled',
               variant: 'destructive',
             });
             setIsConnecting(false);
-            return;
           }
-          
-          handleFacebookPages(response.authResponse.accessToken);
-        } else {
-          console.log('[FACEBOOK-AUTH] Login cancelled or failed');
-          toast({
-            title: 'Connection Cancelled',
-            description: 'Facebook connection was cancelled',
-            variant: 'destructive',
-          });
-          setIsConnecting(false);
+        },
+        { 
+          scope: 'pages_show_list,pages_manage_posts',
+          auth_type: 'reauthorize', // Force fresh permission prompt
+          return_scopes: true 
         }
-      },
-      { 
-        scope: 'pages_show_list',
-        return_scopes: true 
-      }
-    );
+      );
+    });
   };
 
   const handleFacebookPages = (userAccessToken: string) => {
