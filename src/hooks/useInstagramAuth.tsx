@@ -47,6 +47,17 @@ export const useInstagramAuth = () => {
   const connectInstagram = useCallback(async () => {
     setIsConnecting(true);
 
+    // Watchdog so the UI never gets stuck in "Connecting..." forever
+    const watchdog = window.setTimeout(() => {
+      console.warn('[INSTAGRAM-AUTH] Connection watchdog timeout fired');
+      showToast(
+        'Connection Timed Out',
+        'The Instagram/Facebook login did not complete. Please disable popup blockers and try again.',
+        'destructive'
+      );
+      setIsConnecting(false);
+    }, 15000);
+
     try {
       // Wait for FB SDK to be ready
       await waitForFBSDK();
@@ -65,6 +76,7 @@ export const useInstagramAuth = () => {
         }
       });
     } catch (error: any) {
+      window.clearTimeout(watchdog);
       console.error('[INSTAGRAM-AUTH] Connection error:', error);
       showToast('Connection Failed', error.message || 'Failed to connect to Instagram', 'destructive');
       setIsConnecting(false);
@@ -173,6 +185,7 @@ export const useInstagramAuth = () => {
           },
           async (igResponse: any) => {
             if (igResponse.error) {
+              window.clearTimeout(watchdog);
               console.error('[INSTAGRAM-AUTH] Error fetching Instagram account:', igResponse.error);
               showToast('Error', igResponse.error.message, 'destructive');
               setIsConnecting(false);
@@ -180,6 +193,7 @@ export const useInstagramAuth = () => {
             }
 
             if (!igResponse.instagram_business_account) {
+              window.clearTimeout(watchdog);
               console.log('[INSTAGRAM-AUTH] No Instagram Business account connected');
               showToast(
                 'No Instagram Account Found',
@@ -196,8 +210,9 @@ export const useInstagramAuth = () => {
             // Save the connection to backend
             try {
               const { data: { session } } = await supabase.auth.getSession();
-              
+
               if (!session) {
+                window.clearTimeout(watchdog);
                 showToast('Error', 'Not authenticated', 'destructive');
                 setIsConnecting(false);
                 return;
@@ -214,12 +229,14 @@ export const useInstagramAuth = () => {
               });
 
               if (error) {
+                window.clearTimeout(watchdog);
                 console.error('[INSTAGRAM-AUTH] Backend error:', error);
                 showToast('Error', error.message || 'Failed to save Instagram connection', 'destructive');
                 setIsConnecting(false);
                 return;
               }
 
+              window.clearTimeout(watchdog);
               showToast('Success', `Connected to Instagram: @${igAccount.username}`);
               setIsConnecting(false);
 
@@ -227,6 +244,7 @@ export const useInstagramAuth = () => {
                 window.location.reload();
               }, 1000);
             } catch (err: any) {
+              window.clearTimeout(watchdog);
               console.error('[INSTAGRAM-AUTH] Unexpected error:', err);
               showToast('Error', err.message || 'An unexpected error occurred', 'destructive');
               setIsConnecting(false);
