@@ -48,21 +48,19 @@ export const useFacebookAuth = () => {
   };
 
   const promptFacebookLogin = () => {
-    // Force logout first to clear any cached permissions from previous auth attempts
-    console.log('[FACEBOOK-AUTH] Forcing logout to clear cached permissions...');
-    window.FB.logout(() => {
-      console.log('[FACEBOOK-AUTH] Logged out, starting fresh login...');
+    const startLogin = () => {
+      console.log('[FACEBOOK-AUTH] Starting FB.login with reauthorize...');
       window.FB.login(
         (response: any) => {
           console.log('[FACEBOOK-AUTH] Login response:', response);
-          
+
           if (response.authResponse) {
             console.log('[FACEBOOK-AUTH] Login successful, granted scopes:', response.authResponse.grantedScopes);
-            
+
             // Check if we got the required permissions
             const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
             console.log('[FACEBOOK-AUTH] Granted scopes:', grantedScopes);
-            
+
             if (!grantedScopes.includes('pages_show_list')) {
               toast({
                 title: 'Insufficient Permissions',
@@ -72,7 +70,7 @@ export const useFacebookAuth = () => {
               setIsConnecting(false);
               return;
             }
-            
+
             handleFacebookPages(response.authResponse.accessToken);
           } else {
             console.log('[FACEBOOK-AUTH] Login cancelled or failed');
@@ -84,13 +82,39 @@ export const useFacebookAuth = () => {
             setIsConnecting(false);
           }
         },
-        { 
+        {
           scope: 'pages_show_list,pages_manage_posts',
-          auth_type: 'reauthorize', // Force fresh permission prompt
-          return_scopes: true 
+          auth_type: 'reauthorize',
+          return_scopes: true,
         }
       );
-    });
+    };
+
+    // If the user isn't connected, FB.logout may not fire its callback.
+    // So we attempt logout, but guarantee we proceed to login.
+    console.log('[FACEBOOK-AUTH] Attempting FB.logout to clear cached permissions...');
+    let proceeded = false;
+    const proceed = () => {
+      if (proceeded) return;
+      proceeded = true;
+      startLogin();
+    };
+
+    try {
+      window.FB.logout(() => {
+        console.log('[FACEBOOK-AUTH] FB.logout callback fired');
+        proceed();
+      });
+    } catch (e) {
+      console.warn('[FACEBOOK-AUTH] FB.logout threw, proceeding to login', e);
+      proceed();
+    }
+
+    // Fallback: proceed even if logout callback never fires
+    setTimeout(() => {
+      console.log('[FACEBOOK-AUTH] FB.logout fallback timer fired');
+      proceed();
+    }, 600);
   };
 
   const handleFacebookPages = (userAccessToken: string) => {

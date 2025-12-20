@@ -71,19 +71,17 @@ export const useInstagramAuth = () => {
     }
 
     function doFacebookLogin() {
-      // Force logout first to clear any cached permissions from previous auth attempts
-      console.log('[INSTAGRAM-AUTH] Forcing logout to clear cached permissions...');
-      window.FB.logout(() => {
-        console.log('[INSTAGRAM-AUTH] Logged out, starting fresh login...');
+      const startLogin = () => {
+        console.log('[INSTAGRAM-AUTH] Starting FB.login with reauthorize...');
         window.FB.login(
           (response: any) => {
             console.log('[INSTAGRAM-AUTH] Login response:', response);
-            
+
             if (response.authResponse) {
               console.log('[INSTAGRAM-AUTH] Login successful, granted scopes:', response.authResponse.grantedScopes);
-              
+
               const grantedScopes = response.authResponse.grantedScopes?.split(',') || [];
-              
+
               // Check for required page permissions
               if (!grantedScopes.includes('pages_show_list')) {
                 showToast(
@@ -94,7 +92,7 @@ export const useInstagramAuth = () => {
                 setIsConnecting(false);
                 return;
               }
-              
+
               fetchInstagramAccounts(response.authResponse.accessToken);
             } else {
               console.log('[INSTAGRAM-AUTH] Login cancelled or failed');
@@ -102,13 +100,39 @@ export const useInstagramAuth = () => {
               setIsConnecting(false);
             }
           },
-          { 
+          {
             scope: 'pages_show_list,pages_manage_posts',
-            auth_type: 'reauthorize', // Force fresh permission prompt
-            return_scopes: true 
+            auth_type: 'reauthorize',
+            return_scopes: true,
           }
         );
-      });
+      };
+
+      // If the user isn't connected, FB.logout may not fire its callback.
+      // So we attempt logout, but guarantee we proceed to login.
+      console.log('[INSTAGRAM-AUTH] Attempting FB.logout to clear cached permissions...');
+      let proceeded = false;
+      const proceed = () => {
+        if (proceeded) return;
+        proceeded = true;
+        startLogin();
+      };
+
+      try {
+        window.FB.logout(() => {
+          console.log('[INSTAGRAM-AUTH] FB.logout callback fired');
+          proceed();
+        });
+      } catch (e) {
+        console.warn('[INSTAGRAM-AUTH] FB.logout threw, proceeding to login', e);
+        proceed();
+      }
+
+      // Fallback: proceed even if logout callback never fires
+      setTimeout(() => {
+        console.log('[INSTAGRAM-AUTH] FB.logout fallback timer fired');
+        proceed();
+      }, 600);
     }
 
     function fetchInstagramAccounts(userAccessToken: string) {
