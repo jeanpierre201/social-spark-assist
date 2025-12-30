@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
-import { Crown, Zap, TrendingUp, TrendingDown, HelpCircle } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend, AreaChart, Area, ComposedChart } from 'recharts';
+import { Crown, Zap, TrendingUp, TrendingDown, HelpCircle, Users, UserMinus } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, parseISO, isWithinInterval } from 'date-fns';
 
@@ -164,6 +164,35 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts, dateRange }: 
   const totalUpgrades = data.reduce((sum, item) => sum + item.upgrade_count, 0);
   const totalDowngrades = data.reduce((sum, item) => sum + item.downgrade_count, 0);
   const netUpgrades = totalUpgrades - totalDowngrades;
+  const totalNewSubscriptions = data.reduce((sum, item) => sum + item.new_subscriptions, 0);
+  
+  // Calculate churn rate: downgrades / (new subscriptions + upgrades) * 100
+  const totalAcquisitions = totalNewSubscriptions + totalUpgrades;
+  const churnRate = totalAcquisitions > 0 ? ((totalDowngrades / totalAcquisitions) * 100).toFixed(1) : '0.0';
+
+  // Process churn data for chart - shows new vs cancelled over time
+  const churnChartData = data.reduce((acc: any[], item) => {
+    const existingEntry = acc.find(entry => entry.date === item.date_recorded);
+    if (existingEntry) {
+      existingEntry.newSubscriptions += item.new_subscriptions;
+      existingEntry.upgrades += item.upgrade_count;
+      existingEntry.cancellations += item.downgrade_count;
+    } else {
+      acc.push({
+        date: item.date_recorded,
+        newSubscriptions: item.new_subscriptions,
+        upgrades: item.upgrade_count,
+        cancellations: item.downgrade_count,
+      });
+    }
+    return acc;
+  }, []).map(entry => ({
+    ...entry,
+    netGrowth: entry.newSubscriptions + entry.upgrades - entry.cancellations,
+    churnRate: (entry.newSubscriptions + entry.upgrades) > 0 
+      ? ((entry.cancellations / (entry.newSubscriptions + entry.upgrades)) * 100).toFixed(1)
+      : '0.0'
+  })).reverse();
 
   return (
     <div className="space-y-6">
@@ -226,6 +255,36 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts, dateRange }: 
               ) : (
                 <TrendingDown className="h-8 w-8 text-red-500" />
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-amber-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-600">Churn Rate</p>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="h-4 w-4 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Churn Rate = (Cancellations / Total Acquisitions) × 100</p>
+                        <p className="mt-1 text-xs text-gray-400">
+                          Lower is better. Shows the percentage of users who cancelled.
+                        </p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
+                </div>
+                <p className={`text-2xl font-bold ${parseFloat(churnRate) <= 5 ? 'text-green-600' : parseFloat(churnRate) <= 15 ? 'text-orange-600' : 'text-red-600'}`}>
+                  {churnRate}%
+                </p>
+                <p className="text-xs text-gray-500 mt-1">{totalDowngrades} cancellations</p>
+              </div>
+              <UserMinus className="h-8 w-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
@@ -345,6 +404,54 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts, dateRange }: 
                 <Bar dataKey="Starter_revenue" fill="#3B82F6" name="Starter" />
               </BarChart>
             </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Churn Rate Chart - New Subscriptions vs Cancellations */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Subscriber Churn Analysis
+            </CardTitle>
+            <CardDescription>
+              New subscriptions vs cancellations over time with daily churn rate
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {churnChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={350}>
+                <ComposedChart data={churnChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis yAxisId="left" allowDecimals={false} />
+                  <YAxis yAxisId="right" orientation="right" domain={[0, 100]} unit="%" />
+                  <Tooltip 
+                    formatter={(value, name) => {
+                      if (name === 'Churn Rate') return [`${value}%`, name];
+                      return [value, name];
+                    }}
+                  />
+                  <Legend />
+                  <Bar yAxisId="left" dataKey="newSubscriptions" fill="#10B981" name="New Subscriptions" />
+                  <Bar yAxisId="left" dataKey="upgrades" fill="#3B82F6" name="Upgrades" />
+                  <Bar yAxisId="left" dataKey="cancellations" fill="#EF4444" name="Cancellations" />
+                  <Line 
+                    yAxisId="right" 
+                    type="monotone" 
+                    dataKey="churnRate" 
+                    stroke="#F59E0B" 
+                    strokeWidth={2} 
+                    name="Churn Rate"
+                    dot={{ fill: '#F59E0B', strokeWidth: 2 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[350px] text-gray-500">
+                No churn data available for selected period
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
