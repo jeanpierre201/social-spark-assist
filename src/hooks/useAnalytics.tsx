@@ -44,6 +44,7 @@ interface CurrentStats {
   total_active_subscribers: number;
   total_posts: number;
   published_posts: number;
+  active_users: number;
   tier_counts: {
     Free: number;
     Starter: number;
@@ -72,6 +73,7 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
     total_active_subscribers: 0, 
     total_posts: 0,
     published_posts: 0,
+    active_users: 0,
     tier_counts: { Free: 0, Starter: 0, Pro: 0 }
   });
   
@@ -179,6 +181,22 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
         console.error('Error fetching published posts:', publishedError);
       }
 
+      // Fetch posts in date range to calculate active users (users who created posts)
+      const { data: postsInRangeData, error: postsInRangeError } = await supabase
+        .from('posts')
+        .select('user_id')
+        .gte('created_at', fromDateStr)
+        .lte('created_at', toDateStr + 'T23:59:59');
+
+      if (postsInRangeError) {
+        console.error('Error fetching posts in range:', postsInRangeError);
+      }
+
+      // Calculate unique active users from posts in date range
+      const uniqueActiveUserIds = new Set(
+        (postsInRangeData || []).map((p: any) => p.user_id).filter(Boolean)
+      );
+
       // Set current stats using real data only (count all users including Free tier)
       const allUsers = subscribersData || [];
       
@@ -188,11 +206,17 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
         Starter: allUsers.filter((s: any) => s.subscription_tier === 'Starter').length,
         Pro: allUsers.filter((s: any) => s.subscription_tier === 'Pro').length,
       };
+
+      // Active users = users who created posts in the date range, or fall back to total subscribers
+      const activeUsersCount = uniqueActiveUserIds.size > 0 
+        ? uniqueActiveUserIds.size 
+        : allUsers.length;
       
       const currentStatsData = {
         total_active_subscribers: allUsers.length,
         total_posts: postsData?.length || 0,
         published_posts: publishedPostsData?.length || 0,
+        active_users: activeUsersCount,
         tier_counts: tierCounts
       };
       
