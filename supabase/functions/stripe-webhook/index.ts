@@ -196,6 +196,107 @@ async function handlePaymentSuccess(
   if (error) {
     logStep("Error updating income analytics", { error: error.message });
   }
+
+  // Send payment notification email to admin
+  await sendPaymentNotification(invoice, stripe);
 }
 
-// This function is no longer needed as the database trigger handles all analytics updates automatically
+async function sendPaymentNotification(invoice: Stripe.Invoice, stripe: Stripe) {
+  try {
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      logStep("RESEND_API_KEY not set, skipping payment notification");
+      return;
+    }
+
+    // Get customer details
+    const customer = await stripe.customers.retrieve(invoice.customer as string);
+    const customerEmail = customer && !customer.deleted ? (customer as Stripe.Customer).email : 'Unknown';
+    const customerName = customer && !customer.deleted ? (customer as Stripe.Customer).name || customerEmail : 'Unknown';
+    
+    const amount = ((invoice.amount_paid || 0) / 100).toFixed(2);
+    const currency = (invoice.currency || 'eur').toUpperCase();
+    const invoiceDate = new Date().toLocaleString('en-GB', { 
+      dateStyle: 'medium', 
+      timeStyle: 'short' 
+    });
+
+    // Determine subscription tier from line items
+    let tier = 'Unknown';
+    if (invoice.lines?.data?.length > 0) {
+      const amount_cents = invoice.lines.data[0].amount || 0;
+      if (amount_cents >= 2500) tier = 'Pro';
+      else if (amount_cents >= 1200) tier = 'Starter';
+    }
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="background: linear-gradient(135deg, #10B981, #3B82F6); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
+          <h1 style="color: white; margin: 0;">💰 New Payment Received!</h1>
+        </div>
+        <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Amount:</strong></td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right; color: #10B981; font-size: 1.2em; font-weight: bold;">€${amount}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Customer:</strong></td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">${customerName}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Email:</strong></td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">${customerEmail}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Plan:</strong></td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">
+                <span style="background: ${tier === 'Pro' ? '#8B5CF6' : '#3B82F6'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 0.9em;">${tier}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb;"><strong>Date:</strong></td>
+              <td style="padding: 10px 0; border-bottom: 1px solid #e5e7eb; text-align: right;">${invoiceDate}</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px 0;"><strong>Invoice ID:</strong></td>
+              <td style="padding: 10px 0; text-align: right; font-size: 0.85em; color: #6b7280;">${invoice.id}</td>
+            </tr>
+          </table>
+          <div style="margin-top: 20px; text-align: center;">
+            <a href="https://dashboard.stripe.com/payments/${invoice.payment_intent}" 
+               style="display: inline-block; background: #3B82F6; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: 500;">
+              View in Stripe Dashboard
+            </a>
+          </div>
+        </div>
+        <p style="text-align: center; color: #9ca3af; font-size: 0.85em; margin-top: 20px;">
+          This is an automated notification from RombiPost
+        </p>
+      </div>
+    `;
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify({
+        from: "RombiPost <noreply@rombipost.com>",
+        to: ["admin@rombipost.com"], // Replace with actual admin email
+        subject: `💰 New Payment: €${amount} from ${customerName}`,
+        html: emailHtml,
+      }),
+    });
+
+    if (res.ok) {
+      logStep("Payment notification email sent successfully");
+    } else {
+      const errorText = await res.text();
+      logStep("Failed to send payment notification", { error: errorText });
+    }
+  } catch (error) {
+    logStep("Error sending payment notification", { error: error instanceof Error ? error.message : String(error) });
+  }
+}
