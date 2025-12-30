@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from './useUserRole';
 import { format, subDays } from 'date-fns';
@@ -71,6 +71,18 @@ export const useAnalytics = (dateRange?: DateRange) => {
     tier_counts: { Free: 0, Starter: 0, Pro: 0 }
   });
   const [loading, setLoading] = useState(true);
+  const hasFetched = useRef(false);
+
+  // Memoize date strings to prevent unnecessary re-renders
+  const fromDateStr = useMemo(() => 
+    dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+    [dateRange?.from?.getTime()]
+  );
+  
+  const toDateStr = useMemo(() => 
+    dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
+    [dateRange?.to?.getTime()]
+  );
 
   const fetchAnalytics = useCallback(async () => {
     if (!isAdmin()) {
@@ -80,16 +92,13 @@ export const useAnalytics = (dateRange?: DateRange) => {
 
     try {
       setLoading(true);
-      
-      const fromDate = dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : format(subDays(new Date(), 30), 'yyyy-MM-dd');
-      const toDate = dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
 
       // Fetch subscription analytics data with date filter
       const { data: subscriptionAnalytics, error: subError } = await supabase
         .from('subscription_analytics')
         .select('*')
-        .gte('date_recorded', fromDate)
-        .lte('date_recorded', toDate)
+        .gte('date_recorded', fromDateStr)
+        .lte('date_recorded', toDateStr)
         .order('date_recorded', { ascending: false });
 
       if (subError) {
@@ -100,8 +109,8 @@ export const useAnalytics = (dateRange?: DateRange) => {
       const { data: incomeAnalytics, error: incomeError } = await supabase
         .from('income_analytics')
         .select('*')
-        .gte('date_recorded', fromDate)
-        .lte('date_recorded', toDate)
+        .gte('date_recorded', fromDateStr)
+        .lte('date_recorded', toDateStr)
         .order('date_recorded', { ascending: false });
 
       if (incomeError) {
@@ -112,8 +121,8 @@ export const useAnalytics = (dateRange?: DateRange) => {
       const { data: userActivityAnalytics, error: userError } = await supabase
         .from('user_activity_analytics')
         .select('*')
-        .gte('date_recorded', fromDate)
-        .lte('date_recorded', toDate)
+        .gte('date_recorded', fromDateStr)
+        .lte('date_recorded', toDateStr)
         .order('date_recorded', { ascending: false });
 
       if (userError) {
@@ -124,8 +133,8 @@ export const useAnalytics = (dateRange?: DateRange) => {
       const { data: contentAnalytics, error: contentError } = await supabase
         .from('content_analytics')
         .select('*')
-        .gte('date_recorded', fromDate)
-        .lte('date_recorded', toDate)
+        .gte('date_recorded', fromDateStr)
+        .lte('date_recorded', toDateStr)
         .order('date_recorded', { ascending: false });
 
       if (contentError) {
@@ -218,6 +227,7 @@ export const useAnalytics = (dateRange?: DateRange) => {
         api_cost: Number(item.api_cost)
       })) || []);
 
+      hasFetched.current = true;
     } catch (error) {
       console.error('Error fetching analytics:', error);
       setSubscriptionData([]);
@@ -227,7 +237,7 @@ export const useAnalytics = (dateRange?: DateRange) => {
     } finally {
       setLoading(false);
     }
-  }, [isAdmin, dateRange?.from, dateRange?.to]);
+  }, [isAdmin, fromDateStr, toDateStr]);
 
   useEffect(() => {
     if (roleLoading) return;
