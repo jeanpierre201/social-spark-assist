@@ -1,7 +1,11 @@
 
+import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, Legend } from 'recharts';
-import { DollarSign, TrendingUp, CreditCard, Percent, Users, Crown, Zap } from 'lucide-react';
+import { DollarSign, TrendingUp, CreditCard, Percent, Users, Crown, Zap, AlertCircle, RefreshCw, Wallet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useStripeRevenue, StripeRevenueData } from '@/hooks/useStripeRevenue';
+import { DateRange } from '@/hooks/useAnalytics';
 
 interface IncomeData {
   date_recorded: string;
@@ -27,12 +31,23 @@ interface IncomeAnalyticsProps {
   data: IncomeData[];
   loading: boolean;
   revenueStats?: RevenueStats;
+  dateRange?: DateRange;
 }
 
 const STARTER_PRICE = 12;
 const PRO_PRICE = 25;
 
-const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) => {
+const IncomeAnalytics = ({ data, loading, revenueStats, dateRange }: IncomeAnalyticsProps) => {
+  const { stripeData, loading: stripeLoading, error: stripeError, refetch: fetchStripeRevenue } = useStripeRevenue({
+    dateRange,
+    enabled: true
+  });
+
+  // Fetch Stripe data on mount and when date range changes
+  useEffect(() => {
+    fetchStripeRevenue();
+  }, [fetchStripeRevenue]);
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -50,51 +65,97 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
     );
   }
 
-  const chartData = [...data].reverse();
-
-  // Use real revenue stats if available, otherwise fall back to income_analytics data
-  const hasRealStats = revenueStats && (revenueStats.mrr > 0 || revenueStats.paid_subscribers > 0);
+  // Use Stripe data if available, otherwise fall back to calculated estimates
+  const hasStripeData = stripeData && !stripeError;
   
-  // Calculate metrics from income_analytics table
-  const tableRevenue = data.reduce((sum, item) => sum + item.total_revenue, 0);
-  const totalTransactions = data.reduce((sum, item) => sum + item.transaction_count, 0);
-  const latestTableMRR = data.length > 0 ? data[0].monthly_recurring_revenue : 0;
+  const mrr = hasStripeData ? stripeData.mrr : (revenueStats?.mrr || 0);
+  const totalRevenue = hasStripeData ? stripeData.totalRevenue : (revenueStats?.mrr || 0);
+  const paidSubscribers = hasStripeData ? stripeData.activeSubscriptions : (revenueStats?.paid_subscribers || 0);
+  const avgRevenuePerSubscriber = hasStripeData 
+    ? stripeData.avgRevenuePerSubscriber 
+    : (paidSubscribers > 0 ? mrr / paidSubscribers : 0);
+  const annualRunRate = hasStripeData ? stripeData.annualRunRate : (mrr * 12);
+  const totalTransactions = hasStripeData ? stripeData.totalTransactions : 0;
 
-  // Use real calculated values
-  const mrr = hasRealStats ? revenueStats.mrr : latestTableMRR;
-  const totalRevenue = hasRealStats ? revenueStats.mrr : tableRevenue;
-  const paidSubscribers = revenueStats?.paid_subscribers || 0;
-  const avgRevenuePerSubscriber = paidSubscribers > 0 ? mrr / paidSubscribers : 0;
+  // Revenue breakdown for chart
+  const revenueBreakdown = hasStripeData 
+    ? [
+        { 
+          tier: 'Starter', 
+          subscribers: stripeData.subscriberCounts.starter, 
+          revenue: stripeData.subscriberCounts.starter * STARTER_PRICE,
+        },
+        { 
+          tier: 'Pro', 
+          subscribers: stripeData.subscriberCounts.pro, 
+          revenue: stripeData.subscriberCounts.pro * PRO_PRICE,
+        },
+      ]
+    : revenueStats 
+      ? [
+          { tier: 'Starter', subscribers: revenueStats.tier_counts.Starter, revenue: revenueStats.tier_counts.Starter * STARTER_PRICE },
+          { tier: 'Pro', subscribers: revenueStats.tier_counts.Pro, revenue: revenueStats.tier_counts.Pro * PRO_PRICE },
+        ]
+      : [];
 
-  // Create revenue breakdown data for chart
-  const revenueBreakdown = revenueStats ? [
-    { 
-      tier: 'Starter', 
-      subscribers: revenueStats.tier_counts.Starter, 
-      revenue: revenueStats.tier_counts.Starter * STARTER_PRICE,
-      price: STARTER_PRICE
-    },
-    { 
-      tier: 'Pro', 
-      subscribers: revenueStats.tier_counts.Pro, 
-      revenue: revenueStats.tier_counts.Pro * PRO_PRICE,
-      price: PRO_PRICE
-    },
-  ] : [];
+  // Daily revenue chart data
+  const dailyRevenueData = hasStripeData && stripeData.dailyRevenue.length > 0
+    ? stripeData.dailyRevenue
+    : [];
 
   return (
     <div className="space-y-6">
+      {/* Data Source Indicator */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {hasStripeData ? (
+            <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full text-sm">
+              <CreditCard className="h-4 w-4" />
+              <span>Live Stripe Data</span>
+            </div>
+          ) : stripeLoading ? (
+            <div className="flex items-center gap-2 text-blue-600 bg-blue-50 px-3 py-1 rounded-full text-sm">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span>Loading Stripe data...</span>
+            </div>
+          ) : stripeError ? (
+            <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-1 rounded-full text-sm">
+              <AlertCircle className="h-4 w-4" />
+              <span>Using estimated data (Stripe unavailable)</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-gray-600 bg-gray-50 px-3 py-1 rounded-full text-sm">
+              <DollarSign className="h-4 w-4" />
+              <span>Estimated Revenue</span>
+            </div>
+          )}
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={() => fetchStripeRevenue()}
+          disabled={stripeLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${stripeLoading ? 'animate-spin' : ''}`} />
+          Refresh Stripe Data
+        </Button>
+      </div>
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Monthly Recurring Revenue</p>
-                <p className="text-2xl font-bold text-green-600">
-                  €{mrr.toLocaleString()}
+                <p className="text-sm font-medium text-gray-600">
+                  {hasStripeData ? 'Total Revenue' : 'Monthly Recurring Revenue'}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Based on active subscriptions</p>
+                <p className="text-2xl font-bold text-green-600">
+                  €{totalRevenue.toFixed(2)}
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {hasStripeData ? 'From Stripe payments' : 'Based on active subscriptions'}
+                </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-500" />
             </div>
@@ -105,13 +166,13 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Paid Subscribers</p>
+                <p className="text-sm font-medium text-gray-600">MRR</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {paidSubscribers}
+                  €{mrr.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Starter + Pro users</p>
+                <p className="text-xs text-gray-500 mt-1">Monthly recurring</p>
               </div>
-              <Users className="h-8 w-8 text-blue-500" />
+              <TrendingUp className="h-8 w-8 text-blue-500" />
             </div>
           </CardContent>
         </Card>
@@ -120,13 +181,11 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg Revenue/Subscriber</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  €{avgRevenuePerSubscriber.toFixed(2)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Per paid subscriber</p>
+                <p className="text-sm font-medium text-gray-600">Paid Subscribers</p>
+                <p className="text-2xl font-bold text-purple-600">{paidSubscribers}</p>
+                <p className="text-xs text-gray-500 mt-1">Active subscriptions</p>
               </div>
-              <Percent className="h-8 w-8 text-purple-500" />
+              <Users className="h-8 w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
@@ -137,15 +196,63 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
               <div>
                 <p className="text-sm font-medium text-gray-600">Annual Run Rate</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  €{(mrr * 12).toLocaleString()}
+                  €{annualRunRate.toFixed(2)}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">Projected yearly revenue</p>
+                <p className="text-xs text-gray-500 mt-1">Projected yearly</p>
               </div>
               <TrendingUp className="h-8 w-8 text-orange-500" />
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Additional Stripe Stats */}
+      {hasStripeData && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Transactions</p>
+                  <p className="text-2xl font-bold">{totalTransactions}</p>
+                  <p className="text-xs text-gray-500 mt-1">In selected period</p>
+                </div>
+                <CreditCard className="h-8 w-8 text-gray-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Available Balance</p>
+                  <p className="text-2xl font-bold text-green-600">
+                    €{stripeData.availableBalance.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Ready for payout</p>
+                </div>
+                <Wallet className="h-8 w-8 text-green-400" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Pending Balance</p>
+                  <p className="text-2xl font-bold text-amber-600">
+                    €{stripeData.pendingBalance.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Being processed</p>
+                </div>
+                <Wallet className="h-8 w-8 text-amber-400" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue by Tier */}
@@ -177,7 +284,42 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
               <div className="flex flex-col items-center justify-center h-[300px] text-gray-500">
                 <Crown className="h-12 w-12 mb-4 text-gray-300" />
                 <p>No paid subscribers yet</p>
-                <p className="text-sm mt-1">Revenue will appear when users subscribe to Starter or Pro</p>
+                <p className="text-sm mt-1">Revenue will appear when users subscribe</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Daily Revenue Trend */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue Trend</CardTitle>
+            <CardDescription>
+              {hasStripeData ? 'Daily payments from Stripe' : 'No payment data available'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {dailyRevenueData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={dailyRevenueData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip formatter={(value) => [`€${value}`, 'Revenue']} />
+                  <Area 
+                    type="monotone" 
+                    dataKey="amount" 
+                    stroke="#10B981" 
+                    fill="#10B981" 
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-[300px] text-gray-500">
+                <TrendingUp className="h-12 w-12 mb-4 text-gray-300" />
+                <p>No payment history</p>
+                <p className="text-sm mt-1">Payments will appear here once processed</p>
               </div>
             )}
           </CardContent>
@@ -200,15 +342,15 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
                     <span className="text-sm text-gray-500">(€{STARTER_PRICE}/mo)</span>
                   </div>
                   <span className="font-bold text-blue-600">
-                    €{(revenueStats?.tier_counts.Starter || 0) * STARTER_PRICE}
+                    €{(hasStripeData ? stripeData.subscriberCounts.starter : revenueStats?.tier_counts.Starter || 0) * STARTER_PRICE}
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span>{revenueStats?.tier_counts.Starter || 0} subscribers</span>
+                  <span>{hasStripeData ? stripeData.subscriberCounts.starter : revenueStats?.tier_counts.Starter || 0} subscribers</span>
                   <span>•</span>
                   <span>
                     {mrr > 0 
-                      ? Math.round(((revenueStats?.tier_counts.Starter || 0) * STARTER_PRICE / mrr) * 100) 
+                      ? Math.round(((hasStripeData ? stripeData.subscriberCounts.starter : revenueStats?.tier_counts.Starter || 0) * STARTER_PRICE / mrr) * 100) 
                       : 0}% of MRR
                   </span>
                 </div>
@@ -217,7 +359,7 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
                     className="bg-blue-500 h-2 rounded-full transition-all duration-500" 
                     style={{ 
                       width: `${mrr > 0 
-                        ? Math.round(((revenueStats?.tier_counts.Starter || 0) * STARTER_PRICE / mrr) * 100) 
+                        ? Math.round(((hasStripeData ? stripeData.subscriberCounts.starter : revenueStats?.tier_counts.Starter || 0) * STARTER_PRICE / mrr) * 100) 
                         : 0}%` 
                     }}
                   />
@@ -233,15 +375,15 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
                     <span className="text-sm text-gray-500">(€{PRO_PRICE}/mo)</span>
                   </div>
                   <span className="font-bold text-purple-600">
-                    €{(revenueStats?.tier_counts.Pro || 0) * PRO_PRICE}
+                    €{(hasStripeData ? stripeData.subscriberCounts.pro : revenueStats?.tier_counts.Pro || 0) * PRO_PRICE}
                   </span>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
-                  <span>{revenueStats?.tier_counts.Pro || 0} subscribers</span>
+                  <span>{hasStripeData ? stripeData.subscriberCounts.pro : revenueStats?.tier_counts.Pro || 0} subscribers</span>
                   <span>•</span>
                   <span>
                     {mrr > 0 
-                      ? Math.round(((revenueStats?.tier_counts.Pro || 0) * PRO_PRICE / mrr) * 100) 
+                      ? Math.round(((hasStripeData ? stripeData.subscriberCounts.pro : revenueStats?.tier_counts.Pro || 0) * PRO_PRICE / mrr) * 100) 
                       : 0}% of MRR
                   </span>
                 </div>
@@ -250,7 +392,7 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
                     className="bg-purple-500 h-2 rounded-full transition-all duration-500" 
                     style={{ 
                       width: `${mrr > 0 
-                        ? Math.round(((revenueStats?.tier_counts.Pro || 0) * PRO_PRICE / mrr) * 100) 
+                        ? Math.round(((hasStripeData ? stripeData.subscriberCounts.pro : revenueStats?.tier_counts.Pro || 0) * PRO_PRICE / mrr) * 100) 
                         : 0}%` 
                     }}
                   />
@@ -261,68 +403,49 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
               <div className="pt-4 border-t">
                 <div className="flex items-center justify-between">
                   <span className="font-medium">Total MRR</span>
-                  <span className="text-xl font-bold text-green-600">€{mrr}</span>
+                  <span className="text-xl font-bold text-green-600">€{mrr.toFixed(2)}</span>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Historical Revenue Trend (if data exists) */}
-        {chartData.length > 0 && (
+        {/* Recent Transactions */}
+        {hasStripeData && stripeData.recentPayments.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Revenue Trend</CardTitle>
-              <CardDescription>Historical revenue over time</CardDescription>
+              <CardTitle>Recent Payments</CardTitle>
+              <CardDescription>Latest successful transactions from Stripe</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date_recorded" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}`, 'Revenue']} />
-                  <Area 
-                    type="monotone" 
-                    dataKey="total_revenue" 
-                    stroke="#10B981" 
-                    fill="#10B981" 
-                    fillOpacity={0.3}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* MRR Growth (if data exists) */}
-        {chartData.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>MRR History</CardTitle>
-              <CardDescription>Monthly recurring revenue over time</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date_recorded" />
-                  <YAxis />
-                  <Tooltip formatter={(value) => [`€${value}`, 'MRR']} />
-                  <Line 
-                    type="monotone" 
-                    dataKey="monthly_recurring_revenue" 
-                    stroke="#3B82F6" 
-                    strokeWidth={3}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="space-y-3 max-h-[300px] overflow-y-auto">
+                {stripeData.recentPayments.slice(0, 10).map((payment) => (
+                  <div key={payment.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-100 rounded-full">
+                        <CreditCard className="h-4 w-4 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          €{payment.amount.toFixed(2)} {payment.currency.toUpperCase()}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(payment.created).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-xs text-gray-400 font-mono">
+                      {payment.id.slice(-8)}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
 
         {/* Pricing Reference */}
-        <Card className="lg:col-span-2">
+        <Card className={hasStripeData && stripeData.recentPayments.length > 0 ? '' : 'lg:col-span-2'}>
           <CardHeader>
             <CardTitle>Pricing Structure</CardTitle>
             <CardDescription>Current subscription pricing</CardDescription>
@@ -345,7 +468,9 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
                 </div>
                 <p className="text-2xl font-bold">€{STARTER_PRICE}<span className="text-sm font-normal">/mo</span></p>
                 <p className="text-sm text-gray-500">Enhanced features</p>
-                <p className="text-sm font-medium mt-2">{revenueStats?.tier_counts.Starter || 0} subscribers</p>
+                <p className="text-sm font-medium mt-2">
+                  {hasStripeData ? stripeData.subscriberCounts.starter : revenueStats?.tier_counts.Starter || 0} subscribers
+                </p>
               </div>
               <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                 <div className="flex items-center gap-2 mb-2">
@@ -354,7 +479,9 @@ const IncomeAnalytics = ({ data, loading, revenueStats }: IncomeAnalyticsProps) 
                 </div>
                 <p className="text-2xl font-bold">€{PRO_PRICE}<span className="text-sm font-normal">/mo</span></p>
                 <p className="text-sm text-gray-500">All features</p>
-                <p className="text-sm font-medium mt-2">{revenueStats?.tier_counts.Pro || 0} subscribers</p>
+                <p className="text-sm font-medium mt-2">
+                  {hasStripeData ? stripeData.subscriberCounts.pro : revenueStats?.tier_counts.Pro || 0} subscribers
+                </p>
               </div>
             </div>
           </CardContent>
