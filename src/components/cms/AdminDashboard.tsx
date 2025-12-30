@@ -129,9 +129,9 @@ const AdminDashboard = () => {
     return acc;
   }, [] as typeof subscriptionData);
 
-  // Calculate total revenue from all subscription tiers
-  const totalRevenue = latestSubscriptionData.reduce((sum, item) => sum + item.revenue_generated, 0);
-  const totalActiveUsers = currentStats.active_users; // Use real active users count
+  // Use real MRR from current stats (calculated from active subscribers)
+  const totalRevenue = currentStats.mrr; // Monthly Recurring Revenue
+  const totalActiveUsers = currentStats.active_users;
   const totalPublishedPosts = currentStats.published_posts;
   const totalSubscriptions = currentStats.total_active_subscribers;
 
@@ -190,7 +190,7 @@ const AdminDashboard = () => {
                   <div className="text-2xl font-bold text-blue-700">
                     €{totalRevenue.toLocaleString()}
                   </div>
-                  <p className="text-xs text-blue-600">Last 30 days</p>
+                  <p className="text-xs text-blue-600">Monthly Recurring Revenue</p>
                 </>
               )}
             </CardContent>
@@ -302,7 +302,16 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="revenue">
-            <IncomeAnalytics data={incomeData} loading={initialLoading} />
+            <IncomeAnalytics 
+              data={incomeData} 
+              loading={initialLoading} 
+              revenueStats={{
+                mrr: currentStats.mrr,
+                estimated_revenue: currentStats.estimated_revenue,
+                paid_subscribers: currentStats.paid_subscribers,
+                tier_counts: currentStats.tier_counts
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="users">

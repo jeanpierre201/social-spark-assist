@@ -50,6 +50,10 @@ interface CurrentStats {
     Starter: number;
     Pro: number;
   };
+  // Revenue stats calculated from real subscribers
+  mrr: number; // Monthly Recurring Revenue
+  estimated_revenue: number; // Based on active paid subscribers
+  paid_subscribers: number;
 }
 
 export interface DateRange {
@@ -74,7 +78,10 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
     total_posts: 0,
     published_posts: 0,
     active_users: 0,
-    tier_counts: { Free: 0, Starter: 0, Pro: 0 }
+    tier_counts: { Free: 0, Starter: 0, Pro: 0 },
+    mrr: 0,
+    estimated_revenue: 0,
+    paid_subscribers: 0
   });
   
   // Split loading states: initialLoading for first fetch, refreshing for subsequent
@@ -201,11 +208,29 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
       const allUsers = subscribersData || [];
       
       // Calculate tier counts from real subscribers data
+      // Only count actively subscribed users for paid tiers
+      const activeStarterUsers = allUsers.filter((s: any) => 
+        s.subscription_tier === 'Starter' && s.subscribed === true
+      );
+      const activeProUsers = allUsers.filter((s: any) => 
+        s.subscription_tier === 'Pro' && s.subscribed === true
+      );
+      const freeUsers = allUsers.filter((s: any) => 
+        s.subscription_tier === 'Free' || !s.subscription_tier || s.subscribed === false
+      );
+
       const tierCounts = {
-        Free: allUsers.filter((s: any) => s.subscription_tier === 'Free' || !s.subscription_tier).length,
-        Starter: allUsers.filter((s: any) => s.subscription_tier === 'Starter').length,
-        Pro: allUsers.filter((s: any) => s.subscription_tier === 'Pro').length,
+        Free: freeUsers.length,
+        Starter: activeStarterUsers.length,
+        Pro: activeProUsers.length,
       };
+
+      // Calculate MRR from active paid subscribers
+      // Starter = €12/month, Pro = €25/month
+      const STARTER_PRICE = 12;
+      const PRO_PRICE = 25;
+      const mrr = (activeStarterUsers.length * STARTER_PRICE) + (activeProUsers.length * PRO_PRICE);
+      const paidSubscribers = activeStarterUsers.length + activeProUsers.length;
 
       // Active users = users who created posts in the date range, or fall back to total subscribers
       const activeUsersCount = uniqueActiveUserIds.size > 0 
@@ -217,7 +242,10 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
         total_posts: postsData?.length || 0,
         published_posts: publishedPostsData?.length || 0,
         active_users: activeUsersCount,
-        tier_counts: tierCounts
+        tier_counts: tierCounts,
+        mrr: mrr,
+        estimated_revenue: mrr, // Current month estimated revenue
+        paid_subscribers: paidSubscribers
       };
       
       setCurrentStats(currentStatsData);
