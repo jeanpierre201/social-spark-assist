@@ -1,7 +1,5 @@
-
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useUserRole } from './useUserRole';
 import { format, subDays } from 'date-fns';
 
 interface SubscriptionAnalytics {
@@ -58,8 +56,14 @@ export interface DateRange {
   to: Date;
 }
 
-export const useAnalytics = (dateRange?: DateRange) => {
-  const { userRole, loading: roleLoading, isAdmin } = useUserRole();
+interface UseAnalyticsOptions {
+  dateRange?: DateRange;
+  enabled?: boolean;
+}
+
+export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
+  const { dateRange, enabled = true } = options;
+  
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionAnalytics[]>([]);
   const [incomeData, setIncomeData] = useState<IncomeAnalytics[]>([]);
   const [userActivityData, setUserActivityData] = useState<UserActivityData[]>([]);
@@ -70,7 +74,10 @@ export const useAnalytics = (dateRange?: DateRange) => {
     published_posts: 0,
     tier_counts: { Free: 0, Starter: 0, Pro: 0 }
   });
-  const [loading, setLoading] = useState(true);
+  
+  // Split loading states: initialLoading for first fetch, refreshing for subsequent
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const hasFetched = useRef(false);
 
   // Memoize date strings to prevent unnecessary re-renders
@@ -85,13 +92,16 @@ export const useAnalytics = (dateRange?: DateRange) => {
   );
 
   const fetchAnalytics = useCallback(async () => {
-    if (!isAdmin()) {
-      setLoading(false);
+    if (!enabled) {
+      setInitialLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
+      // Use refreshing state for subsequent fetches, initialLoading for first
+      if (hasFetched.current) {
+        setRefreshing(true);
+      }
 
       // Fetch subscription analytics data with date filter
       const { data: subscriptionAnalytics, error: subError } = await supabase
@@ -235,14 +245,14 @@ export const useAnalytics = (dateRange?: DateRange) => {
       setUserActivityData([]);
       setContentData([]);
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setRefreshing(false);
     }
-  }, [isAdmin, fromDateStr, toDateStr]);
+  }, [enabled, fromDateStr, toDateStr]);
 
   useEffect(() => {
-    if (roleLoading) return;
     fetchAnalytics();
-  }, [roleLoading, fetchAnalytics]);
+  }, [fetchAnalytics]);
 
   return {
     subscriptionData,
@@ -250,7 +260,10 @@ export const useAnalytics = (dateRange?: DateRange) => {
     userActivityData,
     contentData,
     currentStats,
-    loading,
+    initialLoading,
+    refreshing,
+    // Keep 'loading' for backward compatibility (true only during initial load)
+    loading: initialLoading,
     refetch: fetchAnalytics
   };
 };
