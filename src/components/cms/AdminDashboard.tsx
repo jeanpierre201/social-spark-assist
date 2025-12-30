@@ -311,6 +311,7 @@ const AdminDashboard = () => {
                 paid_subscribers: currentStats.paid_subscribers,
                 tier_counts: currentStats.tier_counts
               }}
+              dateRange={dateRange}
             />
           </TabsContent>
 
