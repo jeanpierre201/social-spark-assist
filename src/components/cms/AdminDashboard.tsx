@@ -35,7 +35,19 @@ const AdminDashboard = () => {
     from: subDays(new Date(), 30),
     to: new Date()
   });
-  const { subscriptionData, incomeData, userActivityData, contentData, currentStats, loading, refetch } = useAnalytics(dateRange);
+  
+  // Pass enabled flag based on admin status (avoid fetching if not admin)
+  const { 
+    subscriptionData, 
+    incomeData, 
+    userActivityData, 
+    contentData, 
+    currentStats, 
+    initialLoading, 
+    refreshing, 
+    refetch 
+  } = useAnalytics({ dateRange, enabled: !roleLoading && isAdmin() });
+  
   const [syncing, setSyncing] = useState(false);
 
   const handleSyncAnalytics = async () => {
@@ -73,7 +85,8 @@ const AdminDashboard = () => {
     }
   };
 
-  if (roleLoading || loading) {
+  // Only show full-screen spinner during initial role check
+  if (roleLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
@@ -119,8 +132,11 @@ const AdminDashboard = () => {
   // Calculate total revenue from all subscription tiers
   const totalRevenue = latestSubscriptionData.reduce((sum, item) => sum + item.revenue_generated, 0);
   const totalActiveUsers = latestUserActivityData?.total_active_users || 0;
-  const totalPublishedPosts = currentStats.published_posts; // Use published posts count
-  const totalSubscriptions = currentStats.total_active_subscribers; // Use real subscribers count
+  const totalPublishedPosts = currentStats.published_posts;
+  const totalSubscriptions = currentStats.total_active_subscribers;
+
+  // Show skeleton cards during initial data load (dashboard stays mounted)
+  const showSkeletons = initialLoading;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -134,20 +150,29 @@ const AdminDashboard = () => {
               Comprehensive analytics and performance insights
             </p>
           </div>
-          <Button 
-            onClick={handleSyncAnalytics} 
-            disabled={syncing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
-            {syncing ? 'Syncing...' : 'Sync Analytics'}
-          </Button>
+          <div className="flex items-center gap-2">
+            {refreshing && (
+              <span className="text-sm text-muted-foreground animate-pulse">
+                Refreshing...
+              </span>
+            )}
+            <Button 
+              onClick={handleSyncAnalytics} 
+              disabled={syncing || refreshing}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing || refreshing ? 'animate-spin' : ''}`} />
+              {syncing ? 'Syncing...' : 'Sync Analytics'}
+            </Button>
+          </div>
         </div>
 
         {/* Date Range Filter */}
         <div className="mb-6">
           <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
         </div>
+
+        {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -155,10 +180,19 @@ const AdminDashboard = () => {
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-700">
-                €{totalRevenue.toLocaleString()}
-              </div>
-              <p className="text-xs text-blue-600">Last 30 days</p>
+              {showSkeletons ? (
+                <div className="space-y-2">
+                  <div className="h-8 bg-blue-100 rounded animate-pulse w-24"></div>
+                  <div className="h-3 bg-blue-100 rounded animate-pulse w-16"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-blue-700">
+                    €{totalRevenue.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-blue-600">Last 30 days</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -168,10 +202,19 @@ const AdminDashboard = () => {
               <Users className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-700">
-                {totalActiveUsers.toLocaleString()}
-              </div>
-              <p className="text-xs text-green-600">Last 30 days</p>
+              {showSkeletons ? (
+                <div className="space-y-2">
+                  <div className="h-8 bg-green-100 rounded animate-pulse w-24"></div>
+                  <div className="h-3 bg-green-100 rounded animate-pulse w-16"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-green-700">
+                    {totalActiveUsers.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-green-600">Last 30 days</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -181,10 +224,19 @@ const AdminDashboard = () => {
               <Send className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-purple-700">
-                {totalPublishedPosts.toLocaleString()}
-              </div>
-              <p className="text-xs text-purple-600">Successfully published to social media</p>
+              {showSkeletons ? (
+                <div className="space-y-2">
+                  <div className="h-8 bg-purple-100 rounded animate-pulse w-24"></div>
+                  <div className="h-3 bg-purple-100 rounded animate-pulse w-32"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-purple-700">
+                    {totalPublishedPosts.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-purple-600">Successfully published to social media</p>
+                </>
+              )}
             </CardContent>
           </Card>
 
@@ -194,10 +246,19 @@ const AdminDashboard = () => {
               <Crown className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-700">
-                {totalSubscriptions.toLocaleString()}
-              </div>
-              <p className="text-xs text-orange-600">Active subscribers</p>
+              {showSkeletons ? (
+                <div className="space-y-2">
+                  <div className="h-8 bg-orange-100 rounded animate-pulse w-24"></div>
+                  <div className="h-3 bg-orange-100 rounded animate-pulse w-20"></div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-bold text-orange-700">
+                    {totalSubscriptions.toLocaleString()}
+                  </div>
+                  <p className="text-xs text-orange-600">Active subscribers</p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -234,21 +295,22 @@ const AdminDashboard = () => {
           <TabsContent value="subscriptions">
             <SubscriptionAnalytics 
               data={subscriptionData} 
-              loading={loading} 
+              loading={initialLoading} 
               currentTierCounts={currentStats.tier_counts}
+              dateRange={dateRange}
             />
           </TabsContent>
 
           <TabsContent value="revenue">
-            <IncomeAnalytics data={incomeData} loading={loading} />
+            <IncomeAnalytics data={incomeData} loading={initialLoading} />
           </TabsContent>
 
           <TabsContent value="users">
-            <UserActivityAnalytics data={userActivityData} loading={loading} />
+            <UserActivityAnalytics data={userActivityData} loading={initialLoading} />
           </TabsContent>
 
           <TabsContent value="content">
-            <ContentAnalytics data={contentData} loading={loading} />
+            <ContentAnalytics data={contentData} loading={initialLoading} />
           </TabsContent>
 
           <TabsContent value="performance">
@@ -256,7 +318,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="promo-codes">
-            <PromoCodesManagement loading={loading} />
+            <PromoCodesManagement loading={initialLoading} />
           </TabsContent>
         </Tabs>
       </div>

@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Crown, Zap, TrendingUp, TrendingDown, HelpCircle } from 'lucide-react';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { format, parseISO, isWithinInterval } from 'date-fns';
 
 interface SubscriptionData {
   date_recorded: string;
@@ -19,13 +20,19 @@ interface CurrentTierCounts {
   Pro: number;
 }
 
+interface DateRange {
+  from: Date;
+  to: Date;
+}
+
 interface SubscriptionAnalyticsProps {
   data: SubscriptionData[];
   loading: boolean;
   currentTierCounts?: CurrentTierCounts;
+  dateRange?: DateRange;
 }
 
-const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: SubscriptionAnalyticsProps) => {
+const SubscriptionAnalytics = ({ data, loading, currentTierCounts, dateRange }: SubscriptionAnalyticsProps) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -43,7 +50,14 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: Subscriptio
     );
   }
 
-  // Process data for charts - aggregate by date, adding current tier counts for the most recent day
+  // Check if today is within the selected date range
+  const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
+  const isTodayInRange = dateRange 
+    ? isWithinInterval(today, { start: dateRange.from, end: dateRange.to })
+    : true;
+
+  // Process data for charts - aggregate by date
   const chartData = data.reduce((acc: any[], item) => {
     const existingEntry = acc.find(entry => entry.date === item.date_recorded);
     if (existingEntry) {
@@ -64,20 +78,19 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: Subscriptio
     return acc;
   }, []).reverse();
 
-  // If we have current tier counts, update the most recent data point or add a new one for today
-  if (currentTierCounts && chartData.length > 0) {
-    const today = new Date().toISOString().split('T')[0];
+  // If we have current tier counts and today is in range, update or add today's data point
+  if (currentTierCounts && isTodayInRange) {
     const lastEntry = chartData[chartData.length - 1];
     
-    if (lastEntry.date === today) {
+    if (lastEntry && lastEntry.date === todayStr) {
       // Update today's data with current counts
       lastEntry.Free_active = currentTierCounts.Free;
       lastEntry.Starter_active = currentTierCounts.Starter;
       lastEntry.Pro_active = currentTierCounts.Pro;
-    } else {
+    } else if (chartData.length > 0) {
       // Add today's data point with current counts
       chartData.push({
-        date: today,
+        date: todayStr,
         Free_active: currentTierCounts.Free,
         Starter_active: currentTierCounts.Starter,
         Pro_active: currentTierCounts.Pro,
@@ -89,18 +102,34 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: Subscriptio
         Pro_revenue: 0,
       });
     }
-  } else if (currentTierCounts && chartData.length === 0) {
-    // No historical data, create a single data point with current counts
-    const today = new Date().toISOString().split('T')[0];
-    chartData.push({
-      date: today,
-      Free_active: currentTierCounts.Free,
-      Starter_active: currentTierCounts.Starter,
-      Pro_active: currentTierCounts.Pro,
-      Free_new: 0,
-      Starter_new: 0,
-      Pro_new: 0,
-    });
+  }
+  
+  // If no historical data but we have current counts, create data with current counts
+  if (chartData.length === 0 && currentTierCounts) {
+    // Only add if today is in range
+    if (isTodayInRange) {
+      chartData.push({
+        date: todayStr,
+        Free_active: currentTierCounts.Free,
+        Starter_active: currentTierCounts.Starter,
+        Pro_active: currentTierCounts.Pro,
+        Free_new: 0,
+        Starter_new: 0,
+        Pro_new: 0,
+      });
+    }
+  }
+
+  // Apply flat-line snapshot for Free users if historical data doesn't have Free
+  // This shows current Free count as a flat line across all dates
+  if (currentTierCounts && currentTierCounts.Free > 0 && chartData.length > 0) {
+    const hasFreeHistorical = chartData.some(d => d.Free_active > 0);
+    if (!hasFreeHistorical) {
+      // Apply current Free count to all data points as a flat line
+      chartData.forEach(d => {
+        d.Free_active = currentTierCounts.Free;
+      });
+    }
   }
 
   // Use real current tier counts if provided
@@ -207,7 +236,14 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: Subscriptio
         <Card>
           <CardHeader>
             <CardTitle>Active Subscriptions Trend</CardTitle>
-            <CardDescription>Daily active subscriptions by tier (includes Free users)</CardDescription>
+            <CardDescription>
+              Daily active subscriptions by tier
+              {currentTierCounts && currentTierCounts.Free > 0 && (
+                <span className="block text-xs mt-1 text-muted-foreground">
+                  Note: Free tier shows current snapshot across dates
+                </span>
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
