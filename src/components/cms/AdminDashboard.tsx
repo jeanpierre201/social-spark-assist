@@ -131,7 +131,7 @@ const AdminDashboard = () => {
 
   // Calculate total revenue from all subscription tiers
   const totalRevenue = latestSubscriptionData.reduce((sum, item) => sum + item.revenue_generated, 0);
-  const totalActiveUsers = latestUserActivityData?.total_active_users || 0;
+  const totalActiveUsers = currentStats.active_users; // Use real active users count
   const totalPublishedPosts = currentStats.published_posts;
   const totalSubscriptions = currentStats.total_active_subscribers;
 
@@ -212,7 +212,7 @@ const AdminDashboard = () => {
                   <div className="text-2xl font-bold text-green-700">
                     {totalActiveUsers.toLocaleString()}
                   </div>
-                  <p className="text-xs text-green-600">Last 30 days</p>
+                  <p className="text-xs text-green-600">Users who created posts in period</p>
                 </>
               )}
             </CardContent>
