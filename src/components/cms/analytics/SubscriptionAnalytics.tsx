@@ -1,7 +1,7 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { Crown, Zap, TrendingUp, TrendingDown } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Crown, Zap, TrendingUp, TrendingDown, HelpCircle } from 'lucide-react';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SubscriptionData {
   date_recorded: string;
@@ -13,12 +13,19 @@ interface SubscriptionData {
   downgrade_count: number;
 }
 
+interface CurrentTierCounts {
+  Free: number;
+  Starter: number;
+  Pro: number;
+}
+
 interface SubscriptionAnalyticsProps {
   data: SubscriptionData[];
   loading: boolean;
+  currentTierCounts?: CurrentTierCounts;
 }
 
-const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) => {
+const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: SubscriptionAnalyticsProps) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -36,39 +43,56 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
     );
   }
 
-  // Process data for charts
+  // Process data for charts - aggregate by date
   const chartData = data.reduce((acc: any[], item) => {
     const existingEntry = acc.find(entry => entry.date === item.date_recorded);
     if (existingEntry) {
-      existingEntry[`${item.subscription_tier}_active`] = item.active_subscriptions;
+      existingEntry[`${item.subscription_tier}_active`] = Math.max(0, item.active_subscriptions);
       existingEntry[`${item.subscription_tier}_new`] = item.new_subscriptions;
       existingEntry[`${item.subscription_tier}_revenue`] = item.revenue_generated;
     } else {
       acc.push({
         date: item.date_recorded,
-        [`${item.subscription_tier}_active`]: item.active_subscriptions,
+        [`${item.subscription_tier}_active`]: Math.max(0, item.active_subscriptions),
         [`${item.subscription_tier}_new`]: item.new_subscriptions,
         [`${item.subscription_tier}_revenue`]: item.revenue_generated,
+        // Initialize other tiers with 0
+        Free_active: item.subscription_tier === 'Free' ? Math.max(0, item.active_subscriptions) : 0,
+        Starter_active: item.subscription_tier === 'Starter' ? Math.max(0, item.active_subscriptions) : 0,
+        Pro_active: item.subscription_tier === 'Pro' ? Math.max(0, item.active_subscriptions) : 0,
       });
     }
     return acc;
   }, []).reverse();
 
-  // Tier distribution data
-  const tierData = data.reduce((acc: any[], item) => {
-    const existing = acc.find(entry => entry.tier === item.subscription_tier);
-    if (existing) {
-      existing.active += item.active_subscriptions;
-    } else {
-      acc.push({
-        tier: item.subscription_tier,
-        active: item.active_subscriptions,
-      });
-    }
-    return acc;
-  }, []);
+  // Use real current tier counts if provided, otherwise calculate from data
+  const tierData = currentTierCounts 
+    ? [
+        { tier: 'Free', active: currentTierCounts.Free, fill: '#10B981' },
+        { tier: 'Starter', active: currentTierCounts.Starter, fill: '#3B82F6' },
+        { tier: 'Pro', active: currentTierCounts.Pro, fill: '#8B5CF6' },
+      ].filter(t => t.active > 0)
+    : data.reduce((acc: any[], item) => {
+        const existing = acc.find(entry => entry.tier === item.subscription_tier);
+        if (existing) {
+          // Only keep the most recent count for each tier
+          existing.active = Math.max(0, item.active_subscriptions);
+        } else {
+          acc.push({
+            tier: item.subscription_tier,
+            active: Math.max(0, item.active_subscriptions),
+            fill: item.subscription_tier === 'Pro' ? '#8B5CF6' : 
+                  item.subscription_tier === 'Starter' ? '#3B82F6' : '#10B981',
+          });
+        }
+        return acc;
+      }, []);
 
-  const COLORS = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B'];
+  const COLORS = {
+    Pro: '#8B5CF6',
+    Starter: '#3B82F6', 
+    Free: '#10B981'
+  };
 
   // Calculate metrics
   const totalUpgrades = data.reduce((sum, item) => sum + item.upgrade_count, 0);
@@ -85,6 +109,7 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Upgrades</p>
                 <p className="text-2xl font-bold text-purple-600">{totalUpgrades}</p>
+                <p className="text-xs text-gray-500 mt-1">Users who upgraded their plan</p>
               </div>
               <TrendingUp className="h-8 w-8 text-purple-500" />
             </div>
@@ -97,6 +122,7 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Downgrades</p>
                 <p className="text-2xl font-bold text-red-600">{totalDowngrades}</p>
+                <p className="text-xs text-gray-500 mt-1">Users who downgraded their plan</p>
               </div>
               <TrendingDown className="h-8 w-8 text-red-500" />
             </div>
@@ -107,10 +133,27 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Net Growth</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-600">Net Growth</p>
+                  <TooltipProvider>
+                    <UITooltip>
+                      <TooltipTrigger>
+                        <HelpCircle className="h-4 w-4 text-gray-400" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        <p>Net Growth = Total Upgrades - Total Downgrades</p>
+                        <p className="mt-1 text-xs text-gray-400">
+                          Positive means more users upgraded than downgraded.
+                          Negative means more users downgraded than upgraded.
+                        </p>
+                      </TooltipContent>
+                    </UITooltip>
+                  </TooltipProvider>
+                </div>
                 <p className={`text-2xl font-bold ${netUpgrades >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {netUpgrades >= 0 ? '+' : ''}{netUpgrades}
                 </p>
+                <p className="text-xs text-gray-500 mt-1">Upgrades minus downgrades</p>
               </div>
               {netUpgrades >= 0 ? (
                 <TrendingUp className="h-8 w-8 text-green-500" />
@@ -127,15 +170,16 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
         <Card>
           <CardHeader>
             <CardTitle>Active Subscriptions Trend</CardTitle>
-            <CardDescription>Daily active subscriptions by tier</CardDescription>
+            <CardDescription>Daily active subscriptions by tier (includes Free users)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
-                <YAxis />
+                <YAxis allowDecimals={false} />
                 <Tooltip />
+                <Legend />
                 <Line type="monotone" dataKey="Pro_active" stroke="#8B5CF6" strokeWidth={2} name="Pro" />
                 <Line type="monotone" dataKey="Starter_active" stroke="#3B82F6" strokeWidth={2} name="Starter" />
                 <Line type="monotone" dataKey="Free_active" stroke="#10B981" strokeWidth={2} name="Free" />
@@ -144,32 +188,47 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
           </CardContent>
         </Card>
 
-        {/* Subscription Tier Distribution */}
+        {/* Subscription Tier Distribution - REAL TIME from subscribers table */}
         <Card>
           <CardHeader>
-            <CardTitle>Subscription Distribution</CardTitle>
-            <CardDescription>Current active subscriptions by tier</CardDescription>
+            <CardTitle>Current Subscription Distribution</CardTitle>
+            <CardDescription>
+              Real-time count of users by tier
+              {currentTierCounts && (
+                <span className="block mt-1 text-xs">
+                  Free: {currentTierCounts.Free} | Starter: {currentTierCounts.Starter} | Pro: {currentTierCounts.Pro}
+                </span>
+              )}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={tierData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ tier, active }) => `${tier}: ${active}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="active"
-                >
-                  {tierData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+            {tierData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={tierData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={true}
+                    label={({ tier, active }) => `${tier}: ${active}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="active"
+                    nameKey="tier"
+                  >
+                    {tierData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill || COLORS[entry.tier as keyof typeof COLORS] || '#888'} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [value, `${name} users`]} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex items-center justify-center h-[300px] text-gray-500">
+                No subscription data available
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -184,8 +243,9 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
-                <YAxis />
+                <YAxis allowDecimals={false} />
                 <Tooltip />
+                <Legend />
                 <Bar dataKey="Pro_new" fill="#8B5CF6" name="Pro" />
                 <Bar dataKey="Starter_new" fill="#3B82F6" name="Starter" />
                 <Bar dataKey="Free_new" fill="#10B981" name="Free" />
@@ -198,7 +258,7 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
         <Card>
           <CardHeader>
             <CardTitle>Revenue by Tier</CardTitle>
-            <CardDescription>Daily revenue generated by subscription tier</CardDescription>
+            <CardDescription>Daily revenue generated by subscription tier (€)</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -206,9 +266,10 @@ const SubscriptionAnalytics = ({ data, loading }: SubscriptionAnalyticsProps) =>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
-                <Bar dataKey="Pro_revenue" fill="#8B5CF6" />
-                <Bar dataKey="Starter_revenue" fill="#3B82F6" />
+                <Tooltip formatter={(value) => [`€${value}`, 'Revenue']} />
+                <Legend />
+                <Bar dataKey="Pro_revenue" fill="#8B5CF6" name="Pro" />
+                <Bar dataKey="Starter_revenue" fill="#3B82F6" name="Starter" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

@@ -148,7 +148,7 @@ const AdminDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-700">
-                ${totalRevenue.toLocaleString()}
+                €{totalRevenue.toLocaleString()}
               </div>
               <p className="text-xs text-blue-600">Last 30 days</p>
             </CardContent>
@@ -224,7 +224,11 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="subscriptions">
-            <SubscriptionAnalytics data={subscriptionData} loading={loading} />
+            <SubscriptionAnalytics 
+              data={subscriptionData} 
+              loading={loading} 
+              currentTierCounts={currentStats.tier_counts}
+            />
           </TabsContent>
 
           <TabsContent value="revenue">
