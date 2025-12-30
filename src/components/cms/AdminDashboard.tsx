@@ -3,10 +3,11 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { useAnalytics } from '@/hooks/useAnalytics';
+import { useAnalytics, DateRange } from '@/hooks/useAnalytics';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { subDays } from 'date-fns';
 import { 
   Users, 
   DollarSign, 
@@ -17,7 +18,8 @@ import {
   Zap,
   BarChart3,
   RefreshCw,
-  Gift
+  Gift,
+  Send
 } from 'lucide-react';
 import SubscriptionAnalytics from './analytics/SubscriptionAnalytics';
 import IncomeAnalytics from './analytics/IncomeAnalytics';
@@ -25,10 +27,15 @@ import UserActivityAnalytics from './analytics/UserActivityAnalytics';
 import ContentAnalytics from './analytics/ContentAnalytics';
 import PerformanceMetrics from './analytics/PerformanceMetrics';
 import PromoCodesManagement from './analytics/PromoCodesManagement';
+import DateRangeFilter from './analytics/DateRangeFilter';
 
 const AdminDashboard = () => {
   const { userRole, loading: roleLoading, isAdmin } = useUserRole();
-  const { subscriptionData, incomeData, userActivityData, contentData, currentStats, loading } = useAnalytics();
+  const [dateRange, setDateRange] = useState<DateRange>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
+  const { subscriptionData, incomeData, userActivityData, contentData, currentStats, loading, refetch } = useAnalytics(dateRange);
   const [syncing, setSyncing] = useState(false);
 
   const handleSyncAnalytics = async () => {
@@ -56,10 +63,8 @@ const AdminDashboard = () => {
       console.log('Sync successful:', data);
       toast.success('Analytics synced successfully! Refreshing data...');
       
-      // Refresh the page to show updated data
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
+      // Refetch data instead of reloading the page
+      await refetch();
     } catch (error) {
       console.error('Sync error:', error);
       toast.error(`Failed to sync analytics: ${error.message || 'Unknown error'}`);
@@ -114,7 +119,7 @@ const AdminDashboard = () => {
   // Calculate total revenue from all subscription tiers
   const totalRevenue = latestSubscriptionData.reduce((sum, item) => sum + item.revenue_generated, 0);
   const totalActiveUsers = latestUserActivityData?.total_active_users || 0;
-  const totalPostsGenerated = currentStats.total_posts; // Use real posts count
+  const totalPublishedPosts = currentStats.published_posts; // Use published posts count
   const totalSubscriptions = currentStats.total_active_subscribers; // Use real subscribers count
 
   return (
@@ -139,7 +144,10 @@ const AdminDashboard = () => {
           </Button>
         </div>
 
-        {/* Summary Cards */}
+        {/* Date Range Filter */}
+        <div className="mb-6">
+          <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -169,14 +177,14 @@ const AdminDashboard = () => {
 
           <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Posts Created</CardTitle>
-              <FileText className="h-4 w-4 text-purple-600" />
+              <CardTitle className="text-sm font-medium">Posts Published</CardTitle>
+              <Send className="h-4 w-4 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-purple-700">
-                {totalPostsGenerated.toLocaleString()}
+                {totalPublishedPosts.toLocaleString()}
               </div>
-              <p className="text-xs text-purple-600">Generated content (posted & scheduled)</p>
+              <p className="text-xs text-purple-600">Successfully published to social media</p>
             </CardContent>
           </Card>
 

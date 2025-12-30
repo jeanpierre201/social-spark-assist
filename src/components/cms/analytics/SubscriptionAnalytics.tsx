@@ -43,7 +43,7 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: Subscriptio
     );
   }
 
-  // Process data for charts - aggregate by date
+  // Process data for charts - aggregate by date, adding current tier counts for the most recent day
   const chartData = data.reduce((acc: any[], item) => {
     const existingEntry = acc.find(entry => entry.date === item.date_recorded);
     if (existingEntry) {
@@ -56,7 +56,6 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: Subscriptio
         [`${item.subscription_tier}_active`]: Math.max(0, item.active_subscriptions),
         [`${item.subscription_tier}_new`]: item.new_subscriptions,
         [`${item.subscription_tier}_revenue`]: item.revenue_generated,
-        // Initialize other tiers with 0
         Free_active: item.subscription_tier === 'Free' ? Math.max(0, item.active_subscriptions) : 0,
         Starter_active: item.subscription_tier === 'Starter' ? Math.max(0, item.active_subscriptions) : 0,
         Pro_active: item.subscription_tier === 'Pro' ? Math.max(0, item.active_subscriptions) : 0,
@@ -65,7 +64,46 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: Subscriptio
     return acc;
   }, []).reverse();
 
-  // Use real current tier counts if provided, otherwise calculate from data
+  // If we have current tier counts, update the most recent data point or add a new one for today
+  if (currentTierCounts && chartData.length > 0) {
+    const today = new Date().toISOString().split('T')[0];
+    const lastEntry = chartData[chartData.length - 1];
+    
+    if (lastEntry.date === today) {
+      // Update today's data with current counts
+      lastEntry.Free_active = currentTierCounts.Free;
+      lastEntry.Starter_active = currentTierCounts.Starter;
+      lastEntry.Pro_active = currentTierCounts.Pro;
+    } else {
+      // Add today's data point with current counts
+      chartData.push({
+        date: today,
+        Free_active: currentTierCounts.Free,
+        Starter_active: currentTierCounts.Starter,
+        Pro_active: currentTierCounts.Pro,
+        Free_new: 0,
+        Starter_new: 0,
+        Pro_new: 0,
+        Free_revenue: 0,
+        Starter_revenue: 0,
+        Pro_revenue: 0,
+      });
+    }
+  } else if (currentTierCounts && chartData.length === 0) {
+    // No historical data, create a single data point with current counts
+    const today = new Date().toISOString().split('T')[0];
+    chartData.push({
+      date: today,
+      Free_active: currentTierCounts.Free,
+      Starter_active: currentTierCounts.Starter,
+      Pro_active: currentTierCounts.Pro,
+      Free_new: 0,
+      Starter_new: 0,
+      Pro_new: 0,
+    });
+  }
+
+  // Use real current tier counts if provided
   const tierData = currentTierCounts 
     ? [
         { tier: 'Free', active: currentTierCounts.Free, fill: '#10B981' },
@@ -75,7 +113,6 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts }: Subscriptio
     : data.reduce((acc: any[], item) => {
         const existing = acc.find(entry => entry.tier === item.subscription_tier);
         if (existing) {
-          // Only keep the most recent count for each tier
           existing.active = Math.max(0, item.active_subscriptions);
         } else {
           acc.push({
