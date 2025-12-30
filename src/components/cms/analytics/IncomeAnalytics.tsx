@@ -53,7 +53,7 @@ const IncomeAnalytics = ({ data, loading }: IncomeAnalyticsProps) => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-bold text-green-600">
-                  ${totalRevenue.toLocaleString()}
+                  €{totalRevenue.toLocaleString()}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-500" />
@@ -67,7 +67,7 @@ const IncomeAnalytics = ({ data, loading }: IncomeAnalyticsProps) => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Monthly Recurring Revenue</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  ${latestMRR.toLocaleString()}
+                  €{latestMRR.toLocaleString()}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-blue-500" />
@@ -93,7 +93,7 @@ const IncomeAnalytics = ({ data, loading }: IncomeAnalyticsProps) => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg Revenue/Transaction</p>
                 <p className="text-2xl font-bold text-orange-600">
-                  ${avgRevenuePerTransaction.toFixed(2)}
+                  €{avgRevenuePerTransaction.toFixed(2)}
                 </p>
               </div>
               <Percent className="h-8 w-8 text-orange-500" />
@@ -115,7 +115,7 @@ const IncomeAnalytics = ({ data, loading }: IncomeAnalyticsProps) => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date_recorded" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+                <Tooltip formatter={(value) => [`€${value}`, 'Revenue']} />
                 <Area 
                   type="monotone" 
                   dataKey="total_revenue" 
@@ -140,7 +140,7 @@ const IncomeAnalytics = ({ data, loading }: IncomeAnalyticsProps) => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date_recorded" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, 'MRR']} />
+                <Tooltip formatter={(value) => [`€${value}`, 'MRR']} />
                 <Line 
                   type="monotone" 
                   dataKey="monthly_recurring_revenue" 
@@ -164,7 +164,7 @@ const IncomeAnalytics = ({ data, loading }: IncomeAnalyticsProps) => {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="date_recorded" />
                 <YAxis />
-                <Tooltip formatter={(value) => [`$${value}`, 'Revenue']} />
+                <Tooltip formatter={(value) => [`€${value}`, 'Revenue']} />
                 <Line 
                   type="monotone" 
                   dataKey="total_revenue" 

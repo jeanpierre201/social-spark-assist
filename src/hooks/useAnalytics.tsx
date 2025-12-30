@@ -44,6 +44,11 @@ interface ContentAnalytics {
 interface CurrentStats {
   total_active_subscribers: number;
   total_posts: number;
+  tier_counts: {
+    Free: number;
+    Starter: number;
+    Pro: number;
+  };
 }
 
 export const useAnalytics = () => {
@@ -52,7 +57,11 @@ export const useAnalytics = () => {
   const [incomeData, setIncomeData] = useState<IncomeAnalytics[]>([]);
   const [userActivityData, setUserActivityData] = useState<UserActivityData[]>([]);
   const [contentData, setContentData] = useState<ContentAnalytics[]>([]);
-  const [currentStats, setCurrentStats] = useState<CurrentStats>({ total_active_subscribers: 0, total_posts: 0 });
+  const [currentStats, setCurrentStats] = useState<CurrentStats>({ 
+    total_active_subscribers: 0, 
+    total_posts: 0,
+    tier_counts: { Free: 0, Starter: 0, Pro: 0 }
+  });
   const [loading, setLoading] = useState(true);
   const [hasAttemptedFetch, setHasAttemptedFetch] = useState(false);
 
@@ -138,12 +147,22 @@ export const useAnalytics = () => {
 
         // Set current stats using real data only (count all users including Free tier)
         const allUsers = subscribersData || [];
+        
+        // Calculate tier counts from real subscribers data
+        const tierCounts = {
+          Free: allUsers.filter((s: any) => s.subscription_tier === 'Free' || !s.subscription_tier).length,
+          Starter: allUsers.filter((s: any) => s.subscription_tier === 'Starter').length,
+          Pro: allUsers.filter((s: any) => s.subscription_tier === 'Pro').length,
+        };
+        
         const currentStatsData = {
           total_active_subscribers: allUsers.length,
-          total_posts: postsData?.length || 0
+          total_posts: postsData?.length || 0,
+          tier_counts: tierCounts
         };
         
         console.log('Setting current stats:', currentStatsData);
+        console.log('Tier breakdown:', tierCounts);
         setCurrentStats(currentStatsData);
 
         // Transform and set the data
