@@ -225,12 +225,23 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
         Pro: activeProUsers.length,
       };
 
-      // Calculate MRR from active paid subscribers
+      // Calculate MRR from active paid subscribers with Stripe billing (exclude promo code users)
+      // Promo code users have subscribed=true but no stripe_customer_id
       // Starter = €12/month, Pro = €25/month
       const STARTER_PRICE = 12;
       const PRO_PRICE = 25;
-      const mrr = (activeStarterUsers.length * STARTER_PRICE) + (activeProUsers.length * PRO_PRICE);
-      const paidSubscribers = activeStarterUsers.length + activeProUsers.length;
+      
+      // Only count users with a stripe_customer_id as true paying subscribers
+      const billedStarterUsers = allUsers.filter((s: any) => 
+        s.subscription_tier === 'Starter' && s.subscribed === true && s.stripe_customer_id
+      );
+      const billedProUsers = allUsers.filter((s: any) => 
+        s.subscription_tier === 'Pro' && s.subscribed === true && s.stripe_customer_id
+      );
+      
+      const mrr = (billedStarterUsers.length * STARTER_PRICE) + (billedProUsers.length * PRO_PRICE);
+      // paid_subscribers counts only those with actual Stripe billing (for discrepancy check)
+      const paidSubscribers = billedStarterUsers.length + billedProUsers.length;
 
       // Active users = users who created posts in the date range, or fall back to total subscribers
       const activeUsersCount = uniqueActiveUserIds.size > 0 

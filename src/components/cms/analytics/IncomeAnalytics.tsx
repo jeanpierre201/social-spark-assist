@@ -227,7 +227,7 @@ const IncomeAnalytics = ({ data, loading, revenueStats, dateRange }: IncomeAnaly
                   <p className="text-2xl font-bold text-green-600">
                     €{stripeData.availableBalance.toFixed(2)}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">Ready for payout</p>
+                  <p className="text-xs text-gray-500 mt-1">Stripe account balance</p>
                 </div>
                 <Wallet className="h-8 w-8 text-green-400" />
               </div>
