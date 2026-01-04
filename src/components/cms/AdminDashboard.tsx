@@ -213,6 +213,11 @@ const AdminDashboard = () => {
                 Refreshing...
               </span>
             )}
+            {stripeRefreshing && (
+              <span className="text-sm text-muted-foreground animate-pulse">
+                Updating Stripe...
+              </span>
+            )}
             <Button 
               onClick={handleSyncAnalytics} 
               disabled={syncing || refreshing}
@@ -269,7 +274,7 @@ const AdminDashboard = () => {
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              {showSkeletons || stripeInitialLoading ? (
+              {showSkeletons && !stripeData ? (
                 <div className="space-y-2">
                   <div className="h-8 bg-blue-100 rounded animate-pulse w-24"></div>
                   <div className="h-3 bg-blue-100 rounded animate-pulse w-16"></div>
@@ -339,7 +344,7 @@ const AdminDashboard = () => {
               <Crown className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
-              {showSkeletons || stripeInitialLoading ? (
+              {showSkeletons && !stripeData ? (
                 <div className="space-y-2">
                   <div className="h-8 bg-orange-100 rounded animate-pulse w-24"></div>
                   <div className="h-3 bg-orange-100 rounded animate-pulse w-20"></div>
