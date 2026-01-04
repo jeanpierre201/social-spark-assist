@@ -30,9 +30,11 @@ interface SubscriptionAnalyticsProps {
   loading: boolean;
   currentTierCounts?: CurrentTierCounts;
   dateRange?: DateRange;
+  paidSubscribers?: number;
+  promoSubscribers?: number;
 }
 
-const SubscriptionAnalytics = ({ data, loading, currentTierCounts, dateRange }: SubscriptionAnalyticsProps) => {
+const SubscriptionAnalytics = ({ data, loading, currentTierCounts, dateRange, paidSubscribers, promoSubscribers }: SubscriptionAnalyticsProps) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -194,10 +196,45 @@ const SubscriptionAnalytics = ({ data, loading, currentTierCounts, dateRange }: 
       : '0.0'
   })).reverse();
 
+  // Calculate total paid and promo subscribers from props
+  const totalPaid = paidSubscribers ?? 0;
+  const totalPromo = promoSubscribers ?? 0;
+
   return (
     <div className="space-y-6">
+      {/* Synced Subscriber Counts */}
+      {(totalPaid > 0 || totalPromo > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Paid Subscribers</p>
+                  <p className="text-2xl font-bold text-blue-600">{totalPaid}</p>
+                  <p className="text-xs text-gray-500 mt-1">Active Stripe billing</p>
+                </div>
+                <Crown className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-amber-50 to-yellow-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Promo Subscribers</p>
+                  <p className="text-2xl font-bold text-amber-600">{totalPromo}</p>
+                  <p className="text-xs text-gray-500 mt-1">Via promo codes</p>
+                </div>
+                <Zap className="h-8 w-8 text-amber-500" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-purple-50 to-blue-50">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">

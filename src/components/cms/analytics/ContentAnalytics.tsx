@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
-import { FileText, Zap, Target, DollarSign } from 'lucide-react';
+import { FileText, Zap, Target, DollarSign, Send } from 'lucide-react';
 
 interface ContentData {
   date_recorded: string;
@@ -13,12 +13,18 @@ interface ContentData {
   api_cost: number;
 }
 
+interface ContentStats {
+  total_posts: number;
+  published_posts: number;
+}
+
 interface ContentAnalyticsProps {
   data: ContentData[];
   loading: boolean;
+  contentStats?: ContentStats;
 }
 
-const ContentAnalytics = ({ data, loading }: ContentAnalyticsProps) => {
+const ContentAnalytics = ({ data, loading, contentStats }: ContentAnalyticsProps) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -38,8 +44,9 @@ const ContentAnalytics = ({ data, loading }: ContentAnalyticsProps) => {
 
   const chartData = [...data].reverse();
 
-  // Calculate metrics
-  const totalPosts = data.reduce((sum, item) => sum + item.total_posts_generated, 0);
+  // Use synced contentStats for real-time counts, fallback to historical data
+  const totalPosts = contentStats?.total_posts ?? data.reduce((sum, item) => sum + item.total_posts_generated, 0);
+  const publishedPosts = contentStats?.published_posts ?? 0;
   const totalApiCalls = data.reduce((sum, item) => sum + item.api_calls_count, 0);
   const totalApiCost = data.reduce((sum, item) => sum + item.api_cost, 0);
   const avgSuccessRate = data.length > 0 ? data.reduce((sum, item) => sum + item.success_rate, 0) / data.length : 0;
@@ -76,16 +83,30 @@ const ContentAnalytics = ({ data, loading }: ContentAnalyticsProps) => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Summary Cards - Synced with contentStats */}
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-cyan-50">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Posts Generated</p>
+                <p className="text-sm font-medium text-gray-600">Total Posts</p>
                 <p className="text-2xl font-bold text-blue-600">{totalPosts.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-1">All time</p>
               </div>
               <FileText className="h-8 w-8 text-blue-500" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Published</p>
+                <p className="text-2xl font-bold text-purple-600">{publishedPosts.toLocaleString()}</p>
+                <p className="text-xs text-gray-500 mt-1">To social media</p>
+              </div>
+              <Send className="h-8 w-8 text-purple-500" />
             </div>
           </CardContent>
         </Card>
