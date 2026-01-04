@@ -11,11 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
-import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useOptionalSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useManualPublish } from '@/hooks/useManualPublish';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2, RotateCcw, Sparkles, Send } from 'lucide-react';
+import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2, RotateCcw, Sparkles, Send, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
@@ -54,16 +54,10 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const { user } = useAuth();
   const { subscriptionEnd, subscriptionTier } = useSubscription();
   
-  // Safely get social accounts - may throw if provider is missing
-  let accounts: { id: string; platform: string; username: string | null; is_active: boolean; created_at: string }[] = [];
-  let accountsLoading = false;
-  try {
-    const socialAccountsContext = useSocialAccounts();
-    accounts = socialAccountsContext.accounts;
-    accountsLoading = socialAccountsContext.loading;
-  } catch (error) {
-    console.error('SocialAccountsProvider not available:', error);
-  }
+  // Use optional hook - returns null if provider missing
+  const socialContext = useOptionalSocialAccounts();
+  const accounts = socialContext?.accounts ?? [];
+  const accountsLoading = socialContext?.loading ?? false;
   
   const { publishToMastodon, publishToFacebook, publishToTwitter, publishToTelegram, isPublishingPost } = useManualPublish();
   // Get subscription status based on tier
@@ -1049,75 +1043,126 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
           {!isReadOnly && (
             <div>
               <Label className="text-sm font-medium mb-3 block">Social Media Platforms</Label>
-              <div className="grid grid-cols-2 gap-3">
-                <TooltipProvider>
-                  {socialPlatforms.map((platform) => {
-                    const isConnected = accounts.some(acc => acc.platform === platform.id && acc.is_active);
-                    const isComingSoon = platform.comingSoon;
-                    const isBeta = platform.beta;
-                    const isDisabled = !isConnected || isComingSoon;
-                    
-                    return (
-                      <div key={platform.id} className="flex items-center space-x-2">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex items-center space-x-2">
-                              <Checkbox
-                                id={platform.id}
-                                checked={formData.social_platforms.includes(platform.id)}
-                                disabled={isDisabled}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      social_platforms: [...prev.social_platforms, platform.id]
-                                    }));
-                                  } else {
-                                    const newPlatforms = formData.social_platforms.filter(p => p !== platform.id);
-                                    setFormData(prev => ({
-                                      ...prev,
-                                      social_platforms: newPlatforms,
-                                      // Clear schedule if no platforms remain
-                                      ...(newPlatforms.length === 0 && { scheduled_date: '', scheduled_time: '' })
-                                    }));
-                                  }
-                                }}
-                              />
-                              <Label 
-                                htmlFor={platform.id} 
-                                className={`text-sm flex items-center gap-1.5 ${isDisabled ? 'text-muted-foreground' : ''}`}
-                              >
-                                {platform.name}
-                                <Badge variant="outline" className="text-[10px] px-1 py-0">
-                                  {platform.tier}
-                                </Badge>
-                                {isBeta && (
-                                  <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-amber-100 text-amber-800">
-                                    β
-                                  </Badge>
+              {(() => {
+                // Helper to check connection (handles twitter/x equivalence)
+                const isPlatformConnected = (platformId: string) => {
+                  if (platformId === 'x' || platformId === 'twitter') {
+                    return accounts.some(acc => (acc.platform === 'x' || acc.platform === 'twitter') && acc.is_active);
+                  }
+                  return accounts.some(acc => acc.platform === platformId && acc.is_active);
+                };
+                
+                // Find disconnected platforms that are currently selected
+                const disconnectedSelectedPlatforms = formData.social_platforms.filter(
+                  pId => !isPlatformConnected(pId)
+                );
+                const hasDisconnectedPlatforms = disconnectedSelectedPlatforms.length > 0;
+                
+                return (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <TooltipProvider>
+                        {socialPlatforms.map((platform) => {
+                          const isConnected = isPlatformConnected(platform.id);
+                          const isComingSoon = platform.comingSoon;
+                          const isBeta = platform.beta;
+                          const isChecked = formData.social_platforms.includes(platform.id);
+                          // Allow unchecking even if disconnected, but prevent checking new disconnected platforms
+                          const isDisabled = isComingSoon || (!isConnected && !isChecked);
+                          
+                          return (
+                            <div key={platform.id} className="flex items-center space-x-2">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={platform.id}
+                                      checked={isChecked}
+                                      disabled={isDisabled}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            social_platforms: [...prev.social_platforms, platform.id]
+                                          }));
+                                        } else {
+                                          const newPlatforms = formData.social_platforms.filter(p => p !== platform.id);
+                                          setFormData(prev => ({
+                                            ...prev,
+                                            social_platforms: newPlatforms,
+                                            // Clear schedule if no platforms remain
+                                            ...(newPlatforms.length === 0 && { scheduled_date: '', scheduled_time: '' })
+                                          }));
+                                        }
+                                      }}
+                                    />
+                                    <Label 
+                                      htmlFor={platform.id} 
+                                      className={`text-sm flex items-center gap-1.5 ${isDisabled ? 'text-muted-foreground' : ''} ${isChecked && !isConnected ? 'text-destructive' : ''}`}
+                                    >
+                                      {platform.name}
+                                      {isChecked && !isConnected && (
+                                        <AlertTriangle className="h-3 w-3 text-destructive" />
+                                      )}
+                                      <Badge variant="outline" className="text-[10px] px-1 py-0">
+                                        {platform.tier}
+                                      </Badge>
+                                      {isBeta && (
+                                        <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-amber-100 text-amber-800">
+                                          β
+                                        </Badge>
+                                      )}
+                                      {isComingSoon && (
+                                        <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                          Soon
+                                        </Badge>
+                                      )}
+                                    </Label>
+                                  </div>
+                                </TooltipTrigger>
+                                {(isDisabled || (isChecked && !isConnected)) && (
+                                  <TooltipContent>
+                                    {isComingSoon ? 'Coming soon' : isChecked && !isConnected ? 'Account disconnected - uncheck or reconnect' : 'Connect this account in Social Settings'}
+                                  </TooltipContent>
                                 )}
-                                {isComingSoon && (
-                                  <Badge variant="secondary" className="text-[10px] px-1 py-0">
-                                    Soon
-                                  </Badge>
-                                )}
-                              </Label>
+                              </Tooltip>
                             </div>
-                          </TooltipTrigger>
-                          {isDisabled && (
-                            <TooltipContent>
-                              {isComingSoon ? 'Coming soon' : 'Connect this account in Social Settings'}
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
+                          );
+                        })}
+                      </TooltipProvider>
+                    </div>
+                    
+                    {/* Disconnected platforms warning */}
+                    {hasDisconnectedPlatforms && (
+                      <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="text-sm text-destructive font-medium">
+                              Disconnected accounts: {disconnectedSelectedPlatforms.map(p => 
+                                socialPlatforms.find(sp => sp.id === p)?.name || p
+                              ).join(', ')}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Uncheck these platforms or reconnect to publish.
+                            </p>
+                            <Link 
+                              to="/dashboard/social" 
+                              className="inline-flex items-center gap-1 mt-2 text-sm font-medium text-primary hover:underline"
+                            >
+                              Reconnect Account →
+                            </Link>
+                          </div>
+                        </div>
                       </div>
-                    );
-                  })}
-                </TooltipProvider>
-              </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Connect <Link to="/dashboard" className="text-primary hover:underline">Social Accounts</Link> in the Social Media Accounts section to enable posting.
-              </p>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Connect <Link to="/dashboard/social" className="text-primary hover:underline">Social Accounts</Link> to enable posting.
+                    </p>
+                  </>
+                );
+              })()}
               
               {/* Post Now Button */}
               {formData.social_platforms.length > 0 && post?.status !== 'published' && !isSubscriptionExpired && (

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
 import ProPostsSection from '@/components/dashboard/ProPostsSection';
-import { SocialAccountsProvider } from '@/hooks/useSocialAccounts';
+
 
 const PostsProPage = () => {
   const { user } = useAuth();
@@ -48,7 +48,6 @@ const PostsProPage = () => {
   }
 
   return (
-    <SocialAccountsProvider>
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={false} title="Your Posts" />
@@ -134,7 +133,6 @@ const PostsProPage = () => {
         </div>
       </div>
     </div>
-    </SocialAccountsProvider>
   );
 };
 
