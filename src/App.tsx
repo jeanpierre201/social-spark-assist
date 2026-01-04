@@ -23,9 +23,8 @@ import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminResetPasswordPage from "./pages/AdminResetPasswordPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import ContentGeneratorPage from "./pages/ContentGeneratorPage";
-import ContentGeneratorStarterPage from "./pages/ContentGeneratorStarterPage";
-import ContentGeneratorStarterPage2 from "./pages/ContentGeneratorStarterPage2";
-import ContentGeneratorProPage2 from "./pages/ContentGeneratorProPage2";
+import StarterContentGeneratorPage from "./pages/StarterContentGeneratorPage";
+import ProContentGeneratorPage from "./pages/ProContentGeneratorPage";
 import PostsStarterPage from "./pages/PostsStarterPage";
 import PostsProPage from "./pages/PostsProPage";
 import SupportPage from "./pages/SupportPage";
@@ -122,19 +121,14 @@ const App = () => (
                       <ContentGeneratorPage />
                     </ProtectedRoute>
                   } />
-                  <Route path="/content-generator-starter" element={
-                    <ProtectedRoute>
-                      <ContentGeneratorStarterPage />
-                    </ProtectedRoute>
-                  } />
                   <Route path="/dashboard/content-generator-starter" element={
                     <ProtectedRoute>
-                      <ContentGeneratorStarterPage2 />
+                      <StarterContentGeneratorPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard/content-generator-pro" element={
                     <ProtectedRoute>
-                      <ContentGeneratorProPage2 />
+                      <ProContentGeneratorPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard/posts-starter" element={

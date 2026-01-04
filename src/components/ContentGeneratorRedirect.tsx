@@ -18,12 +18,17 @@ const ContentGeneratorRedirect = () => {
     );
   }
 
-  // Pro users should be redirected to dashboard
+  // Pro users should be redirected to dashboard content generator
   if (subscribed && subscriptionTier === 'Pro') {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/dashboard/content-generator-pro" replace />;
   }
 
-  // Non-Pro users (including Starter users) can access the content generator
+  // Starter users should be redirected to starter content generator
+  if (subscribed && subscriptionTier === 'Starter') {
+    return <Navigate to="/dashboard/content-generator-starter" replace />;
+  }
+
+  // Free users can access the content generator
   return <ContentGenerator />;
 };
 

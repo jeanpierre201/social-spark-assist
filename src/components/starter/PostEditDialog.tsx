@@ -59,10 +59,12 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const starterStatus = useStarterSubscriptionStatus();
   const proStatus = useProSubscriptionStatus();
   
+  // Only consider subscription expired when we have loaded the status
+  // During loading, assume not expired to avoid blocking edit dialog
   const isSubscriptionExpired = subscriptionTier === 'Starter' 
-    ? !starterStatus.canCreatePosts 
+    ? (starterStatus.isLoading ? false : !starterStatus.canCreatePosts)
     : subscriptionTier === 'Pro' 
-      ? !proStatus.canCreatePosts 
+      ? (proStatus.isLoading ? false : !proStatus.canCreatePosts)
       : false;
   const [loading, setLoading] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
