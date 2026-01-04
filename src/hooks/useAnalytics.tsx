@@ -53,7 +53,8 @@ interface CurrentStats {
   // Revenue stats calculated from real subscribers
   mrr: number; // Monthly Recurring Revenue
   estimated_revenue: number; // Based on active paid subscribers
-  paid_subscribers: number;
+  paid_subscribers: number; // Subscribers with Stripe billing
+  promo_subscribers: number; // Subscribers with promo codes (no Stripe billing)
 }
 
 export interface DateRange {
@@ -81,7 +82,8 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
     tier_counts: { Free: 0, Starter: 0, Pro: 0 },
     mrr: 0,
     estimated_revenue: 0,
-    paid_subscribers: 0
+    paid_subscribers: 0,
+    promo_subscribers: 0
   });
   
   // Split loading states: initialLoading for first fetch, refreshing for subsequent
@@ -242,6 +244,14 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
       const mrr = (billedStarterUsers.length * STARTER_PRICE) + (billedProUsers.length * PRO_PRICE);
       // paid_subscribers counts only those with actual Stripe billing (for discrepancy check)
       const paidSubscribers = billedStarterUsers.length + billedProUsers.length;
+      
+      // Promo subscribers: users with subscribed=true but NO stripe_customer_id
+      const promoSubscribers = allUsers.filter((s: any) => 
+        s.subscribed === true && 
+        s.subscription_tier && 
+        s.subscription_tier !== 'Free' && 
+        !s.stripe_customer_id
+      );
 
       // Active users = users who created posts in the date range, or fall back to total subscribers
       const activeUsersCount = uniqueActiveUserIds.size > 0 
@@ -256,7 +266,8 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
         tier_counts: tierCounts,
         mrr: mrr,
         estimated_revenue: mrr, // Current month estimated revenue
-        paid_subscribers: paidSubscribers
+        paid_subscribers: paidSubscribers,
+        promo_subscribers: promoSubscribers.length
       };
       
       setCurrentStats(currentStatsData);

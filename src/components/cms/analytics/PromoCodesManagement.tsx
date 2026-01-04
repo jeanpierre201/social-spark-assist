@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,8 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Copy, Trash2, Gift, RefreshCw, Calendar } from 'lucide-react';
-import { format } from 'date-fns';
+import { Plus, Copy, Trash2, Gift, RefreshCw, Calendar, Users, Crown, Zap, DollarSign } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
 
 interface PromoCode {
   id: string;
@@ -25,6 +25,12 @@ interface PromoCode {
   is_active: boolean;
 }
 
+interface ActivePromoSubscriber {
+  email: string;
+  tier: string;
+  subscription_end: string | null;
+}
+
 interface PromoCodesManagementProps {
   loading: boolean;
 }
@@ -35,6 +41,7 @@ const PromoCodesManagement = ({ loading: parentLoading }: PromoCodesManagementPr
   const [creating, setCreating] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string>('Starter');
   const [expirationDays, setExpirationDays] = useState<number>(30);
+  const [promoSubscribers, setPromoSubscribers] = useState<ActivePromoSubscriber[]>([]);
 
   const fetchPromoCodes = async () => {
     try {
@@ -54,9 +61,49 @@ const PromoCodesManagement = ({ loading: parentLoading }: PromoCodesManagementPr
     }
   };
 
+  const fetchPromoSubscribers = async () => {
+    try {
+      // Fetch subscribers who have active subscriptions but no stripe_customer_id (promo code users)
+      const { data, error } = await supabase
+        .from('subscribers')
+        .select('email, subscription_tier, subscription_end')
+        .eq('subscribed', true)
+        .is('stripe_customer_id', null)
+        .not('subscription_tier', 'eq', 'Free');
+
+      if (error) throw error;
+      
+      setPromoSubscribers((data || []).map((s: any) => ({
+        email: s.email,
+        tier: s.subscription_tier,
+        subscription_end: s.subscription_end
+      })));
+    } catch (error) {
+      console.error('Error fetching promo subscribers:', error);
+    }
+  };
+
   useEffect(() => {
     fetchPromoCodes();
+    fetchPromoSubscribers();
   }, []);
+
+  // Calculate promo stats
+  const promoStats = useMemo(() => {
+    const STARTER_PRICE = 12;
+    const PRO_PRICE = 25;
+    
+    const starterCount = promoSubscribers.filter(s => s.tier === 'Starter').length;
+    const proCount = promoSubscribers.filter(s => s.tier === 'Pro').length;
+    const valueGranted = (starterCount * STARTER_PRICE) + (proCount * PRO_PRICE);
+    
+    return {
+      total: promoSubscribers.length,
+      starterCount,
+      proCount,
+      valueGranted
+    };
+  }, [promoSubscribers]);
 
   const generateRandomCode = (): string => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -175,6 +222,132 @@ const PromoCodesManagement = ({ loading: parentLoading }: PromoCodesManagementPr
 
   return (
     <div className="space-y-6">
+      {/* Promo Subscribers Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Active Promo Users</p>
+                <p className="text-2xl font-bold text-purple-600">{promoStats.total}</p>
+                <p className="text-xs text-gray-500 mt-1">Via promo codes</p>
+              </div>
+              <Users className="h-8 w-8 text-purple-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Value Granted</p>
+                <p className="text-2xl font-bold text-green-600">€{promoStats.valueGranted}</p>
+                <p className="text-xs text-gray-500 mt-1">Monthly equivalent</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Starter Plans</p>
+                <p className="text-2xl font-bold text-blue-600">{promoStats.starterCount}</p>
+                <p className="text-xs text-gray-500 mt-1">Promo subscribers</p>
+              </div>
+              <Zap className="h-8 w-8 text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pro Plans</p>
+                <p className="text-2xl font-bold text-orange-600">{promoStats.proCount}</p>
+                <p className="text-xs text-gray-500 mt-1">Promo subscribers</p>
+              </div>
+              <Crown className="h-8 w-8 text-orange-400" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Active Promo Subscribers List */}
+      {promoSubscribers.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Active Promo Subscribers
+            </CardTitle>
+            <CardDescription>
+              Users with active subscriptions via promo codes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Tier</TableHead>
+                    <TableHead>Expires</TableHead>
+                    <TableHead>Days Remaining</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {promoSubscribers.map((sub, idx) => {
+                    const daysRemaining = sub.subscription_end 
+                      ? differenceInDays(new Date(sub.subscription_end), new Date())
+                      : null;
+                    const isExpiringSoon = daysRemaining !== null && daysRemaining <= 7;
+                    
+                    return (
+                      <TableRow key={idx}>
+                        <TableCell>{sub.email}</TableCell>
+                        <TableCell>
+                          {sub.tier === 'Pro' ? (
+                            <Badge className="bg-purple-600">Pro</Badge>
+                          ) : (
+                            <Badge className="bg-blue-600">Starter</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {sub.subscription_end ? (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <Calendar className="h-3 w-3" />
+                              {format(new Date(sub.subscription_end), 'MMM d, yyyy')}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {daysRemaining !== null ? (
+                            <Badge 
+                              variant={isExpiringSoon ? 'destructive' : 'outline'}
+                              className={isExpiringSoon ? '' : 'border-green-500 text-green-600'}
+                            >
+                              {daysRemaining > 0 ? `${daysRemaining} days` : 'Expired'}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {/* Create Promo Code Card */}
       <Card>
         <CardHeader>

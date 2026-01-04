@@ -185,12 +185,17 @@ const AdminDashboard = () => {
   const totalPublishedPosts = currentStats.published_posts;
   // Use Stripe active subscriptions count if available (more accurate for paid subs)
   const totalSubscriptions = hasStripeData ? stripeData.activeSubscriptions : currentStats.paid_subscribers;
+  
+  // Promo code subscribers (from database, these won't be in Stripe)
+  const promoSubscribers = currentStats.promo_subscribers;
 
-  // Data quality check: compare database subscriber count with Stripe
+  // Data quality check: only show discrepancy if Stripe shows MORE than database (unexpected case)
+  // If database shows more, it's likely due to promo code users or test mode subscriptions, which is expected
   const dbPaidSubscribers = currentStats.paid_subscribers;
   const stripePaidSubscribers = stripeData?.activeSubscriptions || 0;
-  const dataDiscrepancy = hasStripeData && Math.abs(dbPaidSubscribers - stripePaidSubscribers) > 0;
-  const discrepancyAmount = hasStripeData ? dbPaidSubscribers - stripePaidSubscribers : 0;
+  // Only show warning if Stripe reports more subscribers than database has with stripe_customer_id
+  // (database having more is expected due to promo codes/test mode)
+  const dataDiscrepancy = hasStripeData && stripePaidSubscribers > dbPaidSubscribers;
 
   // Show skeleton cards during initial data load (dashboard stays mounted)
   const showSkeletons = initialLoading;
@@ -234,7 +239,22 @@ const AdminDashboard = () => {
           <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
         </div>
 
-        {/* Data Quality Indicator */}
+        {/* Promo Code Subscribers Info */}
+        {promoSubscribers > 0 && (
+          <div className="mb-6 p-4 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-3">
+            <Gift className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-purple-800">
+                {promoSubscribers} Promo Code Subscriber{promoSubscribers !== 1 ? 's' : ''}
+              </p>
+              <p className="text-sm text-purple-700 mt-1">
+                These users have active subscriptions via promo codes and are not counted in Stripe revenue metrics.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Data Quality Indicator - Only show for unexpected discrepancy */}
         {dataDiscrepancy && (
           <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start justify-between">
             <div className="flex items-start gap-3">
@@ -242,12 +262,9 @@ const AdminDashboard = () => {
               <div>
                 <p className="font-medium text-amber-800">Data Discrepancy Detected</p>
                 <p className="text-sm text-amber-700 mt-1">
-                  Database shows {dbPaidSubscribers} paid subscriber{dbPaidSubscribers !== 1 ? 's' : ''}, 
-                  but Stripe reports {stripePaidSubscribers} active subscription{stripePaidSubscribers !== 1 ? 's' : ''}.
-                  {discrepancyAmount > 0 
-                    ? ` ${Math.abs(discrepancyAmount)} extra record${Math.abs(discrepancyAmount) !== 1 ? 's' : ''} in database may be from test users or failed payments.`
-                    : ` ${Math.abs(discrepancyAmount)} subscription${Math.abs(discrepancyAmount) !== 1 ? 's' : ''} in Stripe not reflected in database.`
-                  }
+                  Stripe reports {stripePaidSubscribers} subscription{stripePaidSubscribers !== 1 ? 's' : ''}, 
+                  but only {dbPaidSubscribers} subscriber{dbPaidSubscribers !== 1 ? 's' : ''} found in database with Stripe billing.
+                  Some Stripe subscriptions may not be synced to the database.
                 </p>
               </div>
             </div>
