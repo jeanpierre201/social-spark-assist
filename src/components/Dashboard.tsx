@@ -117,7 +117,7 @@ const Dashboard = () => {
                   Overview
                 </button>
                 <button
-                  onClick={() => navigate('/dashboard/content')}
+                  onClick={() => navigate('/dashboard/content-generator-pro')}
                   className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
                 >
                   Content Generator
@@ -167,25 +167,25 @@ const Dashboard = () => {
                 hasAnyPlan={hasAnyPlan}
                 onContentGeneration={() => {
                   if (isProUser) {
-                    navigate('/dashboard/content');
+                    navigate('/dashboard/content-generator-pro');
                   } else if (isStarterUser) {
-                    navigate('/content-generator-starter');
+                    navigate('/dashboard/content-generator-starter');
                   } else {
                     navigate('/content-generator');
                   }
                 }}
                 onViewAllPosts={() => {
                   if (isProUser) {
-                    navigate('/dashboard/content');
+                    navigate('/dashboard/posts-pro');
                   } else if (isStarterUser) {
-                    navigate('/content-generator-starter');
+                    navigate('/dashboard/posts-starter');
                   }
                 }}
                 onCalendarView={() => {
-                  if (isStarterUser) {
-                    navigate('/content-generator-starter', { 
-                      state: { scrollToPosts: true, viewMode: 'calendar' } 
-                    });
+                  if (isProUser) {
+                    navigate('/dashboard/posts-pro', { state: { viewMode: 'calendar' } });
+                  } else if (isStarterUser) {
+                    navigate('/dashboard/posts-starter', { state: { viewMode: 'calendar' } });
                   }
                 }}
                 onConnectAccounts={() => {
@@ -214,15 +214,13 @@ const Dashboard = () => {
                 isStarterUser={isStarterUser}
                 hasAnyPlan={hasAnyPlan}
                 onContentGeneration={() => {
-                  navigate('/content-generator-starter');
+                  navigate('/dashboard/content-generator-starter');
                 }}
                 onViewAllPosts={() => {
-                  navigate('/content-generator-starter');
+                  navigate('/dashboard/posts-starter');
                 }}
               onCalendarView={() => {
-                navigate('/content-generator-starter', { 
-                  state: { scrollToPosts: true, viewMode: 'calendar' } 
-                });
+                navigate('/dashboard/posts-starter', { state: { viewMode: 'calendar' } });
               }}
               onConnectAccounts={() => {
                 navigate('/dashboard/social');
@@ -237,17 +235,19 @@ const Dashboard = () => {
                   isStarterUser={isStarterUser}
                   hasAnyPlan={hasAnyPlan}
                   onContentGeneration={() => {
-                    navigate('/dashboard/content');
+                    navigate('/dashboard/content-generator-pro');
                   }}
                   onViewAllPosts={() => {
-                    navigate('/dashboard/content');
+                    navigate('/dashboard/posts-pro');
                   }}
-                  onCalendarView={() => {}}
+                  onCalendarView={() => {
+                    navigate('/dashboard/posts-pro', { state: { viewMode: 'calendar' } });
+                  }}
                   onConnectAccounts={() => {
                     navigate('/dashboard/social');
                   }}
                   onSetActiveTab={(tab) => {
-                    if (tab === 'content') navigate('/dashboard/content');
+                    if (tab === 'content') navigate('/dashboard/content-generator-pro');
                     else if (tab === 'social') navigate('/dashboard/social');
                     else if (tab === 'analytics') navigate('/dashboard/analytics');
                     else if (tab === 'team') navigate('/dashboard/team');
