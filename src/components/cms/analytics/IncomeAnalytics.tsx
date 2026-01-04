@@ -1,5 +1,4 @@
 
-import { useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, BarChart, Bar, Legend } from 'recharts';
 import { DollarSign, TrendingUp, CreditCard, Percent, Users, Crown, Zap, AlertCircle, RefreshCw, Wallet } from 'lucide-react';
@@ -38,16 +37,14 @@ const STARTER_PRICE = 12;
 const PRO_PRICE = 25;
 
 const IncomeAnalytics = ({ data, loading, revenueStats, dateRange }: IncomeAnalyticsProps) => {
-  const { stripeData, loading: stripeLoading, error: stripeError, refetch: fetchStripeRevenue } = useStripeRevenue({
+  const { stripeData, initialLoading, refreshing, error: stripeError, refetch: fetchStripeRevenue } = useStripeRevenue({
     dateRange,
     enabled: true
   });
+  
+  const stripeLoading = initialLoading || refreshing;
 
-  // Fetch Stripe data on mount and when date range changes
-  useEffect(() => {
-    fetchStripeRevenue();
-  }, [fetchStripeRevenue]);
-
+  // Hook already auto-fetches on mount and when date range changes
   if (loading) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

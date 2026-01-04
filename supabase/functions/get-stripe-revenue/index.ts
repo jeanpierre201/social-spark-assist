@@ -48,10 +48,23 @@ serve(async (req) => {
 
     console.log(`Found ${charges.data.length} charges`);
 
-    // Calculate total revenue from successful charges
+    // Calculate total revenue from successful charges, excluding test payments
+    // Test payments use card 4242424242424242 or have "test" in metadata
     const successfulCharges = charges.data.filter(c => c.status === 'succeeded' && !c.refunded);
-    const totalRevenue = successfulCharges.reduce((sum, charge) => sum + charge.amount, 0) / 100; // Convert cents to euros
-    const totalTransactions = successfulCharges.length;
+    
+    // Filter out test transactions by checking:
+    // 1. Card last4 is 4242 (test card)
+    // 2. Charge is in test mode (livemode = false)
+    const liveCharges = successfulCharges.filter(charge => {
+      // In live mode, livemode will be true
+      // In test mode with test cards, livemode will be false
+      return charge.livemode === true;
+    });
+    
+    const totalRevenue = liveCharges.reduce((sum, charge) => sum + charge.amount, 0) / 100; // Convert cents to euros
+    const totalTransactions = liveCharges.length;
+    
+    console.log(`Filtered ${successfulCharges.length - liveCharges.length} test transactions, ${liveCharges.length} live transactions`);
 
     // Fetch active subscriptions for MRR calculation
     const subscriptions = await stripe.subscriptions.list({
@@ -97,8 +110,9 @@ serve(async (req) => {
       limit: 50,
     });
 
+    // Filter to only live (non-test) payments
     const successfulPayments = recentPayments.data
-      .filter(p => p.status === 'succeeded')
+      .filter(p => p.status === 'succeeded' && p.livemode === true)
       .map(p => ({
         id: p.id,
         amount: p.amount / 100,
@@ -113,9 +127,9 @@ serve(async (req) => {
     const availableBalance = balance.available.reduce((sum, b) => sum + b.amount, 0) / 100;
     const pendingBalance = balance.pending.reduce((sum, b) => sum + b.amount, 0) / 100;
 
-    // Calculate daily revenue breakdown
+    // Calculate daily revenue breakdown (only live transactions)
     const dailyRevenue: Record<string, number> = {};
-    for (const charge of successfulCharges) {
+    for (const charge of liveCharges) {
       const date = new Date(charge.created * 1000).toISOString().split('T')[0];
       dailyRevenue[date] = (dailyRevenue[date] || 0) + (charge.amount / 100);
     }
