@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon } from 'lucide-react';
+import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon, Clock } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
@@ -159,18 +159,15 @@ const ContentGeneratorStarter = () => {
     );
   }
 
-  // Show upgrade prompt if user doesn't have access
-  // Only check canCreatePosts for subscribed users (Starter/Pro have time-based access)
-  // Free users will have subscribed=false
+  // Show upgrade prompt only if user is not subscribed at all
+  // Subscribed users with expired creation period should still see their posts
   console.log('Starter page access check:', { subscribed, canCreatePosts, isLoading, isLoadingPosts });
   if (!subscribed) {
     return <UpgradePrompt subscribed={subscribed} canCreatePosts={canCreatePosts} />;
   }
   
-  // For subscribed users, check if they can still create posts (within 30-day window)
-  if (!canCreatePosts) {
-    return <UpgradePrompt subscribed={subscribed} canCreatePosts={canCreatePosts} />;
-  }
+  // Track if creation period is expired (for UI adjustments)
+  const isCreationExpired = !canCreatePosts;
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
@@ -184,7 +181,12 @@ const ContentGeneratorStarter = () => {
               <ProfileAvatar />
             </div>
           </div>
-          <p className="text-muted-foreground text-sm mb-4">Generate up to 10 posts per month with AI assistance</p>
+          <p className="text-muted-foreground text-sm mb-4">
+            {isCreationExpired 
+              ? "Your creation period has ended. You can still view and download your content."
+              : "Generate up to 10 posts per month with AI assistance"
+            }
+          </p>
           <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
@@ -206,7 +208,12 @@ const ContentGeneratorStarter = () => {
         <div className="mb-8 hidden md:flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-foreground mb-2">Content Generator</h1>
-            <p className="text-muted-foreground">Generate up to 10 posts per month with AI assistance</p>
+            <p className="text-muted-foreground">
+              {isCreationExpired 
+                ? "Your creation period has ended. You can still view and download your content."
+                : "Generate up to 10 posts per month with AI assistance"
+              }
+            </p>
           </div>
           <div className="flex items-center space-x-3">
             <Button 
@@ -226,6 +233,41 @@ const ContentGeneratorStarter = () => {
           </div>
         </div>
 
+        {/* Expired Banner */}
+        {isCreationExpired && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <Clock className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="font-medium text-amber-800">Creation period expired</p>
+                <p className="text-sm text-amber-600">Extend your period to create new content, or view and download your existing posts below.</p>
+              </div>
+            </div>
+            <Button 
+              onClick={async () => {
+                try {
+                  const { error } = await supabase.functions.invoke('extend-creation-period', {
+                    headers: {
+                      Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                    },
+                  });
+                  if (error) throw error;
+                  toast({ title: "Success!", description: "Your creation period has been extended for another 30 days" });
+                  window.location.reload();
+                } catch (error) {
+                  toast({ title: "Error", description: "Failed to extend creation period", variant: "destructive" });
+                }
+              }}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <Clock className="h-4 w-4 mr-2" />
+              Extend Period
+            </Button>
+          </div>
+        )}
+
         <UsageIndicators 
           monthlyPosts={monthlyPosts} 
           previousPeriodPosts={previousPeriodPosts}
@@ -236,14 +278,17 @@ const ContentGeneratorStarter = () => {
           canCreatePosts={canCreatePosts}
         />
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
-          <ContentCreationForm
-            monthlyPosts={monthlyPosts}
-            setMonthlyPosts={setMonthlyPosts}
-            canCreatePosts={canCreatePosts}
-            setPosts={setPosts}
-            onPostCreated={() => setPostsRefreshTrigger(prev => prev + 1)}
-          />
+        <div className={`grid grid-cols-1 gap-6 ${!isCreationExpired ? 'lg:grid-cols-2 lg:gap-8' : ''}`}>
+          {/* Only show creation form if not expired */}
+          {!isCreationExpired && (
+            <ContentCreationForm
+              monthlyPosts={monthlyPosts}
+              setMonthlyPosts={setMonthlyPosts}
+              canCreatePosts={canCreatePosts}
+              setPosts={setPosts}
+              onPostCreated={() => setPostsRefreshTrigger(prev => prev + 1)}
+            />
+          )}
           
           <div className="space-y-4" data-posts-section>
             {/* View Toggle */}
