@@ -20,7 +20,8 @@ import {
   BarChart3,
   RefreshCw,
   Gift,
-  Send
+  Send,
+  AlertTriangle
 } from 'lucide-react';
 import SubscriptionAnalytics from './analytics/SubscriptionAnalytics';
 import IncomeAnalytics from './analytics/IncomeAnalytics';
@@ -151,6 +152,12 @@ const AdminDashboard = () => {
   // Use Stripe active subscriptions count if available (more accurate for paid subs)
   const totalSubscriptions = hasStripeData ? stripeData.activeSubscriptions : currentStats.paid_subscribers;
 
+  // Data quality check: compare database subscriber count with Stripe
+  const dbPaidSubscribers = currentStats.paid_subscribers;
+  const stripePaidSubscribers = stripeData?.activeSubscriptions || 0;
+  const dataDiscrepancy = hasStripeData && Math.abs(dbPaidSubscribers - stripePaidSubscribers) > 0;
+  const discrepancyAmount = hasStripeData ? dbPaidSubscribers - stripePaidSubscribers : 0;
+
   // Show skeleton cards during initial data load (dashboard stays mounted)
   const showSkeletons = initialLoading;
 
@@ -187,6 +194,24 @@ const AdminDashboard = () => {
         <div className="mb-6">
           <DateRangeFilter dateRange={dateRange} onDateRangeChange={setDateRange} />
         </div>
+
+        {/* Data Quality Indicator */}
+        {dataDiscrepancy && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-amber-800">Data Discrepancy Detected</p>
+              <p className="text-sm text-amber-700 mt-1">
+                Database shows {dbPaidSubscribers} paid subscriber{dbPaidSubscribers !== 1 ? 's' : ''}, 
+                but Stripe reports {stripePaidSubscribers} active subscription{stripePaidSubscribers !== 1 ? 's' : ''}.
+                {discrepancyAmount > 0 
+                  ? ` ${Math.abs(discrepancyAmount)} extra record${Math.abs(discrepancyAmount) !== 1 ? 's' : ''} in database may be from test users or failed payments.`
+                  : ` ${Math.abs(discrepancyAmount)} subscription${Math.abs(discrepancyAmount) !== 1 ? 's' : ''} in Stripe not reflected in database.`
+                }
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
