@@ -74,12 +74,17 @@ serve(async (req) => {
 
     console.log(`Found ${subscriptions.data.length} active subscriptions`);
 
-    // Calculate MRR from active subscriptions
+    // Filter to only live mode subscriptions (exclude test mode subscriptions)
+    const liveSubscriptions = subscriptions.data.filter(sub => sub.livemode === true);
+    
+    console.log(`Filtered ${subscriptions.data.length - liveSubscriptions.length} test subscriptions, ${liveSubscriptions.length} live subscriptions`);
+
+    // Calculate MRR from active LIVE subscriptions only
     let mrr = 0;
     let starterCount = 0;
     let proCount = 0;
 
-    for (const sub of subscriptions.data) {
+    for (const sub of liveSubscriptions) {
       for (const item of sub.items.data) {
         const amount = item.price.unit_amount || 0;
         const interval = item.price.recurring?.interval;
@@ -139,7 +144,7 @@ serve(async (req) => {
       totalRevenue,
       mrr,
       totalTransactions,
-      activeSubscriptions: subscriptions.data.length,
+      activeSubscriptions: liveSubscriptions.length, // Only count live subscriptions
       
       // Subscriber breakdown
       subscriberCounts: {
@@ -164,8 +169,8 @@ serve(async (req) => {
       annualRunRate: mrr * 12,
       
       // Average revenue per subscriber
-      avgRevenuePerSubscriber: subscriptions.data.length > 0 
-        ? mrr / subscriptions.data.length 
+      avgRevenuePerSubscriber: liveSubscriptions.length > 0 
+        ? mrr / liveSubscriptions.length 
         : 0,
     };
 
