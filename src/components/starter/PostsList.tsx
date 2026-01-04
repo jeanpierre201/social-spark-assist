@@ -178,7 +178,9 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   };
 
   // Check if post can have "Post Now" button - only ready and scheduled posts (have platforms selected)
-  const canPostNow = (post: Post) => {
+  // Disabled when subscription period is expired
+  const canPostNowCheck = (post: Post) => {
+    if (canCreatePosts === false) return false; // Disable when expired
     const hasPlatforms = post.social_platforms && post.social_platforms.length > 0;
     return hasPlatforms && (post.status === 'ready' || post.status === 'scheduled');
   };
@@ -536,7 +538,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                 
                 <div className="flex flex-wrap gap-2 pt-2 sm:pt-0 sm:ml-4 border-t sm:border-t-0 mt-2 sm:mt-0">
                   {/* Post Now button for ready/scheduled posts with platforms */}
-                  {canPostNow(post) && (
+                  {canPostNowCheck(post) && (
                     <Button
                       variant="default"
                       size="sm"
@@ -553,7 +555,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                     </Button>
                   )}
                   
-                  {isEditable(post.status) ? (
+                  {isEditable(post.status) && canCreatePosts !== false ? (
                     <Button
                       variant="outline"
                       size="sm"
@@ -593,27 +595,29 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                       {post.status === 'failed' ? 'Publishing Failed' : 'Temporarily Failed - Will Retry'}
                     </div>
                     <p className="text-sm text-red-700 whitespace-pre-wrap">{post.error_message}</p>
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="bg-white border-red-300 text-red-700 hover:bg-red-100"
-                        onClick={() => handleManualPublish(post)}
-                        disabled={isPublishingPost(post.id)}
-                      >
-                        {isPublishingPost(post.id) ? (
-                          <>
-                            <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
-                            Retrying...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="h-3 w-3 mr-1" />
-                            Retry Now
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    {canCreatePosts !== false && (
+                      <div className="mt-2 flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border-red-300 text-red-700 hover:bg-red-100"
+                          onClick={() => handleManualPublish(post)}
+                          disabled={isPublishingPost(post.id)}
+                        >
+                          {isPublishingPost(post.id) ? (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                              Retrying...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              Retry Now
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
                   </AlertDescription>
                 </Alert>
               )}
