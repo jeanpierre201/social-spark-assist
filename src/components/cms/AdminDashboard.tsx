@@ -448,7 +448,12 @@ const AdminDashboard = () => {
               loading={initialLoading}
               contentStats={{
                 total_posts: currentStats.total_posts,
-                published_posts: currentStats.published_posts
+                published_posts: currentStats.published_posts,
+                scheduled_posts: currentStats.scheduled_posts,
+                draft_posts: currentStats.draft_posts,
+                content_costs: currentStats.content_costs,
+                posts_by_tier: currentStats.posts_by_tier,
+                industries: currentStats.industries
               }}
             />
           </TabsContent>

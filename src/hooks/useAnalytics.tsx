@@ -44,6 +44,8 @@ interface CurrentStats {
   total_active_subscribers: number;
   total_posts: number;
   published_posts: number;
+  scheduled_posts: number;
+  draft_posts: number;
   active_users: number;
   tier_counts: {
     Free: number;
@@ -55,6 +57,22 @@ interface CurrentStats {
   estimated_revenue: number; // Based on active paid subscribers
   paid_subscribers: number; // Subscribers with Stripe billing
   promo_subscribers: number; // Subscribers with promo codes (no Stripe billing)
+  // Content creation costs
+  content_costs: {
+    total_text_generations: number;
+    total_image_generations: number;
+    estimated_text_cost: number; // Based on OpenAI pricing
+    estimated_image_cost: number; // Based on image generation pricing
+    total_cost: number;
+  };
+  // Posts by tier (real-time)
+  posts_by_tier: {
+    Free: number;
+    Starter: number;
+    Pro: number;
+  };
+  // Industry breakdown
+  industries: { name: string; count: number }[];
 }
 
 export interface DateRange {
@@ -78,12 +96,23 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
     total_active_subscribers: 0, 
     total_posts: 0,
     published_posts: 0,
+    scheduled_posts: 0,
+    draft_posts: 0,
     active_users: 0,
     tier_counts: { Free: 0, Starter: 0, Pro: 0 },
     mrr: 0,
     estimated_revenue: 0,
     paid_subscribers: 0,
-    promo_subscribers: 0
+    promo_subscribers: 0,
+    content_costs: {
+      total_text_generations: 0,
+      total_image_generations: 0,
+      estimated_text_cost: 0,
+      estimated_image_cost: 0,
+      total_cost: 0
+    },
+    posts_by_tier: { Free: 0, Starter: 0, Pro: 0 },
+    industries: []
   });
   
   // Split loading states: initialLoading for first fetch, refreshing for subsequent
@@ -171,23 +200,13 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
         console.error('Error fetching current subscribers:', subscribersError);
       }
 
-      // Fetch total posts count
+      // Fetch all posts with details for comprehensive content analytics
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
-        .select('id');
+        .select('id, status, user_id, industry, ai_generations_count, ai_generated_image_1_url, ai_generated_image_2_url');
 
       if (postsError) {
-        console.error('Error fetching total posts:', postsError);
-      }
-
-      // Fetch published posts count
-      const { data: publishedPostsData, error: publishedError } = await supabase
-        .from('posts')
-        .select('id')
-        .eq('status', 'published');
-
-      if (publishedError) {
-        console.error('Error fetching published posts:', publishedError);
+        console.error('Error fetching posts:', postsError);
       }
 
       // Fetch posts in date range to calculate active users (users who created posts)
@@ -208,9 +227,9 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
 
       // Set current stats using real data only (count all users including Free tier)
       const allUsers = subscribersData || [];
+      const allPosts = postsData || [];
       
       // Calculate tier counts from real subscribers data
-      // Only count actively subscribed users for paid tiers
       const activeStarterUsers = allUsers.filter((s: any) => 
         s.subscription_tier === 'Starter' && s.subscribed === true
       );
@@ -227,13 +246,10 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
         Pro: activeProUsers.length,
       };
 
-      // Calculate MRR from active paid subscribers with Stripe billing (exclude promo code users)
-      // Promo code users have subscribed=true but no stripe_customer_id
-      // Starter = €12/month, Pro = €25/month
+      // Calculate MRR from active paid subscribers with Stripe billing
       const STARTER_PRICE = 12;
       const PRO_PRICE = 25;
       
-      // Only count users with a stripe_customer_id as true paying subscribers
       const billedStarterUsers = allUsers.filter((s: any) => 
         s.subscription_tier === 'Starter' && s.subscribed === true && s.stripe_customer_id
       );
@@ -242,7 +258,6 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
       );
       
       const mrr = (billedStarterUsers.length * STARTER_PRICE) + (billedProUsers.length * PRO_PRICE);
-      // paid_subscribers counts only those with actual Stripe billing (for discrepancy check)
       const paidSubscribers = billedStarterUsers.length + billedProUsers.length;
       
       // Promo subscribers: users with subscribed=true but NO stripe_customer_id
@@ -253,21 +268,86 @@ export const useAnalytics = (options: UseAnalyticsOptions = {}) => {
         !s.stripe_customer_id
       );
 
-      // Active users = users who created posts in the date range, or fall back to total subscribers
+      // Calculate post counts by status
+      const publishedPosts = allPosts.filter((p: any) => p.status === 'published').length;
+      const scheduledPosts = allPosts.filter((p: any) => p.status === 'scheduled').length;
+      const draftPosts = allPosts.filter((p: any) => p.status === 'draft' || !p.status).length;
+
+      // Calculate content creation costs
+      // Text generation: ~$0.002 per post (GPT-4o-mini average)
+      // Image generation: ~$0.04 per image (DALL-E 3)
+      const TEXT_COST_PER_GENERATION = 0.002;
+      const IMAGE_COST_PER_IMAGE = 0.04;
+      
+      const totalTextGenerations = allPosts.reduce((sum: number, p: any) => 
+        sum + (p.ai_generations_count || 1), 0
+      );
+      const totalImageGenerations = allPosts.reduce((sum: number, p: any) => {
+        let count = 0;
+        if (p.ai_generated_image_1_url) count++;
+        if (p.ai_generated_image_2_url) count++;
+        return sum + count;
+      }, 0);
+      
+      const estimatedTextCost = totalTextGenerations * TEXT_COST_PER_GENERATION;
+      const estimatedImageCost = totalImageGenerations * IMAGE_COST_PER_IMAGE;
+
+      // Calculate posts by tier (match post user_id to subscriber tier)
+      const userTierMap = new Map(
+        allUsers.map((s: any) => [s.user_id, s.subscription_tier || 'Free'])
+      );
+      
+      const postsByTier = {
+        Free: 0,
+        Starter: 0,
+        Pro: 0
+      };
+      
+      allPosts.forEach((p: any) => {
+        const tier = userTierMap.get(p.user_id) || 'Free';
+        if (tier === 'Starter') postsByTier.Starter++;
+        else if (tier === 'Pro') postsByTier.Pro++;
+        else postsByTier.Free++;
+      });
+
+      // Calculate industry breakdown
+      const industryMap = new Map<string, number>();
+      allPosts.forEach((p: any) => {
+        if (p.industry) {
+          industryMap.set(p.industry, (industryMap.get(p.industry) || 0) + 1);
+        }
+      });
+      const industries = Array.from(industryMap.entries())
+        .map(([name, count]) => ({ name, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      // Active users = users who created posts in the date range
       const activeUsersCount = uniqueActiveUserIds.size > 0 
         ? uniqueActiveUserIds.size 
         : allUsers.length;
       
-      const currentStatsData = {
+      const currentStatsData: CurrentStats = {
         total_active_subscribers: allUsers.length,
-        total_posts: postsData?.length || 0,
-        published_posts: publishedPostsData?.length || 0,
+        total_posts: allPosts.length,
+        published_posts: publishedPosts,
+        scheduled_posts: scheduledPosts,
+        draft_posts: draftPosts,
         active_users: activeUsersCount,
         tier_counts: tierCounts,
         mrr: mrr,
-        estimated_revenue: mrr, // Current month estimated revenue
+        estimated_revenue: mrr,
         paid_subscribers: paidSubscribers,
-        promo_subscribers: promoSubscribers.length
+        promo_subscribers: promoSubscribers.length,
+        content_costs: {
+          total_text_generations: totalTextGenerations,
+          total_image_generations: totalImageGenerations,
+          estimated_text_cost: estimatedTextCost,
+          estimated_image_cost: estimatedImageCost,
+          total_cost: estimatedTextCost + estimatedImageCost
+        },
+        posts_by_tier: postsByTier,
+        industries: industries
       };
       
       setCurrentStats(currentStatsData);
