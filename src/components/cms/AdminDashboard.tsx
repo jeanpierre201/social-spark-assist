@@ -50,20 +50,20 @@ const AdminDashboard = () => {
     refetch 
   } = useAnalytics({ dateRange, enabled: !roleLoading && isAdmin() });
 
-  // Fetch real Stripe revenue data for top summary card
-  const { stripeData, loading: stripeLoading, error: stripeError, refetch: fetchStripeRevenue } = useStripeRevenue({
+  // Fetch real Stripe revenue data for top summary card - hook auto-fetches on mount
+  const { 
+    stripeData, 
+    initialLoading: stripeInitialLoading, 
+    refreshing: stripeRefreshing, 
+    error: stripeError, 
+    refetch: fetchStripeRevenue 
+  } = useStripeRevenue({
     dateRange,
     enabled: !roleLoading && isAdmin()
   });
-
-  // Fetch Stripe data when component mounts or date range changes
-  useEffect(() => {
-    if (!roleLoading && isAdmin()) {
-      fetchStripeRevenue();
-    }
-  }, [fetchStripeRevenue, roleLoading, isAdmin]);
   
   const [syncing, setSyncing] = useState(false);
+  const [syncingStripe, setSyncingStripe] = useState(false);
 
   const handleSyncAnalytics = async () => {
     setSyncing(true);
@@ -97,6 +97,40 @@ const AdminDashboard = () => {
       toast.error(`Failed to sync analytics: ${error.message || 'Unknown error'}`);
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const handleSyncStripeSubscribers = async () => {
+    setSyncingStripe(true);
+    try {
+      console.log('Starting Stripe subscribers sync...');
+      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('User not authenticated');
+      }
+      
+      const { data, error } = await supabase.functions.invoke('sync-stripe-subscribers', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      
+      if (error) {
+        console.error('Stripe sync error:', error);
+        throw error;
+      }
+      
+      console.log('Stripe sync successful:', data);
+      toast.success(`Stripe sync complete: ${data.updated} updated, ${data.deactivated} deactivated, ${data.newFromStripe} new`);
+      
+      // Refetch both analytics and Stripe data
+      await Promise.all([refetch(), fetchStripeRevenue()]);
+    } catch (error) {
+      console.error('Stripe sync error:', error);
+      toast.error(`Failed to sync with Stripe: ${error.message || 'Unknown error'}`);
+    } finally {
+      setSyncingStripe(false);
     }
   };
 
@@ -197,19 +231,31 @@ const AdminDashboard = () => {
 
         {/* Data Quality Indicator */}
         {dataDiscrepancy && (
-          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div>
-              <p className="font-medium text-amber-800">Data Discrepancy Detected</p>
-              <p className="text-sm text-amber-700 mt-1">
-                Database shows {dbPaidSubscribers} paid subscriber{dbPaidSubscribers !== 1 ? 's' : ''}, 
-                but Stripe reports {stripePaidSubscribers} active subscription{stripePaidSubscribers !== 1 ? 's' : ''}.
-                {discrepancyAmount > 0 
-                  ? ` ${Math.abs(discrepancyAmount)} extra record${Math.abs(discrepancyAmount) !== 1 ? 's' : ''} in database may be from test users or failed payments.`
-                  : ` ${Math.abs(discrepancyAmount)} subscription${Math.abs(discrepancyAmount) !== 1 ? 's' : ''} in Stripe not reflected in database.`
-                }
-              </p>
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-amber-800">Data Discrepancy Detected</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Database shows {dbPaidSubscribers} paid subscriber{dbPaidSubscribers !== 1 ? 's' : ''}, 
+                  but Stripe reports {stripePaidSubscribers} active subscription{stripePaidSubscribers !== 1 ? 's' : ''}.
+                  {discrepancyAmount > 0 
+                    ? ` ${Math.abs(discrepancyAmount)} extra record${Math.abs(discrepancyAmount) !== 1 ? 's' : ''} in database may be from test users or failed payments.`
+                    : ` ${Math.abs(discrepancyAmount)} subscription${Math.abs(discrepancyAmount) !== 1 ? 's' : ''} in Stripe not reflected in database.`
+                  }
+                </p>
+              </div>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncStripeSubscribers}
+              disabled={syncingStripe}
+              className="flex-shrink-0 border-amber-300 text-amber-700 hover:bg-amber-100"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncingStripe ? 'animate-spin' : ''}`} />
+              {syncingStripe ? 'Syncing...' : 'Sync with Stripe'}
+            </Button>
           </div>
         )}
 
@@ -223,7 +269,7 @@ const AdminDashboard = () => {
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              {showSkeletons || stripeLoading ? (
+              {showSkeletons || stripeInitialLoading ? (
                 <div className="space-y-2">
                   <div className="h-8 bg-blue-100 rounded animate-pulse w-24"></div>
                   <div className="h-3 bg-blue-100 rounded animate-pulse w-16"></div>
@@ -293,7 +339,7 @@ const AdminDashboard = () => {
               <Crown className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
-              {showSkeletons || stripeLoading ? (
+              {showSkeletons || stripeInitialLoading ? (
                 <div className="space-y-2">
                   <div className="h-8 bg-orange-100 rounded animate-pulse w-24"></div>
                   <div className="h-3 bg-orange-100 rounded animate-pulse w-20"></div>
