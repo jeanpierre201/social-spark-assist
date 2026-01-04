@@ -415,6 +415,8 @@ const AdminDashboard = () => {
               loading={initialLoading} 
               currentTierCounts={currentStats.tier_counts}
               dateRange={dateRange}
+              paidSubscribers={currentStats.paid_subscribers}
+              promoSubscribers={currentStats.promo_subscribers}
             />
           </TabsContent>
 
@@ -433,11 +435,22 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="users">
-            <UserActivityAnalytics data={userActivityData} loading={initialLoading} />
+            <UserActivityAnalytics 
+              data={userActivityData} 
+              loading={initialLoading} 
+              currentStats={currentStats}
+            />
           </TabsContent>
 
           <TabsContent value="content">
-            <ContentAnalytics data={contentData} loading={initialLoading} />
+            <ContentAnalytics 
+              data={contentData} 
+              loading={initialLoading}
+              contentStats={{
+                total_posts: currentStats.total_posts,
+                published_posts: currentStats.published_posts
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="performance">
