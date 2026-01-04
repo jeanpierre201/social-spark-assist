@@ -53,7 +53,18 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const { toast } = useToast();
   const { user } = useAuth();
   const { subscriptionEnd, subscriptionTier } = useSubscription();
-  const { accounts } = useSocialAccounts();
+  
+  // Safely get social accounts - may throw if provider is missing
+  let accounts: { id: string; platform: string; username: string | null; is_active: boolean; created_at: string }[] = [];
+  let accountsLoading = false;
+  try {
+    const socialAccountsContext = useSocialAccounts();
+    accounts = socialAccountsContext.accounts;
+    accountsLoading = socialAccountsContext.loading;
+  } catch (error) {
+    console.error('SocialAccountsProvider not available:', error);
+  }
+  
   const { publishToMastodon, publishToFacebook, publishToTwitter, publishToTelegram, isPublishingPost } = useManualPublish();
   // Get subscription status based on tier
   const starterStatus = useStarterSubscriptionStatus();
@@ -1109,7 +1120,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               </p>
               
               {/* Post Now Button */}
-              {formData.social_platforms.length > 0 && post?.status !== 'published' && (
+              {formData.social_platforms.length > 0 && post?.status !== 'published' && !isSubscriptionExpired && (
                 <div className="mt-4 pt-4 border-t">
                   <Button 
                     onClick={async () => {
@@ -1175,7 +1186,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                         onOpenChange(false);
                       }
                     }}
-                    disabled={isPublishingPost(post?.id || '')}
+                    disabled={isPublishingPost(post?.id || '') || accountsLoading}
                     className="w-full"
                     variant="default"
                   >
