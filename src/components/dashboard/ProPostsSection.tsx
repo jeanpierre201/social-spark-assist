@@ -60,9 +60,10 @@ interface ProPostsSectionProps {
   onEditPost: (post: any) => void;
   onUpdatePost: (post: any, newContent: string) => void;
   onDeletePost: (id: string) => void;
+  canCreatePosts?: boolean;
 }
 
-const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSectionProps) => {
+const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePosts = true }: ProPostsSectionProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { publishToFacebook, publishToTwitter, isPublishingPost } = useManualPublish();
@@ -211,7 +212,9 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost }: ProPostsSec
   };
 
   // Check if post can have "Post Now" button - only ready and scheduled posts (have platforms selected)
+  // Disabled when subscription period is expired
   const canPostNow = (post: Post) => {
+    if (!canCreatePosts) return false; // Disable when expired
     const hasPlatforms = post.social_platforms && post.social_platforms.length > 0;
     return hasPlatforms && (post.status === 'ready' || post.status === 'scheduled');
   };

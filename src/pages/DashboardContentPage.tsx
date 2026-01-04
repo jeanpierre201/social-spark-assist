@@ -14,6 +14,11 @@ import ProContentCreationForm from '@/components/dashboard/ProContentCreationFor
 import ProPostsSection from '@/components/dashboard/ProPostsSection';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
+import { Button } from '@/components/ui/button';
+import { Plus, List, Clock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+
+type ActiveTab = 'create' | 'posts' | 'content-generator';
 
 const DashboardContentPage = () => {
   const { user } = useAuth();
@@ -21,7 +26,8 @@ const DashboardContentPage = () => {
   const { accounts, metrics } = useSocialAccounts();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState('content-generator');
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<ActiveTab>('content-generator');
   const socialAccountsRef = useRef<HTMLDivElement>(null);
 
   const isProUser = subscribed && subscriptionTier === 'Pro';
@@ -70,7 +76,16 @@ const DashboardContentPage = () => {
 
   const handlePostCreated = (newPost: any) => {
     createPostMutation.mutate(newPost);
+    // Switch to posts tab after creation
+    setActiveTab('posts');
+    toast({
+      title: "Post created!",
+      description: "Switched to Your Posts to view your new content",
+    });
   };
+
+  // Track if creation period is expired for Pro users
+  const isCreationExpired = isProUser ? !canCreatePosts : false;
 
   if (loading || (isProUser && proStatusLoading)) {
     return (
@@ -145,7 +160,7 @@ const DashboardContentPage = () => {
 
             <NavigationTabs 
               activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
+              setActiveTab={(tab: string) => setActiveTab(tab as ActiveTab)} 
               isProUser={false}
               showContentGenerator={true}
             />
@@ -170,8 +185,23 @@ const DashboardContentPage = () => {
             </div>
           </div>
         ) : isProUser ? (
-          // Pro users
+          // Pro users with tab separation
           <div className="space-y-6">
+            {/* Expired Banner for Pro */}
+            {isCreationExpired && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                    <Clock className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-amber-800">Creation period expired</p>
+                    <p className="text-sm text-amber-600">You can still view your posts but cannot create new content or publish.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <UsageIndicators 
               monthlyPosts={monthlyPosts}
               previousPeriodPosts={previousPeriodPosts}
@@ -182,21 +212,59 @@ const DashboardContentPage = () => {
               canCreatePosts={canCreatePosts}
             />
 
-            <ProContentCreationForm 
-              monthlyPosts={monthlyPosts}
-              setMonthlyPosts={setMonthlyPosts}
-              canCreatePosts={canCreatePosts}
-              setPosts={() => {}}
-              onPostCreated={() => {
-                // The hook will automatically update the monthlyPosts count
-              }}
-            />
+            {/* Tab Navigation for Pro */}
+            <div className="border-b border-gray-200">
+              <nav className="-mb-px flex space-x-8">
+                {!isCreationExpired && (
+                  <button
+                    onClick={() => setActiveTab('create')}
+                    className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                      activeTab === 'create'
+                        ? 'border-purple-500 text-purple-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Content
+                  </button>
+                )}
+                <button
+                  onClick={() => setActiveTab('posts')}
+                  className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                    activeTab === 'posts'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <List className="h-4 w-4" />
+                  Your Posts
+                </button>
+              </nav>
+            </div>
 
-            <ProPostsSection 
-              onEditPost={handleEditPost}
-              onUpdatePost={handleUpdatePost}
-              onDeletePost={handleDeletePost}
-            />
+            {/* Tab Content for Pro */}
+            {activeTab === 'create' && !isCreationExpired ? (
+              <ProContentCreationForm 
+                monthlyPosts={monthlyPosts}
+                setMonthlyPosts={setMonthlyPosts}
+                canCreatePosts={canCreatePosts}
+                setPosts={() => {}}
+                onPostCreated={() => {
+                  setActiveTab('posts');
+                  toast({
+                    title: "Post created!",
+                    description: "Switched to Your Posts to view your new content",
+                  });
+                }}
+              />
+            ) : (
+              <ProPostsSection 
+                onEditPost={handleEditPost}
+                onUpdatePost={handleUpdatePost}
+                onDeletePost={handleDeletePost}
+                canCreatePosts={canCreatePosts}
+              />
+            )}
           </div>
         ) : (
           // Starter users
@@ -213,7 +281,7 @@ const DashboardContentPage = () => {
 
             <NavigationTabs 
               activeTab={activeTab} 
-              setActiveTab={setActiveTab} 
+              setActiveTab={(tab: string) => setActiveTab(tab as ActiveTab)} 
               isProUser={false}
               showContentGenerator={true}
             />
