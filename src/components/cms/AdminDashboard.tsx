@@ -459,7 +459,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="performance">
-            <PerformanceMetrics />
+            <PerformanceMetrics loading={initialLoading} />
           </TabsContent>
 
           <TabsContent value="promo-codes">
