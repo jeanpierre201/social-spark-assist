@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon, Clock } from 'lucide-react';
+import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon, Clock, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +36,7 @@ interface PostData {
 }
 
 type ViewMode = 'list' | 'calendar';
+type ActiveTab = 'create' | 'posts';
 
 const ContentGeneratorStarter = () => {
   const { user } = useAuth();
@@ -49,6 +50,7 @@ const ContentGeneratorStarter = () => {
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [postsRefreshTrigger, setPostsRefreshTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('create');
   
   const {
     monthlyPosts,
@@ -116,19 +118,10 @@ const ContentGeneratorStarter = () => {
       if (state.viewMode) {
         setViewMode(state.viewMode);
       }
+      // Switch to posts tab when navigating to see posts
+      setActiveTab('posts');
       
-      // Scroll to posts section after a brief delay to ensure it's rendered
-      setTimeout(() => {
-        const postsSection = document.querySelector('[data-posts-section]');
-        if (postsSection) {
-          postsSection.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'start' 
-          });
-        }
-      }, 100);
-      
-      // Clear the state to prevent repeated scrolling
+      // Clear the state to prevent repeated action
       navigate(location.pathname, { replace: true });
     }
   }, [location.state, navigate]);
@@ -148,6 +141,17 @@ const ContentGeneratorStarter = () => {
 
   const handlePostUpdated = () => {
     setPostsRefreshTrigger(prev => prev + 1);
+  };
+
+  // Handle post creation - immediately switch to posts tab
+  const handlePostCreated = () => {
+    setPostsRefreshTrigger(prev => prev + 1);
+    // Immediately switch to posts tab after creation
+    setActiveTab('posts');
+    toast({
+      title: "Post created!",
+      description: "Switched to Your Posts to view your new content",
+    });
   };
 
   // Wait for all loading states to complete
@@ -278,18 +282,55 @@ const ContentGeneratorStarter = () => {
           canCreatePosts={canCreatePosts}
         />
 
-        <div className={`grid grid-cols-1 gap-6 ${!isCreationExpired ? 'lg:grid-cols-2 lg:gap-8' : ''}`}>
-          {/* Only show creation form if not expired */}
-          {!isCreationExpired && (
+        {/* Tab Navigation */}
+        <div className="mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              {!isCreationExpired && (
+                <button
+                  onClick={() => setActiveTab('create')}
+                  className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                    activeTab === 'create'
+                      ? 'border-purple-500 text-purple-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <Plus className="h-4 w-4" />
+                  Create Content
+                </button>
+              )}
+              <button
+                onClick={() => setActiveTab('posts')}
+                className={`py-3 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors ${
+                  activeTab === 'posts'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <List className="h-4 w-4" />
+                Your Posts
+                {posts.length > 0 && (
+                  <span className="ml-1 bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs">
+                    {posts.length}
+                  </span>
+                )}
+              </button>
+            </nav>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === 'create' && !isCreationExpired ? (
+          <div className="max-w-2xl">
             <ContentCreationForm
               monthlyPosts={monthlyPosts}
               setMonthlyPosts={setMonthlyPosts}
               canCreatePosts={canCreatePosts}
               setPosts={setPosts}
-              onPostCreated={() => setPostsRefreshTrigger(prev => prev + 1)}
+              onPostCreated={handlePostCreated}
             />
-          )}
-          
+          </div>
+        ) : (
           <div className="space-y-4" data-posts-section>
             {/* View Toggle */}
             <div className="flex items-center justify-between">
@@ -332,7 +373,7 @@ const ContentGeneratorStarter = () => {
               <CalendarView posts={posts} setViewMode={setViewMode} setPosts={setPosts} />
             )}
           </div>
-        </div>
+        )}
         
         <PostEditDialog
           post={selectedPost}
