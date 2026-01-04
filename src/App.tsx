@@ -24,6 +24,10 @@ import AdminResetPasswordPage from "./pages/AdminResetPasswordPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import ContentGeneratorPage from "./pages/ContentGeneratorPage";
 import ContentGeneratorStarterPage from "./pages/ContentGeneratorStarterPage";
+import ContentGeneratorStarterPage2 from "./pages/ContentGeneratorStarterPage2";
+import ContentGeneratorProPage2 from "./pages/ContentGeneratorProPage2";
+import PostsStarterPage from "./pages/PostsStarterPage";
+import PostsProPage from "./pages/PostsProPage";
 import SupportPage from "./pages/SupportPage";
 import AboutPage from "./pages/AboutPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
@@ -121,6 +125,26 @@ const App = () => (
                   <Route path="/content-generator-starter" element={
                     <ProtectedRoute>
                       <ContentGeneratorStarterPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/content-generator-starter" element={
+                    <ProtectedRoute>
+                      <ContentGeneratorStarterPage2 />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/content-generator-pro" element={
+                    <ProtectedRoute>
+                      <ContentGeneratorProPage2 />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/posts-starter" element={
+                    <ProtectedRoute>
+                      <PostsStarterPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/posts-pro" element={
+                    <ProtectedRoute>
+                      <PostsProPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/test-utility" element={
