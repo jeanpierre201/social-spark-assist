@@ -141,7 +141,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         ai_generations_count: content?.aiGenerationsCount || 0,
         ai_image_prompts: content?.aiImagePrompts || [],
         status: editingPost.scheduledDate && editingPost.scheduledTime ? 'scheduled' : 'draft',
-        social_platforms: ['facebook']
+        social_platforms: editingPost.social_platforms || []
       });
       
       toast({

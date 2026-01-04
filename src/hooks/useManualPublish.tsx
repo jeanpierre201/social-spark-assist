@@ -60,13 +60,24 @@ export const useManualPublish = () => {
 
       console.log('[MANUAL-PUBLISH] Mastodon success:', data);
 
-      // Update post status to published
+      // Fetch current post to merge platforms
+      const { data: currentPost } = await supabase
+        .from('posts')
+        .select('social_platforms')
+        .eq('id', postId)
+        .single();
+      
+      const existingPlatforms = Array.isArray(currentPost?.social_platforms) ? currentPost.social_platforms : [];
+      const mergedPlatforms = [...new Set([...existingPlatforms, 'mastodon'])];
+
+      // Update post status to published with merged platforms
       const { error: updateError } = await supabase
         .from('posts')
         .update({ 
           status: 'published',
           posted_at: new Date().toISOString(),
-          error_message: null
+          error_message: null,
+          social_platforms: mergedPlatforms
         })
         .eq('id', postId);
 
@@ -139,13 +150,24 @@ export const useManualPublish = () => {
 
       console.log('[MANUAL-PUBLISH] Facebook success:', data);
 
-      // Update post status to published
+      // Fetch current post to merge platforms
+      const { data: currentPost } = await supabase
+        .from('posts')
+        .select('social_platforms')
+        .eq('id', postId)
+        .single();
+      
+      const existingPlatforms = Array.isArray(currentPost?.social_platforms) ? currentPost.social_platforms : [];
+      const mergedPlatforms = [...new Set([...existingPlatforms, 'facebook'])];
+
+      // Update post status to published with merged platforms
       const { error: updateError } = await supabase
         .from('posts')
         .update({ 
           status: 'published',
           posted_at: new Date().toISOString(),
-          error_message: null
+          error_message: null,
+          social_platforms: mergedPlatforms
         })
         .eq('id', postId);
 
@@ -222,13 +244,24 @@ export const useManualPublish = () => {
 
       console.log('[MANUAL-PUBLISH] Twitter success:', data);
 
-      // Update post status to published
+      // Fetch current post to merge platforms
+      const { data: currentPost } = await supabase
+        .from('posts')
+        .select('social_platforms')
+        .eq('id', postId)
+        .single();
+      
+      const existingPlatforms = Array.isArray(currentPost?.social_platforms) ? currentPost.social_platforms : [];
+      const mergedPlatforms = [...new Set([...existingPlatforms, 'twitter', 'x'])];
+
+      // Update post status to published with merged platforms
       const { error: updateError } = await supabase
         .from('posts')
         .update({ 
           status: 'published',
           posted_at: new Date().toISOString(),
-          error_message: null
+          error_message: null,
+          social_platforms: mergedPlatforms
         })
         .eq('id', postId);
 
@@ -306,13 +339,24 @@ export const useManualPublish = () => {
 
       console.log('[MANUAL-PUBLISH] Telegram success:', data);
 
-      // Update post status to published
+      // Fetch current post to merge platforms
+      const { data: currentPost } = await supabase
+        .from('posts')
+        .select('social_platforms')
+        .eq('id', postId)
+        .single();
+      
+      const existingPlatforms = Array.isArray(currentPost?.social_platforms) ? currentPost.social_platforms : [];
+      const mergedPlatforms = [...new Set([...existingPlatforms, 'telegram'])];
+
+      // Update post status to published with merged platforms
       const { error: updateError } = await supabase
         .from('posts')
         .update({ 
           status: 'published',
           posted_at: new Date().toISOString(),
-          error_message: null
+          error_message: null,
+          social_platforms: mergedPlatforms
         })
         .eq('id', postId);
 
