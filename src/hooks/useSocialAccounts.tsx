@@ -231,6 +231,12 @@ export const useSocialAccounts = () => {
   return context;
 };
 
+// Non-throwing version for components that need graceful fallback
+export const useOptionalSocialAccounts = (): SocialAccountsContextType | null => {
+  const context = useContext(SocialAccountsContext);
+  return context ?? null;
+};
+
 const getOAuthScopes = (platform: string): string => {
   const scopes = {
     // Facebook Pages permissions

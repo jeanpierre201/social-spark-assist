@@ -12,7 +12,7 @@ import PostEditDialog from '@/components/starter/PostEditDialog';
 import UpgradePrompt from '@/components/starter/UpgradePrompt';
 import CalendarView from '@/components/starter/CalendarView';
 import ProfileAvatar from '@/components/ProfileAvatar';
-import { SocialAccountsProvider } from '@/hooks/useSocialAccounts';
+
 
 interface GeneratedContent {
   caption: string;
@@ -129,7 +129,6 @@ const PostsStarterPage = () => {
   const isCreationExpired = !canCreatePosts;
 
   return (
-    <SocialAccountsProvider>
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-6xl mx-auto">
         {/* Header - Mobile */}
@@ -288,7 +287,6 @@ const PostsStarterPage = () => {
         />
       </div>
     </div>
-    </SocialAccountsProvider>
   );
 };
 
