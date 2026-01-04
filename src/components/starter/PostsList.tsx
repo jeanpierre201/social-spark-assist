@@ -79,10 +79,21 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
           filter: `user_id=eq.${user.id}`
         }, 
         (payload) => {
-          // Update single post in local state instead of full refresh
-          setPosts(prev => prev.map(p => 
-            p.id === payload.new.id ? { ...p, ...payload.new as Post } : p
-          ));
+          // Update single post in local state instead of full refresh (avoid wiping fields with partial payloads)
+          setPosts(prev => prev.map(p => {
+            if (p.id !== payload.new.id) return p;
+            const next = payload.new as Partial<Post>;
+            return {
+              ...p,
+              ...next,
+              // Preserve existing media/platforms if realtime payload omits them or sends null
+              media_url: (next.media_url ?? p.media_url) as any,
+              uploaded_image_url: (next.uploaded_image_url ?? p.uploaded_image_url) as any,
+              social_platforms: (Array.isArray(next.social_platforms) ? next.social_platforms : (p.social_platforms ?? [])) as any,
+              generated_hashtags: (Array.isArray(next.generated_hashtags) ? next.generated_hashtags : p.generated_hashtags) as any,
+              generated_caption: (next.generated_caption ?? p.generated_caption) as any,
+            } as Post;
+          }));
         }
       )
       .subscribe();
