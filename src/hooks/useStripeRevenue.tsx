@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays } from 'date-fns';
 
@@ -43,8 +43,10 @@ export const useStripeRevenue = (options: UseStripeRevenueOptions = {}) => {
   const { dateRange, enabled = true } = options;
   
   const [stripeData, setStripeData] = useState<StripeRevenueData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasFetched = useRef(false);
 
   const fromDateStr = useMemo(() => 
     dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : format(subDays(new Date(), 30), 'yyyy-MM-dd'),
@@ -57,9 +59,15 @@ export const useStripeRevenue = (options: UseStripeRevenueOptions = {}) => {
   );
 
   const fetchStripeRevenue = useCallback(async () => {
-    if (!enabled) return;
+    if (!enabled) {
+      setInitialLoading(false);
+      return;
+    }
 
-    setLoading(true);
+    // Use refreshing state for subsequent fetches, initialLoading for first
+    if (hasFetched.current) {
+      setRefreshing(true);
+    }
     setError(null);
 
     try {
@@ -83,17 +91,26 @@ export const useStripeRevenue = (options: UseStripeRevenueOptions = {}) => {
 
       console.log('Stripe revenue data received:', data);
       setStripeData(data);
+      hasFetched.current = true;
     } catch (err) {
       console.error('Error calling Stripe revenue function:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setLoading(false);
+      setInitialLoading(false);
+      setRefreshing(false);
     }
   }, [enabled, fromDateStr, toDateStr]);
 
+  // Auto-fetch on mount and when date range changes
+  useEffect(() => {
+    fetchStripeRevenue();
+  }, [fetchStripeRevenue]);
+
   return {
     stripeData,
-    loading,
+    loading: initialLoading, // For backward compatibility
+    initialLoading,
+    refreshing,
     error,
     refetch: fetchStripeRevenue
   };

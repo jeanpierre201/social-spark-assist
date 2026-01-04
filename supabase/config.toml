@@ -123,3 +123,6 @@ verify_jwt = true
 
 [functions.get-stripe-revenue]
 verify_jwt = true
+
+[functions.sync-stripe-subscribers]
+verify_jwt = true
