@@ -25,6 +25,10 @@ interface Post {
   generated_caption: string;
   generated_hashtags: string[];
   media_url: string | null;
+  uploaded_image_url: string | null;
+  ai_generated_image_1_url: string | null;
+  ai_generated_image_2_url: string | null;
+  selected_image_type: string | null;
   scheduled_date: string | null;
   scheduled_time: string | null;
   user_timezone: string | null;
