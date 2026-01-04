@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon, Clock, Plus } from 'lucide-react';
+import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon, Clock, Plus, AlertTriangle } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,72 @@ import PostEditDialog from '@/components/starter/PostEditDialog';
 import UpgradePrompt from '@/components/starter/UpgradePrompt';
 import CalendarView from '@/components/starter/CalendarView';
 import ProfileAvatar from '@/components/ProfileAvatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Error Boundary for PostEditDialog
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  onClose: () => void;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class PostEditErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('[PostEditDialog] Render error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card className="max-w-md mx-auto mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Unable to Edit Post
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Something went wrong while loading this post. This may be due to missing data or a connection issue.
+            </p>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  this.props.onClose();
+                }}
+              >
+                Close
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => window.location.reload()}
+              >
+                Refresh Page
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 
 interface GeneratedContent {
@@ -106,7 +172,17 @@ const PostsStarterPage = () => {
   };
 
   const handleEditPost = (post: any) => {
-    setSelectedPost(post);
+    // Normalize post data to prevent white page errors
+    const normalizedPost = {
+      ...post,
+      social_platforms: Array.isArray(post.social_platforms) ? post.social_platforms : [],
+      generated_hashtags: Array.isArray(post.generated_hashtags) ? post.generated_hashtags : [],
+      generated_caption: post.generated_caption || '',
+      industry: post.industry || '',
+      goal: post.goal || '',
+      niche_info: post.niche_info || '',
+    };
+    setSelectedPost(normalizedPost);
     setShowEditDialog(true);
   };
 
@@ -279,12 +355,14 @@ const PostsStarterPage = () => {
           )}
         </div>
         
-        <PostEditDialog
-          post={selectedPost}
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
-          onPostUpdated={handlePostUpdated}
-        />
+        <PostEditErrorBoundary onClose={() => setShowEditDialog(false)}>
+          <PostEditDialog
+            post={selectedPost}
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            onPostUpdated={handlePostUpdated}
+          />
+        </PostEditErrorBoundary>
       </div>
     </div>
   );
