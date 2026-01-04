@@ -1,10 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { useAnalytics, DateRange } from '@/hooks/useAnalytics';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useStripeRevenue } from '@/hooks/useStripeRevenue';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { subDays } from 'date-fns';
@@ -47,6 +48,19 @@ const AdminDashboard = () => {
     refreshing, 
     refetch 
   } = useAnalytics({ dateRange, enabled: !roleLoading && isAdmin() });
+
+  // Fetch real Stripe revenue data for top summary card
+  const { stripeData, loading: stripeLoading, error: stripeError, refetch: fetchStripeRevenue } = useStripeRevenue({
+    dateRange,
+    enabled: !roleLoading && isAdmin()
+  });
+
+  // Fetch Stripe data when component mounts or date range changes
+  useEffect(() => {
+    if (!roleLoading && isAdmin()) {
+      fetchStripeRevenue();
+    }
+  }, [fetchStripeRevenue, roleLoading, isAdmin]);
   
   const [syncing, setSyncing] = useState(false);
 
@@ -129,11 +143,13 @@ const AdminDashboard = () => {
     return acc;
   }, [] as typeof subscriptionData);
 
-  // Use real MRR from current stats (calculated from active subscribers)
-  const totalRevenue = currentStats.mrr; // Monthly Recurring Revenue
+  // Use real Stripe MRR if available, otherwise fall back to database estimate
+  const hasStripeData = stripeData && !stripeError;
+  const totalRevenue = hasStripeData ? stripeData.mrr : currentStats.mrr;
   const totalActiveUsers = currentStats.active_users;
   const totalPublishedPosts = currentStats.published_posts;
-  const totalSubscriptions = currentStats.total_active_subscribers;
+  // Use Stripe active subscriptions count if available (more accurate for paid subs)
+  const totalSubscriptions = hasStripeData ? stripeData.activeSubscriptions : currentStats.paid_subscribers;
 
   // Show skeleton cards during initial data load (dashboard stays mounted)
   const showSkeletons = initialLoading;
@@ -176,11 +192,13 @@ const AdminDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {hasStripeData ? 'Monthly Revenue (Stripe)' : 'Monthly Revenue (Est.)'}
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
-              {showSkeletons ? (
+              {showSkeletons || stripeLoading ? (
                 <div className="space-y-2">
                   <div className="h-8 bg-blue-100 rounded animate-pulse w-24"></div>
                   <div className="h-3 bg-blue-100 rounded animate-pulse w-16"></div>
@@ -188,9 +206,11 @@ const AdminDashboard = () => {
               ) : (
                 <>
                   <div className="text-2xl font-bold text-blue-700">
-                    €{totalRevenue.toLocaleString()}
+                    €{totalRevenue.toFixed(2)}
                   </div>
-                  <p className="text-xs text-blue-600">Monthly Recurring Revenue</p>
+                  <p className="text-xs text-blue-600">
+                    {hasStripeData ? 'From Stripe subscriptions' : 'Database estimate'}
+                  </p>
                 </>
               )}
             </CardContent>
@@ -242,11 +262,13 @@ const AdminDashboard = () => {
 
           <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Subscriptions</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {hasStripeData ? 'Paid Subscriptions' : 'Subscriptions'}
+              </CardTitle>
               <Crown className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
-              {showSkeletons ? (
+              {showSkeletons || stripeLoading ? (
                 <div className="space-y-2">
                   <div className="h-8 bg-orange-100 rounded animate-pulse w-24"></div>
                   <div className="h-3 bg-orange-100 rounded animate-pulse w-20"></div>
@@ -256,7 +278,9 @@ const AdminDashboard = () => {
                   <div className="text-2xl font-bold text-orange-700">
                     {totalSubscriptions.toLocaleString()}
                   </div>
-                  <p className="text-xs text-orange-600">Active subscribers</p>
+                  <p className="text-xs text-orange-600">
+                    {hasStripeData ? 'Active Stripe subscriptions' : 'Active subscribers'}
+                  </p>
                 </>
               )}
             </CardContent>
