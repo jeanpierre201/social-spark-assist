@@ -14,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 import { useManualPublish } from '@/hooks/useManualPublish';
-import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useOptionalSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useMastodonPublish } from '@/hooks/useMastodonPublish';
 
 interface Post {
@@ -50,10 +50,12 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   const { user } = useAuth();
   const { toast } = useToast();
   const { publishToFacebook, publishToTwitter, publishToMastodon, isPublishingPost } = useManualPublish();
-  const { accounts } = useSocialAccounts();
+  const socialContext = useOptionalSocialAccounts();
+  const accounts = socialContext?.accounts ?? [];
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [retryingAll, setRetryingAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -373,6 +375,44 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     fetchPosts();
   };
 
+  // Retry all failed posts
+  const handleRetryAllFailed = async () => {
+    const failedPosts = posts.filter(p => p.status === 'failed' || p.status === 'rescheduled');
+    
+    if (failedPosts.length === 0) {
+      toast({
+        description: "No failed posts to retry",
+      });
+      return;
+    }
+
+    setRetryingAll(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const post of failedPosts) {
+      try {
+        await handleManualPublish(post);
+        successCount++;
+      } catch (error) {
+        console.error('Error retrying post:', post.id, error);
+        errorCount++;
+      }
+    }
+
+    setRetryingAll(false);
+    
+    toast({
+      title: "Bulk Retry Complete",
+      description: `Retried ${failedPosts.length} posts. Check individual posts for results.`,
+    });
+    
+    fetchPosts();
+  };
+
+  // Count failed posts for the button
+  const failedPostsCount = posts.filter(p => p.status === 'failed' || p.status === 'rescheduled').length;
+
   if (loading) {
     return (
       <Card>
@@ -433,6 +473,36 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
           >
             <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
+          {failedPostsCount > 0 && canCreatePosts !== false && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleRetryAllFailed}
+                    disabled={retryingAll}
+                    className="shrink-0 text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    {retryingAll ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-1.5 animate-spin" />
+                        Retrying...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-1.5" />
+                        Retry All ({failedPostsCount})
+                      </>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Retry publishing all failed posts at once
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
 
         {/* Posts List */}
@@ -469,21 +539,73 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                         Retrying soon
                       </Badge>
                     )}
-                    {/* Show selected platforms with brand colors */}
+                    {/* Show selected platforms with status indicators */}
                     {post.social_platforms && post.social_platforms.length > 0 && (
                       <div className="flex items-center gap-1">
-                        {post.social_platforms.map((platform) => {
-                          const IconComponent = getPlatformIcon(platform);
-                          const isFailed = post.status === 'failed' || post.status === 'rescheduled';
-                          const colorClass = isFailed 
-                            ? 'text-red-600 border-red-200 bg-red-50' 
-                            : getPlatformColor(platform);
-                          return (
-                            <Badge key={platform} variant="outline" className={`text-xs px-1.5 ${colorClass}`}>
-                              {IconComponent ? <IconComponent className="h-3 w-3" /> : <span className="capitalize">{platform}</span>}
-                            </Badge>
-                          );
-                        })}
+                        <TooltipProvider>
+                          {post.social_platforms.map((platform) => {
+                            const IconComponent = getPlatformIcon(platform);
+                            const normalizedPlatform = platform.toLowerCase();
+                            
+                            // Determine per-platform status
+                            let platformStatus: 'pending' | 'success' | 'failed' = 'pending';
+                            
+                            if (post.status === 'published') {
+                              platformStatus = 'success';
+                            } else if (post.status === 'failed' || post.status === 'rescheduled') {
+                              // Check if error message mentions this specific platform
+                              const errorLower = (post.error_message || '').toLowerCase();
+                              const platformNames = [normalizedPlatform];
+                              if (normalizedPlatform === 'x') platformNames.push('twitter');
+                              if (normalizedPlatform === 'twitter') platformNames.push('x');
+                              
+                              const mentionsPlatform = platformNames.some(name => 
+                                errorLower.includes(name)
+                              );
+                              
+                              // If error doesn't mention specific platforms or mentions this one, mark as failed
+                              // If error mentions other platforms but not this one, assume this one succeeded
+                              if (mentionsPlatform || !errorLower) {
+                                platformStatus = 'failed';
+                              } else {
+                                // Check if the error is generic (applies to all) or platform-specific
+                                const isGenericError = !['facebook', 'twitter', 'x', 'instagram', 'mastodon', 'telegram', 'linkedin'].some(
+                                  p => errorLower.includes(p)
+                                );
+                                platformStatus = isGenericError ? 'failed' : 'success';
+                              }
+                            }
+                            
+                            // Determine styling based on status
+                            let colorClass = getPlatformColor(platform);
+                            let StatusIcon = null;
+                            let statusTooltip = platform;
+                            
+                            if (platformStatus === 'success') {
+                              colorClass = 'bg-green-100 text-green-700 border-green-300';
+                              StatusIcon = CheckCircle;
+                              statusTooltip = `${platform}: Published`;
+                            } else if (platformStatus === 'failed') {
+                              colorClass = 'text-red-600 border-red-200 bg-red-50';
+                              StatusIcon = AlertTriangle;
+                              statusTooltip = `${platform}: Failed`;
+                            }
+                            
+                            return (
+                              <Tooltip key={platform}>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className={`text-xs px-1.5 flex items-center gap-0.5 ${colorClass}`}>
+                                    {IconComponent ? <IconComponent className="h-3 w-3" /> : <span className="capitalize">{platform}</span>}
+                                    {StatusIcon && <StatusIcon className="h-2.5 w-2.5 ml-0.5" />}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <span className="capitalize">{statusTooltip}</span>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </TooltipProvider>
                       </div>
                     )}
                   </div>
