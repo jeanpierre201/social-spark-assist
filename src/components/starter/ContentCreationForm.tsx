@@ -95,6 +95,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
 
   const socialPlatforms = [
     { id: 'mastodon', name: 'Mastodon' },
+    { id: 'telegram', name: 'Telegram' },
     { id: 'facebook', name: 'Facebook' },
     { id: 'instagram', name: 'Instagram' },
     { id: 'x', name: 'X (Twitter)' },

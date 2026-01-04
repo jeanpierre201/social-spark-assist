@@ -187,13 +187,22 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       }
       
       // Normalize platform IDs: 'twitter' -> 'x' for UI consistency
-      const normalizedPlatforms = (post.social_platforms || []).map(p => 
+      // Ensure social_platforms is always an array
+      const platformsArray = Array.isArray(post.social_platforms) 
+        ? post.social_platforms 
+        : [];
+      const normalizedPlatforms = platformsArray.map(p => 
         p === 'twitter' ? 'x' : p
       );
       
+      // Safely handle hashtags array
+      const hashtagsArray = Array.isArray(post.generated_hashtags) 
+        ? post.generated_hashtags 
+        : [];
+      
       setFormData({
-        caption: post.generated_caption,
-        hashtags: post.generated_hashtags.join(' '),
+        caption: post.generated_caption || '',
+        hashtags: hashtagsArray.join(' '),
         scheduled_date: localDate,
         scheduled_time: localTime,
         social_platforms: normalizedPlatforms,
@@ -679,7 +688,30 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     return 'draft';
   })();
 
+  // Safety check - early return for null post
   if (!post) return null;
+
+  // Defensive check for malformed post data
+  if (!post.id || typeof post.generated_caption !== 'string') {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Error Loading Post
+            </DialogTitle>
+            <DialogDescription>
+              This post's data appears to be incomplete or corrupted. Please try refreshing the page.
+            </DialogDescription>
+          </DialogHeader>
+          <Button onClick={() => onOpenChange(false)} className="mt-4">
+            Close
+          </Button>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

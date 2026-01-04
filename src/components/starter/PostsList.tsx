@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, CheckCircle, Clock } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, CheckCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
@@ -58,6 +58,8 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   const [retryingAll, setRetryingAll] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortField, setSortField] = useState<'created_at' | 'updated_at' | 'scheduled_date'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [postToDelete, setPostToDelete] = useState<Post | null>(null);
@@ -103,7 +105,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     if (user) {
       fetchPosts();
     }
-  }, [user, currentPage, searchTerm, statusFilter, refreshTrigger]);
+  }, [user, currentPage, searchTerm, statusFilter, sortField, sortOrder, refreshTrigger]);
 
   const fetchPosts = async () => {
     try {
@@ -113,7 +115,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
         .from('posts')
         .select('*', { count: 'exact' })
         .eq('user_id', user!.id)
-        .order('created_at', { ascending: false });
+        .order(sortField, { ascending: sortOrder === 'asc' });
 
       // Apply status filter
       if (statusFilter !== 'all') {
@@ -204,14 +206,23 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     </svg>
   );
 
+  // Telegram icon component
+  const TelegramIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+    </svg>
+  );
+
   // Get platform icon component
   const getPlatformIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
       case 'facebook': return Facebook;
       case 'twitter': return Twitter;
+      case 'x': return Twitter;
       case 'instagram': return Instagram;
       case 'linkedin': return Linkedin;
       case 'mastodon': return MastodonIcon;
+      case 'telegram': return TelegramIcon;
       default: return null;
     }
   };
@@ -461,9 +472,31 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
               <SelectItem value="ready">Ready</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="published">Published</SelectItem>
+              <SelectItem value="failed">Failed</SelectItem>
+              <SelectItem value="rescheduled">Rescheduled</SelectItem>
               <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={sortField} onValueChange={(value) => setSortField(value as 'created_at' | 'updated_at' | 'scheduled_date')}>
+            <SelectTrigger className="w-36">
+              <ArrowUpDown className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="created_at">Created</SelectItem>
+              <SelectItem value="updated_at">Updated</SelectItem>
+              <SelectItem value="scheduled_date">Scheduled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+            className="shrink-0"
+            title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+          >
+            {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+          </Button>
           <Button 
             variant="outline" 
             size="icon" 
