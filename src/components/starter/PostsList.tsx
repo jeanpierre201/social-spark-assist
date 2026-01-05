@@ -377,7 +377,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
       return;
     }
 
-    const message = `${post.generated_caption}\n\n${post.generated_hashtags.join(' ')}`;
+    const message = `${post.generated_caption}\n\n${post.generated_hashtags.map(h => h.startsWith('#') ? h : `#${h}`).join(' ')}`;
     const results = [];
 
     // Only publish to platforms that are selected AND connected

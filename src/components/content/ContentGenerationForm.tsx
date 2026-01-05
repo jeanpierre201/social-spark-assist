@@ -48,6 +48,9 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const [customImagePrompt, setCustomImagePrompt] = useState('');
   const [isPostingNow, setIsPostingNow] = useState(false);
   const [lastGeneratedPost, setLastGeneratedPost] = useState<any>(null);
+  const [generateCaptionWithAI, setGenerateCaptionWithAI] = useState(true);
+  const [manualCaption, setManualCaption] = useState('');
+  const [manualHashtags, setManualHashtags] = useState('');
   // Free tier platforms - only Mastodon and Telegram
   const freePlatforms = [
     { id: 'mastodon', name: 'Mastodon' },
@@ -63,6 +66,20 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
     { id: 'linkedin', name: 'LinkedIn' },
     { id: 'tiktok', name: 'TikTok' }
   ];
+
+  // Helper to parse hashtags from string (validates # prefix)
+  const parseHashtags = (hashtagString: string): string[] => {
+    return hashtagString
+      .split(/\s+/)
+      .filter(tag => tag.startsWith('#') && tag.length > 1)
+      .map(tag => tag.substring(1)); // Remove the # for storage
+  };
+
+  // Validate manual hashtags have # prefix
+  const validateManualHashtags = (hashtagString: string): boolean => {
+    const tags = hashtagString.trim().split(/\s+/).filter(tag => tag.length > 0);
+    return tags.every(tag => tag.startsWith('#'));
+  };
 
   const handleGenerateContent = async () => {
     if (!user) {
@@ -117,34 +134,74 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       return;
     }
 
+    // Validate manual content if AI is disabled
+    if (!generateCaptionWithAI) {
+      if (!manualCaption.trim()) {
+        toast({
+          title: "Missing Caption",
+          description: "Please write a caption for your post",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!manualHashtags.trim()) {
+        toast({
+          title: "Missing Hashtags",
+          description: "Please add hashtags for your post",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!validateManualHashtags(manualHashtags)) {
+        toast({
+          title: "Invalid Hashtags",
+          description: "Each hashtag must start with #",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsGenerating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: {
-          industry: industry.trim(),
-          goal: goal.trim(),
-          nicheInfo: nicheInfo.trim(),
-          includeEmojis: includeEmojis,
-          userId: user.id,
-        }
-      });
+      let caption: string;
+      let hashtags: string[];
 
-      if (error) {
-        console.error('Error generating content:', error);
-        
-        // Check if it's a limit reached error
-        if (data?.limitReached) {
-          toast({
-            title: "Monthly limit reached",
-            description: data.error || "The amount of free calls has been achieved, please wait for the first day of the coming month or upgrade to a Starter plan",
-            variant: "destructive",
-          });
-          navigate('/#pricing');
-          setIsGenerating(false);
-          return;
+      if (generateCaptionWithAI) {
+        // Generate with AI
+        const { data, error } = await supabase.functions.invoke('generate-content', {
+          body: {
+            industry: industry.trim(),
+            goal: goal.trim(),
+            nicheInfo: nicheInfo.trim(),
+            includeEmojis: includeEmojis,
+            userId: user.id,
+          }
+        });
+
+        if (error) {
+          console.error('Error generating content:', error);
+          
+          // Check if it's a limit reached error
+          if (data?.limitReached) {
+            toast({
+              title: "Monthly limit reached",
+              description: data.error || "The amount of free calls has been achieved, please wait for the first day of the coming month or upgrade to a Starter plan",
+              variant: "destructive",
+            });
+            navigate('/#pricing');
+            setIsGenerating(false);
+            return;
+          }
+          
+          throw error;
         }
-        
-        throw error;
+        caption = data.caption;
+        hashtags = data.hashtags;
+      } else {
+        // Use manual content
+        caption = manualCaption.trim();
+        hashtags = parseHashtags(manualHashtags);
       }
 
       // Generate AI image if requested
@@ -248,8 +305,8 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
       const newPost = {
         user_id: user.id,
-        generated_caption: data.caption,
-        generated_hashtags: data.hashtags,
+        generated_caption: caption,
+        generated_hashtags: hashtags,
         industry: industry.trim(),
         goal: goal.trim(),
         niche_info: nicheInfo.trim() || null,
@@ -272,6 +329,9 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       setImageUrl(null);
       setSelectedSocialPlatforms([]);
       setCustomImagePrompt('');
+      setGenerateCaptionWithAI(true);
+      setManualCaption('');
+      setManualHashtags('');
 
       toast({
         title: "Content generated successfully!",
@@ -412,6 +472,49 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
             Include emojis in content
           </Label>
         </div>
+
+        {/* AI Caption Generation Toggle */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="generate-caption-ai"
+            checked={generateCaptionWithAI}
+            onCheckedChange={(checked) => setGenerateCaptionWithAI(checked as boolean)}
+          />
+          <Label htmlFor="generate-caption-ai" className="text-sm">
+            Create text caption and hashtags with AI
+          </Label>
+        </div>
+
+        {/* Manual Caption and Hashtags (shown when AI is disabled) */}
+        {!generateCaptionWithAI && (
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+            <div>
+              <Label htmlFor="manual-caption">Caption *</Label>
+              <Textarea
+                id="manual-caption"
+                placeholder="Write your post caption..."
+                value={manualCaption}
+                onChange={(e) => setManualCaption(e.target.value)}
+                maxLength={2000}
+                rows={4}
+              />
+            </div>
+            <div>
+              <Label htmlFor="manual-hashtags">Hashtags *</Label>
+              <Textarea
+                id="manual-hashtags"
+                placeholder="#marketing #socialmedia #business (each hashtag must start with #)"
+                value={manualHashtags}
+                onChange={(e) => setManualHashtags(e.target.value)}
+                maxLength={500}
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Each hashtag must start with #. Separate hashtags with spaces.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Advanced features for subscribed users only */}
         {!isFreeUser && (

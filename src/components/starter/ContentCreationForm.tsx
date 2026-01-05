@@ -57,6 +57,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const [customImagePrompt, setCustomImagePrompt] = useState('');
   const [userTimezone, setUserTimezone] = useState<string>('UTC');
   const [timezoneDisplay, setTimezoneDisplay] = useState<string>('');
+  const [generateCaptionWithAI, setGenerateCaptionWithAI] = useState(true);
+  const [manualCaption, setManualCaption] = useState('');
+  const [manualHashtags, setManualHashtags] = useState('');
 
   // Fetch user timezone from profile
   useEffect(() => {
@@ -166,6 +169,20 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
     }
   };
 
+  // Helper to parse hashtags from string (validates # prefix)
+  const parseHashtags = (hashtagString: string): string[] => {
+    return hashtagString
+      .split(/\s+/)
+      .filter(tag => tag.startsWith('#') && tag.length > 1)
+      .map(tag => tag.substring(1)); // Remove the # for storage
+  };
+
+  // Validate manual hashtags have # prefix
+  const validateManualHashtags = (hashtagString: string): boolean => {
+    const tags = hashtagString.trim().split(/\s+/).filter(tag => tag.length > 0);
+    return tags.every(tag => tag.startsWith('#'));
+  };
+
   const handleGenerateSingle = async () => {
     if (!user) {
       toast({
@@ -204,20 +221,60 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       return;
     }
 
+    // Validate manual content if AI is disabled
+    if (!generateCaptionWithAI) {
+      if (!manualCaption.trim()) {
+        toast({
+          title: "Missing Caption",
+          description: "Please write a caption for your post",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!manualHashtags.trim()) {
+        toast({
+          title: "Missing Hashtags",
+          description: "Please add hashtags for your post",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!validateManualHashtags(manualHashtags)) {
+        toast({
+          title: "Invalid Hashtags",
+          description: "Each hashtag must start with #",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     setIsGenerating(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: {
-          userId: user?.id,
-          industry: industry.trim(),
-          goal: goal.trim(),
-          nicheInfo: nicheInfo.trim(),
-          includeEmojis
-        }
-      });
+      let caption: string;
+      let hashtags: string[];
 
-      if (error) throw error;
+      if (generateCaptionWithAI) {
+        // Generate with AI
+        const { data, error } = await supabase.functions.invoke('generate-content', {
+          body: {
+            userId: user?.id,
+            industry: industry.trim(),
+            goal: goal.trim(),
+            nicheInfo: nicheInfo.trim(),
+            includeEmojis
+          }
+        });
+
+        if (error) throw error;
+        caption = data.caption;
+        hashtags = data.hashtags;
+      } else {
+        // Use manual content
+        caption = manualCaption.trim();
+        hashtags = parseHashtags(manualHashtags);
+      }
 
       let imageUrl = '';
       let isImageGenerated = false;
@@ -306,8 +363,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       }
 
       const generatedContent: GeneratedContent = {
-        caption: data.caption,
-        hashtags: data.hashtags,
+        caption: caption,
+        hashtags: hashtags,
         image: imageUrl,
         isGenerated: isImageGenerated
       };
@@ -386,6 +443,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setSelectedSocialPlatforms([]);
       setCustomImagePrompt('');
       setGenerateWithImages(false);
+      setGenerateCaptionWithAI(true);
+      setManualCaption('');
+      setManualHashtags('');
 
       // Clear any file inputs to prevent cross-form contamination
       const fileInputs = document.querySelectorAll('input[type="file"]');
@@ -652,6 +712,49 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             Include emojis in content
           </Label>
         </div>
+
+        {/* AI Caption Generation Toggle */}
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="generate-caption-ai"
+            checked={generateCaptionWithAI}
+            onCheckedChange={(checked) => setGenerateCaptionWithAI(checked as boolean)}
+          />
+          <Label htmlFor="generate-caption-ai" className="text-sm">
+            Create text caption and hashtags with AI
+          </Label>
+        </div>
+
+        {/* Manual Caption and Hashtags (shown when AI is disabled) */}
+        {!generateCaptionWithAI && (
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+            <div>
+              <Label htmlFor="manual-caption">Caption *</Label>
+              <Textarea
+                id="manual-caption"
+                placeholder="Write your post caption..."
+                value={manualCaption}
+                onChange={(e) => setManualCaption(e.target.value)}
+                maxLength={2000}
+                rows={4}
+              />
+            </div>
+            <div>
+              <Label htmlFor="manual-hashtags">Hashtags *</Label>
+              <Textarea
+                id="manual-hashtags"
+                placeholder="#marketing #socialmedia #business (each hashtag must start with #)"
+                value={manualHashtags}
+                onChange={(e) => setManualHashtags(e.target.value)}
+                maxLength={500}
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Each hashtag must start with #. Separate hashtags with spaces.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Social Media Selection */}
         <div className="border-t pt-4">

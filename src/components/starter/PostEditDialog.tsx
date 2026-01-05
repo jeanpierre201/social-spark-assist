@@ -195,14 +195,17 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         p === 'twitter' ? 'x' : p
       );
       
-      // Safely handle hashtags array
+      // Safely handle hashtags array - add # prefix for display
       const hashtagsArray = Array.isArray(post.generated_hashtags) 
         ? post.generated_hashtags 
         : [];
+      const hashtagsWithPrefix = hashtagsArray.map(tag => 
+        tag.startsWith('#') ? tag : `#${tag}`
+      );
       
       setFormData({
         caption: post.generated_caption || '',
-        hashtags: hashtagsArray.join(' '),
+        hashtags: hashtagsWithPrefix.join(' '),
         scheduled_date: localDate,
         scheduled_time: localTime,
         social_platforms: normalizedPlatforms,
@@ -581,6 +584,18 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const handleSave = async () => {
     if (!post || isReadOnly) return;
 
+    // Validate hashtags have # prefix
+    const hashtagParts = formData.hashtags.trim().split(/\s+/).filter(tag => tag.length > 0);
+    const invalidHashtags = hashtagParts.filter(tag => !tag.startsWith('#'));
+    if (hashtagParts.length > 0 && invalidHashtags.length > 0) {
+      toast({
+        title: "Invalid Hashtags",
+        description: "Each hashtag must start with #. Please fix: " + invalidHashtags.join(', '),
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -619,9 +634,14 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         status = 'draft';
       }
       
+      // Parse hashtags - remove # prefix for database storage
+      const parsedHashtags = formData.hashtags.split(/\s+/)
+        .filter(tag => tag.startsWith('#') && tag.length > 1)
+        .map(tag => tag.substring(1)); // Remove # for storage
+      
       const updates = {
         generated_caption: formData.caption,
-        generated_hashtags: formData.hashtags.split(' ').filter(tag => tag.trim()),
+        generated_hashtags: parsedHashtags,
         scheduled_date: finalScheduledDate || null,
         scheduled_time: finalScheduledTime || null,
         user_timezone: userTimezone,
@@ -807,10 +827,15 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               value={formData.hashtags}
               onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
               rows={3}
-              placeholder="Enter hashtags separated by spaces"
+              placeholder="Enter hashtags with # prefix, separated by spaces (e.g., #marketing #business)"
               readOnly={isReadOnly}
               className={isReadOnly ? 'bg-gray-50' : ''}
             />
+            {!isReadOnly && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Each hashtag must start with #
+              </p>
+            )}
           </div>
 
           {/* Image Section */}
