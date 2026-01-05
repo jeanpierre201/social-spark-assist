@@ -5,6 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Platform result types for tracking per-platform status
+interface PlatformResult {
+  status: 'pending' | 'success' | 'failed';
+  published_at?: string;
+  post_id?: string;
+  error?: string;
+  attempted_at?: string;
+}
+
+type PlatformResults = Record<string, PlatformResult>;
+
 // Helper to determine if error is recoverable (should reschedule) or permanent (failed)
 function isRecoverableError(error: string): boolean {
   const recoverablePatterns = [
@@ -14,6 +25,43 @@ function isRecoverableError(error: string): boolean {
   
   const errorLower = error.toLowerCase();
   return recoverablePatterns.some(pattern => errorLower.includes(pattern));
+}
+
+// Calculate overall post status based on platform results
+function calculateOverallStatus(
+  targetPlatforms: string[],
+  platformResults: PlatformResults
+): 'published' | 'partially_published' | 'failed' | 'scheduled' {
+  if (targetPlatforms.length === 0) return 'scheduled';
+  
+  // Normalize platform names for lookup
+  const normalizedPlatforms = targetPlatforms.map(p => p.toLowerCase());
+  
+  const results = normalizedPlatforms.map(p => {
+    const result = platformResults[p] || platformResults[p.toLowerCase()];
+    return result?.status;
+  });
+  
+  // Filter only platforms that have been attempted
+  const attemptedResults = results.filter(r => r === 'success' || r === 'failed');
+  
+  if (attemptedResults.length === 0) return 'scheduled';
+  
+  const successCount = attemptedResults.filter(r => r === 'success').length;
+  const failedCount = attemptedResults.filter(r => r === 'failed').length;
+  
+  // If all target platforms have been attempted
+  if (attemptedResults.length === normalizedPlatforms.length) {
+    if (successCount === normalizedPlatforms.length) return 'published';
+    if (failedCount === normalizedPlatforms.length) return 'failed';
+    return 'partially_published';
+  }
+  
+  // Some platforms still pending
+  if (successCount > 0 && failedCount > 0) return 'partially_published';
+  if (successCount > 0) return 'partially_published';
+  
+  return 'failed';
 }
 
 // Post to Facebook Graph API directly
@@ -321,6 +369,7 @@ Deno.serve(async (req) => {
     let successCount = 0;
     let failureCount = 0;
     let rescheduledCount = 0;
+    let partialCount = 0;
 
     // Process each post
     for (const post of scheduledPosts) {
@@ -343,7 +392,7 @@ Deno.serve(async (req) => {
         }
 
         // Get social platforms from post
-        const targetPlatforms = post.social_platforms && post.social_platforms.length > 0
+        const targetPlatforms: string[] = post.social_platforms && post.social_platforms.length > 0
           ? post.social_platforms
           : ['facebook'];
 
@@ -353,17 +402,28 @@ Deno.serve(async (req) => {
           throw new Error('No social platforms selected. Please select at least one platform.');
         }
 
+        // Get existing platform_results or initialize empty
+        const existingPlatformResults: PlatformResults = (post.platform_results as PlatformResults) || {};
+        const platformResults: PlatformResults = { ...existingPlatformResults };
+
         // Publish to each selected platform
-        const publishResults = [];
         for (const platform of targetPlatforms) {
+          const normalizedPlatform = platform.toLowerCase();
+          
+          // Skip if already successfully published to this platform
+          if (platformResults[normalizedPlatform]?.status === 'success') {
+            console.log(`[PUBLISH-SCHEDULED-POSTS] Skipping ${platform} - already published`);
+            continue;
+          }
+
           const account = socialAccounts.find(acc => acc.platform === platform);
           
           if (!account) {
-            publishResults.push({ 
-              platform, 
-              success: false, 
-              error: `No ${platform} account connected` 
-            });
+            platformResults[normalizedPlatform] = { 
+              status: 'failed',
+              error: `No ${platform} account connected`,
+              attempted_at: now.toISOString()
+            };
             continue;
           }
 
@@ -384,7 +444,6 @@ Deno.serve(async (req) => {
               // Check token expiration
               if (tokenData.token_expires_at) {
                 const expiresAt = new Date(tokenData.token_expires_at);
-                const now = new Date();
                 if (expiresAt < now) {
                   console.error(`[PUBLISH-SCHEDULED-POSTS] Token expired at ${expiresAt.toISOString()}, current time: ${now.toISOString()}`);
                   throw new Error('Facebook access token has expired. Please reconnect your Facebook account to refresh the token.');
@@ -399,9 +458,13 @@ Deno.serve(async (req) => {
 
               // Post to Facebook
               const message = `${post.generated_caption}\n\n${post.generated_hashtags?.join(' ') || ''}`;
-              await postToFacebook(pageId, tokenData.encrypted_access_token, message, post.media_url);
+              const result = await postToFacebook(pageId, tokenData.encrypted_access_token, message, post.media_url);
               
-              publishResults.push({ platform: 'facebook', success: true });
+              platformResults.facebook = {
+                status: 'success',
+                published_at: now.toISOString(),
+                post_id: result?.id || result?.post_id
+              };
               console.log(`[PUBLISH-SCHEDULED-POSTS] Successfully posted to Facebook`);
             } else if (platform === 'mastodon') {
               // Get access token from vault
@@ -426,9 +489,13 @@ Deno.serve(async (req) => {
 
               // Post to Mastodon
               const message = `${post.generated_caption}\n\n${post.generated_hashtags?.join(' ') || ''}`;
-              await postToMastodon(instanceUrl, tokenData.encrypted_access_token, message, post.media_url);
+              const result = await postToMastodon(instanceUrl, tokenData.encrypted_access_token, message, post.media_url);
               
-              publishResults.push({ platform: 'mastodon', success: true });
+              platformResults.mastodon = {
+                status: 'success',
+                published_at: now.toISOString(),
+                post_id: result?.id
+              };
               console.log(`[PUBLISH-SCHEDULED-POSTS] Successfully posted to Mastodon`);
             } else if (platform === 'telegram') {
               // Get bot token from vault
@@ -451,49 +518,73 @@ Deno.serve(async (req) => {
 
               // Post to Telegram - no hashtags for Telegram
               const telegramMessage = post.generated_caption;
-              await postToTelegram(tokenData.encrypted_access_token, channelId, telegramMessage, post.media_url);
+              const result = await postToTelegram(tokenData.encrypted_access_token, channelId, telegramMessage, post.media_url);
               
-              publishResults.push({ platform: 'telegram', success: true });
+              platformResults.telegram = {
+                status: 'success',
+                published_at: now.toISOString(),
+                post_id: result?.result?.message_id?.toString()
+              };
               console.log(`[PUBLISH-SCHEDULED-POSTS] Successfully posted to Telegram`);
             }
             // Add more platforms here
           } catch (platformError: any) {
             console.error(`[PUBLISH-SCHEDULED-POSTS] Error posting to ${platform}:`, platformError);
-            publishResults.push({ 
-              platform, 
-              success: false, 
+            platformResults[normalizedPlatform] = { 
+              status: 'failed',
               error: platformError.message,
-              recoverable: isRecoverableError(platformError.message)
-            });
+              attempted_at: now.toISOString()
+            };
           }
         }
 
-        // Determine final status
-        const anySuccess = publishResults.some(r => r.success);
-        const allFailed = publishResults.every(r => !r.success);
-        const anyRecoverable = publishResults.some(r => !r.success && r.recoverable);
+        // Calculate overall status using the helper function
+        const overallStatus = calculateOverallStatus(targetPlatforms, platformResults);
+        
+        // Check if any failures are recoverable for rescheduling
+        const failedPlatforms = Object.entries(platformResults)
+          .filter(([_, r]) => r.status === 'failed')
+          .map(([platform, r]) => ({ platform, error: r.error || 'Unknown error' }));
+        
+        const anyRecoverable = failedPlatforms.some(f => isRecoverableError(f.error));
+        
+        // Build error message from failed platforms
+        const errorMessages = failedPlatforms
+          .map(f => `${f.platform}: ${f.error}`)
+          .join('; ');
 
-        if (anySuccess) {
-          // At least one platform succeeded
+        if (overallStatus === 'published') {
+          // All platforms succeeded
           await supabaseClient
             .from('posts')
             .update({
               status: 'published',
               posted_at: now.toISOString(),
               error_message: null,
+              platform_results: platformResults,
               updated_at: now.toISOString()
             })
             .eq('id', post.id);
 
           successCount++;
           console.log(`[PUBLISH-SCHEDULED-POSTS] Post ${post.id} marked as published`);
-        } else if (allFailed && anyRecoverable) {
-          // All failed but some are recoverable - reschedule for 5 minutes later
-          const errorMessages = publishResults
-            .filter(r => !r.success)
-            .map(r => `${r.platform}: ${r.error}`)
-            .join('; ');
+        } else if (overallStatus === 'partially_published') {
+          // Some platforms succeeded, some failed
+          await supabaseClient
+            .from('posts')
+            .update({
+              status: 'partially_published',
+              posted_at: now.toISOString(), // Mark when first successful publish happened
+              error_message: null, // Clear error message since some succeeded
+              platform_results: platformResults,
+              updated_at: now.toISOString()
+            })
+            .eq('id', post.id);
 
+          partialCount++;
+          console.log(`[PUBLISH-SCHEDULED-POSTS] Post ${post.id} marked as partially_published. Failed: ${failedPlatforms.map(f => f.platform).join(', ')}`);
+        } else if (overallStatus === 'failed' && anyRecoverable) {
+          // All failed but some are recoverable - reschedule for 5 minutes later
           const newScheduledTime = new Date(now.getTime() + 5 * 60000); // 5 minutes from now
           
           await supabaseClient
@@ -501,6 +592,7 @@ Deno.serve(async (req) => {
             .update({
               status: 'rescheduled',
               error_message: `Temporary failure, will retry. ${errorMessages}`,
+              platform_results: platformResults,
               scheduled_date: newScheduledTime.toISOString().split('T')[0],
               scheduled_time: newScheduledTime.toTimeString().split(' ')[0].substring(0, 5),
               updated_at: now.toISOString()
@@ -511,16 +603,12 @@ Deno.serve(async (req) => {
           console.log(`[PUBLISH-SCHEDULED-POSTS] Post ${post.id} rescheduled to ${newScheduledTime.toISOString()}`);
         } else {
           // All failed with permanent errors
-          const errorMessages = publishResults
-            .filter(r => !r.success)
-            .map(r => `${r.platform}: ${r.error}`)
-            .join('; ');
-
           await supabaseClient
             .from('posts')
             .update({
               status: 'failed',
               error_message: errorMessages,
+              platform_results: platformResults,
               updated_at: now.toISOString()
             })
             .eq('id', post.id);
@@ -567,6 +655,7 @@ Deno.serve(async (req) => {
       message: 'Processing complete',
       total: scheduledPosts.length,
       successful: successCount,
+      partial: partialCount,
       failed: failureCount,
       rescheduled: rescheduledCount
     };
