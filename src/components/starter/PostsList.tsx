@@ -11,11 +11,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, CheckCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
-import { format, isAfter, startOfMonth, addMinutes } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
-import { useManualPublish } from '@/hooks/useManualPublish';
+import { useManualPublish, PlatformResult, PlatformResults } from '@/hooks/useManualPublish';
 import { useOptionalSocialAccounts } from '@/hooks/useSocialAccounts';
-import { useMastodonPublish } from '@/hooks/useMastodonPublish';
 
 interface Post {
   id: string;
@@ -32,11 +31,12 @@ interface Post {
   scheduled_date: string | null;
   scheduled_time: string | null;
   user_timezone: string | null;
-  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
+  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed' | 'partially_published';
   created_at: string;
   posted_at: string | null;
   error_message?: string | null;
   social_platforms?: string[] | null;
+  platform_results?: PlatformResults | null;
 }
 
 interface PostsListProps {
@@ -49,7 +49,7 @@ interface PostsListProps {
 const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreatePosts }: PostsListProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { publishToFacebook, publishToTwitter, publishToMastodon, isPublishingPost } = useManualPublish();
+  const { publishToFacebook, publishToTwitter, publishToMastodon, publishToTelegram, isPublishingPost } = useManualPublish();
   const socialContext = useOptionalSocialAccounts();
   const accounts = socialContext?.accounts ?? [];
   const [posts, setPosts] = useState<Post[]>([]);
@@ -92,6 +92,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
               social_platforms: (Array.isArray(next.social_platforms) ? next.social_platforms : (p.social_platforms ?? [])) as any,
               generated_hashtags: (Array.isArray(next.generated_hashtags) ? next.generated_hashtags : p.generated_hashtags) as any,
               generated_caption: (next.generated_caption ?? p.generated_caption) as any,
+              platform_results: (next.platform_results ?? p.platform_results) as any,
             } as Post;
           }));
         }
@@ -147,7 +148,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
 
       if (error) throw error;
 
-      setPosts((data || []) as Post[]);
+      setPosts((data || []) as unknown as Post[]);
       setTotalPages(Math.ceil((count || 0) / postsPerPage));
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -168,6 +169,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
       case 'scheduled': return 'bg-blue-100 text-blue-800';
       case 'rescheduled': return 'bg-yellow-100 text-yellow-800';
       case 'published': return 'bg-green-100 text-green-800';
+      case 'partially_published': return 'bg-yellow-100 text-yellow-800';
       case 'failed': return 'bg-red-100 text-red-800';
       case 'archived': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -192,8 +194,8 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   };
 
   const isEditable = (status: string) => {
-    // Failed and ready posts should be editable
-    return status === 'draft' || status === 'ready' || status === 'scheduled' || status === 'rescheduled' || status === 'failed';
+    // Failed, partially_published, and ready posts should be editable
+    return status === 'draft' || status === 'ready' || status === 'scheduled' || status === 'rescheduled' || status === 'failed' || status === 'partially_published';
   };
 
   // Check if post can have "Post Now" button - only ready and scheduled posts (have platforms selected)
@@ -204,10 +206,18 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     return hasPlatforms && (post.status === 'ready' || post.status === 'scheduled');
   };
 
-  // Get failed platforms from social_platforms array
-  const getFailedPlatforms = (post: Post) => {
-    if (post.status !== 'failed' && post.status !== 'rescheduled') return [];
-    return post.social_platforms || [];
+  // Check if post has failed platforms that can be retried
+  const hasFailedPlatforms = (post: Post) => {
+    if (!post.platform_results) return false;
+    return Object.values(post.platform_results).some(r => r.status === 'failed');
+  };
+
+  // Get failed platforms from platform_results
+  const getFailedPlatformsList = (post: Post): string[] => {
+    if (!post.platform_results) return [];
+    return Object.entries(post.platform_results)
+      .filter(([_, result]) => result.status === 'failed')
+      .map(([platform]) => platform);
   };
 
   // Mastodon icon component
@@ -246,6 +256,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
       case 'failed': return AlertTriangle;
       case 'rescheduled': return RefreshCw;
       case 'ready': return Send;
+      case 'partially_published': return AlertCircle;
       default: return null;
     }
   };
@@ -316,9 +327,9 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
   };
 
   // Manual publish to social media
-  const handleManualPublish = async (post: Post) => {
-    // Get the platforms selected for this specific post
-    const selectedPlatforms = (post.social_platforms as string[]) || [];
+  const handleManualPublish = async (post: Post, platformsToPublish?: string[]) => {
+    // Get the platforms to publish - either specified or all selected platforms
+    const selectedPlatforms = platformsToPublish || (post.social_platforms as string[]) || [];
     
     if (selectedPlatforms.length === 0) {
       toast({
@@ -339,18 +350,23 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     const mastodonAccount = selectedPlatforms.includes('mastodon')
       ? accounts.find(acc => acc.platform === 'mastodon' && acc.is_active)
       : null;
+    const telegramAccount = selectedPlatforms.includes('telegram')
+      ? accounts.find(acc => acc.platform === 'telegram' && acc.is_active)
+      : null;
     
     // Check if at least one selected platform has a connected account
     const hasConnectedAccount = 
       (selectedPlatforms.includes('facebook') && facebookAccount) ||
       ((selectedPlatforms.includes('twitter') || selectedPlatforms.includes('x')) && twitterAccount) ||
-      (selectedPlatforms.includes('mastodon') && mastodonAccount);
+      (selectedPlatforms.includes('mastodon') && mastodonAccount) ||
+      (selectedPlatforms.includes('telegram') && telegramAccount);
     
     if (!hasConnectedAccount) {
       const missingPlatforms = selectedPlatforms.filter(p => {
         if (p === 'facebook') return !facebookAccount;
         if (p === 'twitter' || p === 'x') return !twitterAccount;
         if (p === 'mastodon') return !mastodonAccount;
+        if (p === 'telegram') return !telegramAccount;
         return true;
       });
       toast({
@@ -393,13 +409,36 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
       results.push({ platform: 'Mastodon', ...result });
     }
 
+    if (telegramAccount && selectedPlatforms.includes('telegram')) {
+      const result = await publishToTelegram(
+        post.id,
+        message,
+        post.media_url || undefined
+      );
+      results.push({ platform: 'Telegram', ...result });
+    }
+
     // Refresh posts to show updated status/errors
     fetchPosts();
   };
 
+  // Retry only failed platforms for a specific post
+  const handleRetryFailedPlatforms = async (post: Post) => {
+    const failedPlatforms = getFailedPlatformsList(post);
+    
+    if (failedPlatforms.length === 0) {
+      toast({
+        description: "No failed platforms to retry",
+      });
+      return;
+    }
+
+    await handleManualPublish(post, failedPlatforms);
+  };
+
   // Retry all failed posts
   const handleRetryAllFailed = async () => {
-    const failedPosts = posts.filter(p => p.status === 'failed' || p.status === 'rescheduled');
+    const failedPosts = posts.filter(p => p.status === 'failed' || p.status === 'rescheduled' || p.status === 'partially_published');
     
     if (failedPosts.length === 0) {
       toast({
@@ -409,16 +448,18 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     }
 
     setRetryingAll(true);
-    let successCount = 0;
-    let errorCount = 0;
 
     for (const post of failedPosts) {
       try {
-        await handleManualPublish(post);
-        successCount++;
+        if (post.status === 'partially_published') {
+          // Only retry failed platforms
+          await handleRetryFailedPlatforms(post);
+        } else {
+          // Retry all platforms
+          await handleManualPublish(post);
+        }
       } catch (error) {
         console.error('Error retrying post:', post.id, error);
-        errorCount++;
       }
     }
 
@@ -432,8 +473,15 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     fetchPosts();
   };
 
-  // Count failed posts for the button
-  const failedPostsCount = posts.filter(p => p.status === 'failed' || p.status === 'rescheduled').length;
+  // Count failed posts for the button (include partially_published)
+  const failedPostsCount = posts.filter(p => p.status === 'failed' || p.status === 'rescheduled' || p.status === 'partially_published').length;
+
+  // Get platform status from platform_results
+  const getPlatformStatus = (post: Post, platform: string): PlatformResult | null => {
+    if (!post.platform_results) return null;
+    const normalizedPlatform = platform.toLowerCase();
+    return post.platform_results[normalizedPlatform] || post.platform_results[platform] || null;
+  };
 
   if (loading) {
     return (
@@ -483,6 +531,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
               <SelectItem value="ready">Ready</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="published">Published</SelectItem>
+              <SelectItem value="partially_published">Partially Published</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
               <SelectItem value="rescheduled">Rescheduled</SelectItem>
               <SelectItem value="archived">Archived</SelectItem>
@@ -554,13 +603,17 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
           {posts.map((post) => (
             <div
               key={post.id}
-              className={`border rounded-lg p-3 sm:p-4 transition-colors ${post.status === 'failed' ? 'border-red-200 bg-red-50/30' : 'hover:bg-gray-50'}`}
+              className={`border rounded-lg p-3 sm:p-4 transition-colors ${
+                post.status === 'failed' ? 'border-red-200 bg-red-50/30' : 
+                post.status === 'partially_published' ? 'border-yellow-200 bg-yellow-50/30' : 
+                'hover:bg-gray-50'
+              }`}
             >
               <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Badge className={getStatusColor(post.status)}>
-                      {post.status}
+                      {post.status === 'partially_published' ? 'Partial' : post.status}
                     </Badge>
                     <span className="text-sm text-gray-500">
                       {post.industry}
@@ -583,7 +636,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                         Retrying soon
                       </Badge>
                     )}
-                    {/* Show selected platforms with status indicators */}
+                    {/* Show selected platforms with status indicators from platform_results */}
                     {post.social_platforms && post.social_platforms.length > 0 && (
                       <div className="flex items-center gap-1">
                         <TooltipProvider>
@@ -591,48 +644,41 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                             const IconComponent = getPlatformIcon(platform);
                             const normalizedPlatform = platform.toLowerCase();
                             
-                            // Determine per-platform status
-                            let platformStatus: 'pending' | 'success' | 'failed' = 'pending';
+                            // Get status from platform_results (primary source)
+                            const platformResult = getPlatformStatus(post, platform);
                             
-                            if (post.status === 'published') {
-                              platformStatus = 'success';
-                            } else if (post.status === 'failed' || post.status === 'rescheduled') {
-                              // Check if error message mentions this specific platform
-                              const errorLower = (post.error_message || '').toLowerCase();
-                              const platformNames = [normalizedPlatform];
-                              if (normalizedPlatform === 'x') platformNames.push('twitter');
-                              if (normalizedPlatform === 'twitter') platformNames.push('x');
-                              
-                              const mentionsPlatform = platformNames.some(name => 
-                                errorLower.includes(name)
-                              );
-                              
-                              // If error doesn't mention specific platforms or mentions this one, mark as failed
-                              // If error mentions other platforms but not this one, assume this one succeeded
-                              if (mentionsPlatform || !errorLower) {
-                                platformStatus = 'failed';
-                              } else {
-                                // Check if the error is generic (applies to all) or platform-specific
-                                const isGenericError = !['facebook', 'twitter', 'x', 'instagram', 'mastodon', 'telegram', 'linkedin'].some(
-                                  p => errorLower.includes(p)
-                                );
-                                platformStatus = isGenericError ? 'failed' : 'success';
+                            let platformStatus: 'pending' | 'success' | 'failed' = 'pending';
+                            let tooltipDetail = platform;
+                            
+                            if (platformResult) {
+                              platformStatus = platformResult.status;
+                              if (platformResult.status === 'success') {
+                                tooltipDetail = `${platform}: Published`;
+                              } else if (platformResult.status === 'failed') {
+                                tooltipDetail = `${platform}: Failed${platformResult.error ? ` - ${platformResult.error.slice(0, 50)}${platformResult.error.length > 50 ? '...' : ''}` : ''}`;
                               }
+                            } else if (post.status === 'published') {
+                              // Fallback for older posts without platform_results
+                              platformStatus = 'success';
+                              tooltipDetail = `${platform}: Published`;
+                            } else if (post.status === 'draft' || post.status === 'ready' || post.status === 'scheduled') {
+                              platformStatus = 'pending';
+                              tooltipDetail = `${platform}: Pending`;
                             }
                             
                             // Determine styling based on status
                             let colorClass = getPlatformColor(platform);
                             let StatusIcon = null;
-                            let statusTooltip = platform;
                             
                             if (platformStatus === 'success') {
                               colorClass = 'bg-green-100 text-green-700 border-green-300';
                               StatusIcon = CheckCircle;
-                              statusTooltip = `${platform}: Published`;
                             } else if (platformStatus === 'failed') {
                               colorClass = 'text-red-600 border-red-200 bg-red-50';
                               StatusIcon = AlertTriangle;
-                              statusTooltip = `${platform}: Failed`;
+                            } else if (platformStatus === 'pending') {
+                              colorClass = 'bg-gray-100 text-gray-600 border-gray-300';
+                              StatusIcon = Clock;
                             }
                             
                             return (
@@ -643,8 +689,8 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                                     {StatusIcon && <StatusIcon className="h-2.5 w-2.5 ml-0.5" />}
                                   </Badge>
                                 </TooltipTrigger>
-                                <TooltipContent>
-                                  <span className="capitalize">{statusTooltip}</span>
+                                <TooltipContent className="max-w-xs">
+                                  <span className="capitalize">{tooltipDetail}</span>
                                 </TooltipContent>
                               </Tooltip>
                             );
@@ -725,6 +771,32 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                     </Button>
                   )}
                   
+                  {/* Retry Failed Platforms button for partially_published posts */}
+                  {post.status === 'partially_published' && hasFailedPlatforms(post) && canCreatePosts !== false && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleRetryFailedPlatforms(post)}
+                            disabled={isPublishingPost(post.id)}
+                            className="bg-white border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                          >
+                            {isPublishingPost(post.id) ? (
+                              <RefreshCw className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Retry failed platforms: {getFailedPlatformsList(post).join(', ')}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  
                   {isEditable(post.status) && canCreatePosts !== false ? (
                     <Button
                       variant="outline"
@@ -783,6 +855,44 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                             <>
                               <RefreshCw className="h-3 w-3 mr-1" />
                               Retry Now
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Partial Success Section - Displayed for partially_published posts */}
+              {post.status === 'partially_published' && (
+                <Alert className="mt-4 bg-yellow-50 border-yellow-200">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="ml-2">
+                    <div className="font-medium text-yellow-800 mb-1">
+                      Partially Published
+                    </div>
+                    <p className="text-sm text-yellow-700">
+                      Some platforms published successfully, but {getFailedPlatformsList(post).length} platform(s) failed: {getFailedPlatformsList(post).join(', ')}
+                    </p>
+                    {canCreatePosts !== false && (
+                      <div className="mt-2 flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="bg-white border-yellow-300 text-yellow-700 hover:bg-yellow-100"
+                          onClick={() => handleRetryFailedPlatforms(post)}
+                          disabled={isPublishingPost(post.id)}
+                        >
+                          {isPublishingPost(post.id) ? (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                              Retrying...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-3 w-3 mr-1" />
+                              Retry Failed Platforms
                             </>
                           )}
                         </Button>

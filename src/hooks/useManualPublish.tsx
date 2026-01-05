@@ -8,6 +8,16 @@ interface PublishError {
   tip?: string;
 }
 
+export interface PlatformResult {
+  status: 'pending' | 'success' | 'failed';
+  published_at?: string;
+  post_id?: string;
+  error?: string;
+  attempted_at?: string;
+}
+
+export type PlatformResults = Record<string, PlatformResult>;
+
 const parseErrorResponse = (error: any): PublishError => {
   // Try to extract structured error from response
   if (error?.message) {
@@ -30,9 +40,108 @@ const parseErrorResponse = (error: any): PublishError => {
   return { message: 'Unknown error occurred' };
 };
 
+// Calculate overall post status based on platform results
+const calculateOverallStatus = (
+  targetPlatforms: string[],
+  platformResults: PlatformResults
+): 'published' | 'partially_published' | 'failed' | 'scheduled' => {
+  if (targetPlatforms.length === 0) return 'scheduled';
+  
+  // Normalize platform names for lookup
+  const normalizedPlatforms = targetPlatforms.map(p => p.toLowerCase());
+  
+  const results = normalizedPlatforms.map(p => {
+    // Check both original and normalized names
+    const result = platformResults[p] || platformResults[p.toLowerCase()];
+    return result?.status;
+  });
+  
+  // Filter only platforms that have been attempted
+  const attemptedResults = results.filter(r => r === 'success' || r === 'failed');
+  
+  if (attemptedResults.length === 0) return 'scheduled'; // No attempts yet
+  
+  const successCount = attemptedResults.filter(r => r === 'success').length;
+  const failedCount = attemptedResults.filter(r => r === 'failed').length;
+  
+  // If all target platforms have been attempted
+  if (attemptedResults.length === normalizedPlatforms.length) {
+    if (successCount === normalizedPlatforms.length) return 'published';
+    if (failedCount === normalizedPlatforms.length) return 'failed';
+    return 'partially_published';
+  }
+  
+  // Some platforms still pending
+  if (successCount > 0 && failedCount > 0) return 'partially_published';
+  if (successCount > 0) return 'partially_published';
+  
+  return 'failed';
+};
+
 export const useManualPublish = () => {
   const [publishingPosts, setPublishingPosts] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  // Helper to get current post data including platform_results
+  const getCurrentPostData = async (postId: string) => {
+    const { data } = await supabase
+      .from('posts')
+      .select('social_platforms, platform_results')
+      .eq('id', postId)
+      .single();
+    
+    return {
+      socialPlatforms: Array.isArray(data?.social_platforms) ? data.social_platforms as string[] : [],
+      platformResults: (data?.platform_results as unknown as PlatformResults) || {}
+    };
+  };
+
+  // Helper to update platform result and overall status
+  const updatePlatformResult = async (
+    postId: string,
+    platform: string,
+    result: PlatformResult,
+    currentData: { socialPlatforms: string[], platformResults: PlatformResults }
+  ) => {
+    const normalizedPlatform = platform.toLowerCase();
+    const updatedResults = {
+      ...currentData.platformResults,
+      [normalizedPlatform]: result
+    };
+    
+    // Merge platform into social_platforms if successful
+    let mergedPlatforms = currentData.socialPlatforms;
+    if (result.status === 'success') {
+      mergedPlatforms = [...new Set([...currentData.socialPlatforms, normalizedPlatform])];
+    }
+    
+    // Calculate overall status
+    const overallStatus = calculateOverallStatus(mergedPlatforms, updatedResults);
+    
+    const updateData: Record<string, any> = {
+      platform_results: updatedResults,
+      status: overallStatus,
+      social_platforms: mergedPlatforms
+    };
+    
+    // Set posted_at only when fully published
+    if (overallStatus === 'published') {
+      updateData.posted_at = new Date().toISOString();
+      updateData.error_message = null;
+    } else if (overallStatus === 'partially_published') {
+      // Clear error_message since at least some succeeded
+      updateData.error_message = null;
+    } else if (overallStatus === 'failed' && result.error) {
+      updateData.error_message = result.error;
+    }
+    
+    await supabase
+      .from('posts')
+      .update(updateData)
+      .eq('id', postId);
+    
+    return { updatedResults, overallStatus };
+  };
 
   const publishToMastodon = async (postId: string, message: string, imageUrl?: string) => {
     setPublishingPosts(prev => new Set(prev).add(postId));
@@ -60,30 +169,15 @@ export const useManualPublish = () => {
 
       console.log('[MANUAL-PUBLISH] Mastodon success:', data);
 
-      // Fetch current post to merge platforms
-      const { data: currentPost } = await supabase
-        .from('posts')
-        .select('social_platforms')
-        .eq('id', postId)
-        .single();
+      // Get current post data
+      const currentData = await getCurrentPostData(postId);
       
-      const existingPlatforms = Array.isArray(currentPost?.social_platforms) ? currentPost.social_platforms : [];
-      const mergedPlatforms = [...new Set([...existingPlatforms, 'mastodon'])];
-
-      // Update post status to published with merged platforms
-      const { error: updateError } = await supabase
-        .from('posts')
-        .update({ 
-          status: 'published',
-          posted_at: new Date().toISOString(),
-          error_message: null,
-          social_platforms: mergedPlatforms
-        })
-        .eq('id', postId);
-
-      if (updateError) {
-        console.error('[MANUAL-PUBLISH] Failed to update post status:', updateError);
-      }
+      // Update platform result
+      await updatePlatformResult(postId, 'mastodon', {
+        status: 'success',
+        published_at: new Date().toISOString(),
+        post_id: data?.id || data?.postId
+      }, currentData);
 
       toast({
         title: 'Success',
@@ -99,14 +193,15 @@ export const useManualPublish = () => {
         ? `${parsedError.message}. ${parsedError.tip}`
         : parsedError.message;
 
-      // Update post with detailed error message
-      await supabase
-        .from('posts')
-        .update({ 
-          status: 'failed',
-          error_message: errorMessage
-        })
-        .eq('id', postId);
+      // Get current post data
+      const currentData = await getCurrentPostData(postId);
+      
+      // Update platform result with failure
+      await updatePlatformResult(postId, 'mastodon', {
+        status: 'failed',
+        error: errorMessage,
+        attempted_at: new Date().toISOString()
+      }, currentData);
 
       toast({
         title: 'Mastodon Post Failed',
@@ -150,30 +245,15 @@ export const useManualPublish = () => {
 
       console.log('[MANUAL-PUBLISH] Facebook success:', data);
 
-      // Fetch current post to merge platforms
-      const { data: currentPost } = await supabase
-        .from('posts')
-        .select('social_platforms')
-        .eq('id', postId)
-        .single();
+      // Get current post data
+      const currentData = await getCurrentPostData(postId);
       
-      const existingPlatforms = Array.isArray(currentPost?.social_platforms) ? currentPost.social_platforms : [];
-      const mergedPlatforms = [...new Set([...existingPlatforms, 'facebook'])];
-
-      // Update post status to published with merged platforms
-      const { error: updateError } = await supabase
-        .from('posts')
-        .update({ 
-          status: 'published',
-          posted_at: new Date().toISOString(),
-          error_message: null,
-          social_platforms: mergedPlatforms
-        })
-        .eq('id', postId);
-
-      if (updateError) {
-        console.error('[MANUAL-PUBLISH] Failed to update post status:', updateError);
-      }
+      // Update platform result
+      await updatePlatformResult(postId, 'facebook', {
+        status: 'success',
+        published_at: new Date().toISOString(),
+        post_id: data?.id || data?.postId
+      }, currentData);
 
       toast({
         title: 'Success',
@@ -189,14 +269,15 @@ export const useManualPublish = () => {
         ? `${parsedError.message}. ${parsedError.tip}`
         : parsedError.message;
 
-      // Update post with detailed error message
-      await supabase
-        .from('posts')
-        .update({ 
-          status: 'failed',
-          error_message: errorMessage
-        })
-        .eq('id', postId);
+      // Get current post data
+      const currentData = await getCurrentPostData(postId);
+      
+      // Update platform result with failure
+      await updatePlatformResult(postId, 'facebook', {
+        status: 'failed',
+        error: errorMessage,
+        attempted_at: new Date().toISOString()
+      }, currentData);
 
       toast({
         title: 'Facebook Post Failed',
@@ -244,30 +325,44 @@ export const useManualPublish = () => {
 
       console.log('[MANUAL-PUBLISH] Twitter success:', data);
 
-      // Fetch current post to merge platforms
-      const { data: currentPost } = await supabase
-        .from('posts')
-        .select('social_platforms')
-        .eq('id', postId)
-        .single();
+      // Get current post data
+      const currentData = await getCurrentPostData(postId);
       
-      const existingPlatforms = Array.isArray(currentPost?.social_platforms) ? currentPost.social_platforms : [];
-      const mergedPlatforms = [...new Set([...existingPlatforms, 'twitter', 'x'])];
-
-      // Update post status to published with merged platforms
-      const { error: updateError } = await supabase
-        .from('posts')
-        .update({ 
-          status: 'published',
-          posted_at: new Date().toISOString(),
-          error_message: null,
-          social_platforms: mergedPlatforms
-        })
-        .eq('id', postId);
-
-      if (updateError) {
-        console.error('[MANUAL-PUBLISH] Failed to update post status:', updateError);
+      // Update platform result - include both 'twitter' and 'x' in social_platforms
+      const updatedResults = {
+        ...currentData.platformResults,
+        twitter: {
+          status: 'success' as const,
+          published_at: new Date().toISOString(),
+          post_id: data?.id || data?.postId
+        },
+        x: {
+          status: 'success' as const,
+          published_at: new Date().toISOString(),
+          post_id: data?.id || data?.postId
+        }
+      };
+      
+      const mergedPlatforms = [...new Set([...currentData.socialPlatforms, 'twitter', 'x'])];
+      const overallStatus = calculateOverallStatus(mergedPlatforms, updatedResults);
+      
+      const updateData: Record<string, any> = {
+        platform_results: updatedResults,
+        status: overallStatus,
+        social_platforms: mergedPlatforms
+      };
+      
+      if (overallStatus === 'published') {
+        updateData.posted_at = new Date().toISOString();
+        updateData.error_message = null;
+      } else if (overallStatus === 'partially_published') {
+        updateData.error_message = null;
       }
+      
+      await supabase
+        .from('posts')
+        .update(updateData)
+        .eq('id', postId);
 
       toast({
         title: 'Success',
@@ -288,12 +383,32 @@ export const useManualPublish = () => {
         toastDescription = error.message; // Keep toast shorter
       }
 
-      // Update post with detailed error message
+      // Get current post data
+      const currentData = await getCurrentPostData(postId);
+      
+      // Update platform result with failure for both twitter and x
+      const updatedResults = {
+        ...currentData.platformResults,
+        twitter: {
+          status: 'failed' as const,
+          error: errorMessage,
+          attempted_at: new Date().toISOString()
+        },
+        x: {
+          status: 'failed' as const,
+          error: errorMessage,
+          attempted_at: new Date().toISOString()
+        }
+      };
+      
+      const overallStatus = calculateOverallStatus(currentData.socialPlatforms, updatedResults);
+      
       await supabase
         .from('posts')
         .update({ 
-          status: 'failed',
-          error_message: errorMessage
+          platform_results: updatedResults,
+          status: overallStatus,
+          error_message: overallStatus === 'failed' ? errorMessage : null
         })
         .eq('id', postId);
 
@@ -339,30 +454,15 @@ export const useManualPublish = () => {
 
       console.log('[MANUAL-PUBLISH] Telegram success:', data);
 
-      // Fetch current post to merge platforms
-      const { data: currentPost } = await supabase
-        .from('posts')
-        .select('social_platforms')
-        .eq('id', postId)
-        .single();
+      // Get current post data
+      const currentData = await getCurrentPostData(postId);
       
-      const existingPlatforms = Array.isArray(currentPost?.social_platforms) ? currentPost.social_platforms : [];
-      const mergedPlatforms = [...new Set([...existingPlatforms, 'telegram'])];
-
-      // Update post status to published with merged platforms
-      const { error: updateError } = await supabase
-        .from('posts')
-        .update({ 
-          status: 'published',
-          posted_at: new Date().toISOString(),
-          error_message: null,
-          social_platforms: mergedPlatforms
-        })
-        .eq('id', postId);
-
-      if (updateError) {
-        console.error('[MANUAL-PUBLISH] Failed to update post status:', updateError);
-      }
+      // Update platform result
+      await updatePlatformResult(postId, 'telegram', {
+        status: 'success',
+        published_at: new Date().toISOString(),
+        post_id: data?.message_id?.toString()
+      }, currentData);
 
       toast({
         title: 'Success',
@@ -378,14 +478,15 @@ export const useManualPublish = () => {
         ? `${parsedError.message}. ${parsedError.tip}`
         : parsedError.message;
 
-      // Update post with detailed error message
-      await supabase
-        .from('posts')
-        .update({ 
-          status: 'failed',
-          error_message: errorMessage
-        })
-        .eq('id', postId);
+      // Get current post data
+      const currentData = await getCurrentPostData(postId);
+      
+      // Update platform result with failure
+      await updatePlatformResult(postId, 'telegram', {
+        status: 'failed',
+        error: errorMessage,
+        attempted_at: new Date().toISOString()
+      }, currentData);
 
       toast({
         title: 'Telegram Post Failed',

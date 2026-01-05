@@ -474,6 +474,7 @@ export type Database = {
           industry: string
           media_url: string | null
           niche_info: string | null
+          platform_results: Json | null
           posted_at: string | null
           scheduled_date: string | null
           scheduled_time: string | null
@@ -499,6 +500,7 @@ export type Database = {
           industry: string
           media_url?: string | null
           niche_info?: string | null
+          platform_results?: Json | null
           posted_at?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
@@ -524,6 +526,7 @@ export type Database = {
           industry?: string
           media_url?: string | null
           niche_info?: string | null
+          platform_results?: Json | null
           posted_at?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
