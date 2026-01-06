@@ -284,10 +284,25 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       // Generate AI image if requested
       if (generateWithImages) {
         try {
-          let imagePrompt = customImagePrompt.trim() || `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
-          if (!customImagePrompt.trim() && nicheInfo.trim()) {
-            imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
+          let imagePrompt = '';
+          
+          // If user provided a custom prompt, use it as the primary prompt
+          if (customImagePrompt.trim()) {
+            imagePrompt = customImagePrompt.trim();
+          } else if (!generateCaptionWithAI && caption) {
+            // Use manual caption as the basis for image generation
+            imagePrompt = `Create a professional social media image that represents: ${caption}`;
+            if (hashtags.length > 0) {
+              imagePrompt += `. Related topics: ${hashtags.join(', ')}`;
+            }
+          } else {
+            // Default prompt from AI fields
+            imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+            if (nicheInfo.trim()) {
+              imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
+            }
           }
+          
           if (uploadedImage) {
             imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
           }
