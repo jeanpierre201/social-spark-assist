@@ -206,13 +206,14 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
           // If user provided a custom prompt, use it as the primary prompt
           if (customImagePrompt.trim()) {
             imagePrompt = customImagePrompt.trim();
-            
-            // Only add context if the custom prompt doesn't seem complete
-            if (!customImagePrompt.toLowerCase().includes(industry.toLowerCase()) && industry.trim()) {
-              imagePrompt += `. Context: ${industry.trim()} industry, Goal: ${goal.trim()}`;
+          } else if (!generateCaptionWithAI && caption) {
+            // Use manual caption as the basis for image generation
+            imagePrompt = `Create a professional social media image that represents: ${caption}`;
+            if (hashtags.length > 0) {
+              imagePrompt += `. Related topics: ${hashtags.join(', ')}`;
             }
           } else {
-            // Default prompt if no custom prompt provided
+            // Default prompt from AI fields
             imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
             if (nicheInfo.trim()) {
               imagePrompt += `. Target audience: ${nicheInfo.trim()}`;

@@ -395,17 +395,14 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       // If user provided a custom prompt, use it as the primary prompt
       if (aiImagePrompt.trim()) {
         prompt = aiImagePrompt.trim();
-        
-        // Only add context if the custom prompt doesn't seem complete
-        if (!aiImagePrompt.toLowerCase().includes(post.industry.toLowerCase())) {
-          prompt += `. Context: ${post.industry} industry, Goal: ${post.goal}`;
-        }
       } else {
-        // Default prompt if no custom prompt provided
-        prompt = `Create a professional image for: ${post.goal}. Industry: ${post.industry}. Content: ${formData.caption}. Hashtags: ${formData.hashtags}`;
-        
-        if (post.niche_info) {
-          prompt += `. Additional context: ${post.niche_info}`;
+        // Use caption as the primary prompt for image generation
+        prompt = `Create a professional social media image that represents: ${formData.caption}`;
+        if (formData.hashtags.trim()) {
+          prompt += `. Related topics: ${formData.hashtags.replace(/#/g, '')}`;
+        }
+        if (post.industry) {
+          prompt += `. Industry context: ${post.industry}`;
         }
       }
 
@@ -845,8 +842,9 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               Post Image
             </Label>
             
-            {formData.media_url ? (
-              <div className="space-y-3">
+            {/* Display current image if any */}
+            {formData.media_url && (
+              <div className="mb-3">
                 <div className="relative">
                   <img 
                     src={formData.media_url} 
@@ -854,167 +852,34 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     className="w-full h-48 object-cover rounded-lg border cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => setShowImageLightbox(true)}
                   />
-                   {!isReadOnly && getCurrentImageType() === 'uploaded' && (
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={handleRemoveImage}
-                       className="absolute top-2 right-2 bg-white/90 hover:bg-white"
-                     >
-                       <X className="h-4 w-4" />
-                     </Button>
-                   )}
-                </div>
-                
-                {!isReadOnly && (
-                  <div className="space-y-3">
-                 {/* Image selection buttons */}
-                     {(availableImages.uploaded || availableImages.ai1 || availableImages.ai2) && (
-                        <div className="flex flex-wrap gap-2">
-                          {availableImages.uploaded && (
-                            <Button
-                              variant={getCurrentImageType() === 'uploaded' ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => handleSelectImage('uploaded')}
-                            >
-                              Use Uploaded
-                            </Button>
-                          )}
-                          {availableImages.ai1 && (
-                            <Button
-                              variant={getCurrentImageType() === 'ai1' ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => handleSelectImage('ai1')}
-                            >
-                              Use AI Image 1
-                            </Button>
-                          )}
-                          {availableImages.ai2 && (
-                            <Button
-                              variant={getCurrentImageType() === 'ai2' ? 'default' : 'outline'}
-                              size="sm"
-                              onClick={() => handleSelectImage('ai2')}
-                            >
-                              Use AI Image 2
-                            </Button>
-                          )}
-                        </div>
-                    )}
-                    
-                    {/* Action buttons */}
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('edit-dialog-file-input')?.click()}
-                        disabled={imageUploading}
-                      >
-                        {imageUploading ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
-                          <Upload className="h-4 w-4 mr-2" />
-                        )}
-                        {availableImages.uploaded ? 'Replace Upload' : 'Upload Image'}
-                      </Button>
-                      
-                       <Button
-                         variant="outline"
-                         size="sm"
-                         onClick={() => handleGenerateAIImage(false)}
-                         disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
-                         className="flex-1"
-                       >
-                       {generatingImage ? (
-                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                       ) : (
-                         <Sparkles className="h-4 w-4 mr-2" />
-                       )}
-                       {availableImages.ai1 && availableImages.ai2 
-                         ? 'Max AI Images' 
-                         : availableImages.ai1 
-                           ? 'Generate new AI Image' 
-                           : 'Generate AI Image'}
-                       </Button>
-                     </div>
-                  </div>
-                )}
-              </div>
-            ) : (availableImages.uploaded || availableImages.ai1 || availableImages.ai2) && !isReadOnly ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                <p className="text-sm text-gray-600 mb-3">No image selected</p>
-                <div className="space-y-3">
-                  {/* Image selection buttons */}
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {availableImages.uploaded && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSelectImage('uploaded')}
-                      >
-                        Use Uploaded
-                      </Button>
-                    )}
-                    {availableImages.ai1 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSelectImage('ai1')}
-                      >
-                        Use AI Image 1
-                      </Button>
-                    )}
-                    {availableImages.ai2 && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSelectImage('ai2')}
-                      >
-                        Use AI Image 2
-                      </Button>
-                    )}
-                  </div>
-                  
-                  {/* Action buttons */}
-                  <div className="flex gap-2 justify-center flex-wrap">
+                  {!isReadOnly && getCurrentImageType() === 'uploaded' && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => document.getElementById('edit-dialog-file-input')?.click()}
-                      disabled={imageUploading}
+                      onClick={handleRemoveImage}
+                      className="absolute top-2 right-2 bg-white/90 hover:bg-white"
                     >
-                      {imageUploading ? (
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-2" />
-                      )}
-                      {availableImages.uploaded ? 'Replace Upload' : 'Upload New'}
+                      <X className="h-4 w-4" />
                     </Button>
-                     <Button
-                       variant="outline"
-                       size="sm"
-                       onClick={() => handleGenerateAIImage(false)}
-                       disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
-                     >
-                       {generatingImage ? (
-                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                       ) : (
-                         <Sparkles className="h-4 w-4 mr-2" />
-                       )}
-                       {availableImages.ai1 && availableImages.ai2 
-                         ? 'Max AI Images' 
-                         : availableImages.ai1 
-                           ? 'Generate new AI Image' 
-                           : 'Generate AI'}
-                     </Button>
-                  </div>
+                  )}
                 </div>
               </div>
-            ) : !isReadOnly ? (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+            )}
+
+            {/* No image placeholder */}
+            {!formData.media_url && (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-3">
                 <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-3" />
-                <p className="text-sm text-gray-600 mb-3">No image attached</p>
-                <div className="flex gap-2 justify-center flex-wrap">
+                <p className="text-sm text-gray-600">No image attached</p>
+              </div>
+            )}
+
+            {/* Image buttons - always show when editable */}
+            {!isReadOnly && (
+              <div className="space-y-3">
+                {/* Three-button row based on state */}
+                <div className="flex gap-2 flex-wrap">
+                  {/* Button 1: Upload Image */}
                   <Button
                     variant="outline"
                     size="sm"
@@ -1028,42 +893,91 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
                     )}
                     Upload Image
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleGenerateAIImage(false)}
-                    disabled={generatingImage || generatingWithUpload || Boolean(availableImages.ai1 && availableImages.ai2)}
-                  >
-                    {generatingImage ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
+                  
+                  {/* Button 2: Generate AI Image OR Use AI Image 1 */}
+                  {!availableImages.ai1 ? (
+                    // No AI images yet - show "Generate AI Image"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleGenerateAIImage(false)}
+                      disabled={generatingImage || generatingWithUpload}
+                    >
+                      {generatingImage ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      Generate AI Image
+                    </Button>
+                  ) : (
+                    // Has AI Image 1 - show "Use AI Image 1" button
+                    <Button
+                      variant={getCurrentImageType() === 'ai1' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleSelectImage('ai1')}
+                    >
+                      Use AI Image 1
+                    </Button>
+                  )}
+                  
+                  {/* Button 3: Disabled "Generate new AI Image" OR "Use AI Image 2" */}
+                  {!availableImages.ai1 ? (
+                    // No AI images - show disabled "Generate new AI Image"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled
+                    >
                       <Sparkles className="h-4 w-4 mr-2" />
-                    )}
-                    {availableImages.ai1 
-                      ? 'Generate new AI Image' 
-                      : 'Generate AI Image'}
-                  </Button>
+                      Generate new AI Image
+                    </Button>
+                  ) : !availableImages.ai2 ? (
+                    // Has AI1 but no AI2 - show enabled "Generate new AI Image"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleGenerateAIImage(false)}
+                      disabled={generatingImage || generatingWithUpload}
+                    >
+                      {generatingImage ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4 mr-2" />
+                      )}
+                      Generate new AI Image
+                    </Button>
+                  ) : (
+                    // Has both AI1 and AI2 - show "Use AI Image 2" button
+                    <Button
+                      variant={getCurrentImageType() === 'ai2' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => handleSelectImage('ai2')}
+                    >
+                      Use AI Image 2
+                    </Button>
+                  )}
                 </div>
-              </div>
-            ) : null}
 
-            {/* AI Image Prompt Text Area */}
-            {!isReadOnly && !(availableImages.ai1 && availableImages.ai2) && (
-              <div className="mt-4">
-                <Label htmlFor="ai-prompt" className="text-sm font-medium mb-2 block">
-                  Image Description (Optional)
-                </Label>
-                <Textarea
-                  id="ai-prompt"
-                  value={aiImagePrompt}
-                  onChange={(e) => setAiImagePrompt(e.target.value)}
-                  placeholder="Describe how you want your image to look... e.g., 'Modern office setting with laptop, professional lighting, blue color scheme'"
-                  rows={2}
-                  className="text-sm"
-                />
-                 <p className="text-xs text-muted-foreground mt-1">
-                   💡 DALL-E 3 creates images from text descriptions only. Describe visual elements like colors, style, objects, and composition for best results.
-                 </p>
+                {/* AI Image Prompt Text Area - only show if can generate more AI images */}
+                {!(availableImages.ai1 && availableImages.ai2) && (
+                  <div className="mt-2">
+                    <Label htmlFor="ai-prompt" className="text-sm font-medium mb-2 block">
+                      Image Description (Optional)
+                    </Label>
+                    <Textarea
+                      id="ai-prompt"
+                      value={aiImagePrompt}
+                      onChange={(e) => setAiImagePrompt(e.target.value)}
+                      placeholder="Describe how you want your image to look... e.g., 'Modern office setting with laptop, professional lighting, blue color scheme'"
+                      rows={2}
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      💡 DALL-E 3 creates images from text descriptions only. Describe visual elements like colors, style, objects, and composition for best results.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
 
