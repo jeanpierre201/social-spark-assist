@@ -125,17 +125,18 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
       return;
     }
 
-    if (!industry.trim() || !goal.trim()) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in at least industry and goal fields",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Validate manual content if AI is disabled
-    if (!generateCaptionWithAI) {
+    // Validate based on content mode
+    if (generateCaptionWithAI) {
+      if (!industry.trim() || !goal.trim()) {
+        toast({
+          title: "Missing Information",
+          description: "Please fill in at least industry and goal fields",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      // Validate manual content
       if (!manualCaption.trim()) {
         toast({
           title: "Missing Caption",
@@ -144,15 +145,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         });
         return;
       }
-      if (!manualHashtags.trim()) {
-        toast({
-          title: "Missing Hashtags",
-          description: "Please add hashtags for your post",
-          variant: "destructive",
-        });
-        return;
-      }
-      if (!validateManualHashtags(manualHashtags)) {
+      if (manualHashtags.trim() && !validateManualHashtags(manualHashtags)) {
         toast({
           title: "Invalid Hashtags",
           description: "Each hashtag must start with #",
@@ -427,69 +420,79 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-2">
-          <Label htmlFor="industry">Industry *</Label>
-          <Input
-            id="industry"
-            placeholder="e.g., Technology, Fashion, Food..."
-            value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
-            maxLength={100}
-          />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="goal">Content Goal *</Label>
-          <Textarea
-            id="goal"
-            placeholder="e.g., Promote new product launch, increase brand awareness..."
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            maxLength={200}
-            rows={3}
-          />
-        </div>
-
-        <div className="grid gap-2">
-          <Label htmlFor="niche">Niche Information (Optional)</Label>
-          <Textarea
-            id="niche"
-            placeholder="Any specific details about your target audience or niche..."
-            value={nicheInfo}
-            onChange={(e) => setNicheInfo(e.target.value)}
-            maxLength={300}
-            rows={2}
-          />
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Checkbox
-            id="include-emojis"
-            checked={includeEmojis}
-            onCheckedChange={(checked) => setIncludeEmojis(checked as boolean)}
-          />
-          <Label htmlFor="include-emojis" className="text-sm">
-            Include emojis in content
-          </Label>
-        </div>
-
-        {/* AI Caption Generation Toggle */}
+        {/* AI Caption Generation Toggle - at the top */}
         <div className="flex items-center space-x-2">
           <Checkbox
             id="generate-caption-ai"
             checked={generateCaptionWithAI}
             onCheckedChange={(checked) => setGenerateCaptionWithAI(checked as boolean)}
           />
-          <Label htmlFor="generate-caption-ai" className="text-sm">
+          <Label htmlFor="generate-caption-ai" className="text-sm font-medium">
             Create text caption and hashtags with AI
           </Label>
         </div>
 
-        {/* Manual Caption and Hashtags (shown when AI is disabled) */}
+        {/* AI Content Fields - shown when checkbox is checked */}
+        {generateCaptionWithAI && (
+          <>
+            <div className="grid gap-2">
+              <Label htmlFor="industry">Industry *</Label>
+              <Input
+                id="industry"
+                placeholder="e.g., Technology, Fashion, Food..."
+                value={industry}
+                onChange={(e) => setIndustry(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="goal">Content Goal *</Label>
+              <Textarea
+                id="goal"
+                placeholder="e.g., Promote new product launch, increase brand awareness..."
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                maxLength={200}
+                rows={3}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="niche">Niche Information (Optional)</Label>
+              <Textarea
+                id="niche"
+                placeholder="Any specific details about your target audience or niche..."
+                value={nicheInfo}
+                onChange={(e) => setNicheInfo(e.target.value)}
+                maxLength={300}
+                rows={2}
+              />
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="include-emojis"
+                checked={includeEmojis}
+                onCheckedChange={(checked) => setIncludeEmojis(checked as boolean)}
+              />
+              <Label htmlFor="include-emojis" className="text-sm">
+                Include emojis in content
+              </Label>
+            </div>
+          </>
+        )}
+
+        {/* Manual Caption and Hashtags - shown when AI is disabled */}
         {!generateCaptionWithAI && (
           <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
             <div>
-              <Label htmlFor="manual-caption">Caption *</Label>
+              <div className="flex justify-between items-center mb-1">
+                <Label htmlFor="manual-caption">Caption *</Label>
+                <span className="text-xs text-muted-foreground">
+                  {manualCaption.length}/2000
+                </span>
+              </div>
               <Textarea
                 id="manual-caption"
                 placeholder="Write your post caption..."
@@ -500,7 +503,12 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
               />
             </div>
             <div>
-              <Label htmlFor="manual-hashtags">Hashtags *</Label>
+              <div className="flex justify-between items-center mb-1">
+                <Label htmlFor="manual-hashtags">Hashtags</Label>
+                <span className="text-xs text-muted-foreground">
+                  {manualHashtags.length}/500
+                </span>
+              </div>
               <Textarea
                 id="manual-hashtags"
                 placeholder="#marketing #socialmedia #business (each hashtag must start with #)"
@@ -717,7 +725,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
         <Button 
           onClick={handleGenerateContent}
-          disabled={isGenerating || !industry.trim() || !goal.trim()}
+          disabled={isGenerating || (generateCaptionWithAI ? (!industry.trim() || !goal.trim()) : !manualCaption.trim())}
           className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
         >
           {isGenerating ? (
@@ -728,7 +736,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              Generate Content
+              {generateCaptionWithAI ? 'Generate Content' : 'Create Post'}
             </>
           )}
         </Button>
