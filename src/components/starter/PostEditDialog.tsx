@@ -78,6 +78,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   const [showImageLightbox, setShowImageLightbox] = useState(false);
   const [aiImagePrompt, setAiImagePrompt] = useState('');
   const [originalPost, setOriginalPost] = useState<Post | null>(null);
+  const [originalFormData, setOriginalFormData] = useState<typeof formData | null>(null);
   const [availableImages, setAvailableImages] = useState({
     uploaded: '',
     ai1: '',
@@ -203,7 +204,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         tag.startsWith('#') ? tag : `#${tag}`
       );
       
-      setFormData({
+      const initialFormData = {
         caption: post.generated_caption || '',
         hashtags: hashtagsWithPrefix.join(' '),
         scheduled_date: localDate,
@@ -215,7 +216,11 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         ai_generated_image_1_url: post.ai_generated_image_1_url || '',
         ai_generated_image_2_url: post.ai_generated_image_2_url || '',
         selected_image_type: post.selected_image_type || ''
-      });
+      };
+      
+      setFormData(initialFormData);
+      // Store original form data for dirty checking
+      setOriginalFormData(initialFormData);
 
       // Set available images for switching
       setAvailableImages({
@@ -708,8 +713,8 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   // Safety check - early return for null post
   if (!post) return null;
 
-  // Defensive check for malformed post data
-  if (!post.id || typeof post.generated_caption !== 'string') {
+  // Defensive check for malformed post data - allow null/undefined generated_caption (will be normalized)
+  if (!post.id) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-md">
@@ -729,6 +734,22 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       </Dialog>
     );
   }
+
+  // Check if form has been modified (dirty state)
+  const hasChanges = (): boolean => {
+    if (!originalFormData) return false;
+    return (
+      formData.caption !== originalFormData.caption ||
+      formData.hashtags !== originalFormData.hashtags ||
+      formData.scheduled_date !== originalFormData.scheduled_date ||
+      formData.scheduled_time !== originalFormData.scheduled_time ||
+      formData.media_url !== originalFormData.media_url ||
+      formData.selected_image_type !== originalFormData.selected_image_type ||
+      JSON.stringify(formData.social_platforms.sort()) !== JSON.stringify(originalFormData.social_platforms.sort())
+    );
+  };
+  
+  const isDirty = hasChanges();
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -1317,7 +1338,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               {isReadOnly ? 'Close' : 'Cancel'}
             </Button>
             {!isReadOnly && (
-              <Button onClick={handleSave} disabled={loading}>
+              <Button onClick={handleSave} disabled={loading || !isDirty}>
                 {loading ? 'Saving...' : 'Save Changes'}
               </Button>
             )}
