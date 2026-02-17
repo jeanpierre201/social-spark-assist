@@ -16,12 +16,10 @@ const ProPlanPricing = () => {
   const navigate = useNavigate();
 
   const features = [
-    { icon: Sparkles, text: "Unlimited posts per month" },
-    { icon: Zap, text: "Multiple content variations (3-5 versions per post)" },
+    { icon: Sparkles, text: "100 posts per month" },
     { icon: BarChart3, text: "Advanced analytics & insights" },
     { icon: Users, text: "Team collaboration tools" },
     { icon: Crown, text: "Priority support" },
-    { icon: Check, text: "Auto-posting to all platforms" },
     { icon: Check, text: "Custom branding options" },
     { icon: Check, text: "Advanced AI optimization" }
   ];

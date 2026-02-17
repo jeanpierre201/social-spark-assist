@@ -104,10 +104,7 @@ const Pricing = () => {
       platforms: [...freePlatforms, ...starterPlatforms, ...proPlatforms],
       features: [
         "Everything in Starter",
-        "Unlimited posts per month",
-        "Multiple content variations",
-        "Advanced AI features",
-        "Auto-posting to all platforms",
+        "100 posts per month",
         "Advanced analytics & insights",
         "Priority support",
         "Team collaboration",
