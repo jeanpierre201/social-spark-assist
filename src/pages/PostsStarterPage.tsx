@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Home, ArrowLeft, List, Calendar as CalendarIcon, Clock, Plus, AlertTriangle } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -98,6 +98,7 @@ interface PostData {
   generated_hashtags?: string[];
   media_url?: string;
   created_at?: string;
+  status?: string;
 }
 
 type ViewMode = 'list' | 'calendar';
@@ -107,8 +108,10 @@ const PostsStarterPage = () => {
   const { subscribed } = useSubscription();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [posts, setPosts] = useState<PostData[]>([]);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const initialViewMode = (location.state as any)?.viewMode === 'calendar' ? 'calendar' : 'list';
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [selectedPost, setSelectedPost] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -140,7 +143,7 @@ const PostsStarterPage = () => {
           industry: post.industry,
           goal: post.goal,
           nicheInfo: post.niche_info || '',
-          scheduledDate: post.scheduled_date,
+          scheduledDate: post.scheduled_date || post.posted_at || post.created_at,
           scheduledTime: post.scheduled_time,
           generatedContent: {
             caption: post.generated_caption,
@@ -148,7 +151,8 @@ const PostsStarterPage = () => {
             image: post.media_url,
             isGenerated: false
           },
-          created_at: post.created_at
+          created_at: post.created_at,
+          status: post.status || 'draft'
         })) || [];
 
         setPosts(transformedPosts);
