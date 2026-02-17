@@ -35,6 +35,7 @@ interface Post {
   social_platforms: string[];
   status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed' | 'partially_published';
   created_at: string;
+  updated_at: string | null;
   posted_at: string | null;
   error_message?: string | null;
 }
@@ -178,6 +179,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
         social_platforms: post.social_platforms || [],
         status: post.status,
         created_at: post.created_at,
+        updated_at: post.updated_at || null,
         posted_at: post.posted_at,
         error_message: post.error_message || null
       }));
