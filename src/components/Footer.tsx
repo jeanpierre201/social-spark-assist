@@ -1,5 +1,5 @@
 
-import { Twitter, Instagram, Linkedin, Facebook } from 'lucide-react';
+import { Instagram, Music2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoNew from '@/assets/rombipost-logo-new.png';
 
@@ -40,10 +40,11 @@ const Footer = () => {
               Empowering businesses with AI-driven social media management and content creation.
             </p>
             <div className="flex space-x-4">
-              <Twitter className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
-              <Instagram className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
-              <Linkedin className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
-              <Facebook className="h-5 w-5 text-gray-400 hover:text-white cursor-pointer transition-colors" />
+              <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" className="text-muted-foreground hover:text-white cursor-pointer transition-colors">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <Instagram className="h-5 w-5 text-muted-foreground hover:text-white cursor-pointer transition-colors" />
+              <Music2 className="h-5 w-5 text-muted-foreground hover:text-white cursor-pointer transition-colors" />
             </div>
           </div>
           
