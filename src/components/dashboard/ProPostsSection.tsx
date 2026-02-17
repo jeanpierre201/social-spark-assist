@@ -69,7 +69,7 @@ interface ProPostsSectionProps {
 const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePosts = true }: ProPostsSectionProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { publishToFacebook, publishToTwitter, isPublishingPost } = useManualPublish();
+  const { publishToFacebook, publishToTwitter, publishToMastodon, publishToTelegram, isPublishingPost } = useManualPublish();
   const { accounts } = useSocialAccounts();
   const [posts, setPosts] = useState<Post[]>([]);
   const [transformedPosts, setTransformedPosts] = useState<PostData[]>([]);
@@ -402,7 +402,6 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
 
   // Manual publish to social platforms
   const handleManualPublish = async (post: Post) => {
-    // Get the platforms selected for this specific post
     const selectedPlatforms = (post.social_platforms as string[]) || [];
     
     if (selectedPlatforms.length === 0) {
@@ -414,23 +413,33 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
       return;
     }
 
-    // Find connected accounts for selected platforms only
+    // Find connected accounts for selected platforms
+    const mastodonAccount = selectedPlatforms.includes('mastodon')
+      ? accounts.find(acc => acc.platform === 'mastodon' && acc.is_active)
+      : null;
+    const telegramAccount = selectedPlatforms.includes('telegram')
+      ? accounts.find(acc => acc.platform === 'telegram' && acc.is_active)
+      : null;
     const facebookAccount = selectedPlatforms.includes('facebook') 
       ? accounts.find(acc => acc.platform === 'facebook' && acc.is_active)
       : null;
-    const twitterAccount = selectedPlatforms.includes('twitter')
-      ? accounts.find(acc => acc.platform === 'twitter' && acc.is_active)
+    const twitterAccount = (selectedPlatforms.includes('twitter') || selectedPlatforms.includes('x'))
+      ? accounts.find(acc => (acc.platform === 'twitter' || acc.platform === 'x') && acc.is_active)
       : null;
     
     // Check if at least one selected platform has a connected account
     const hasConnectedAccount = 
+      (selectedPlatforms.includes('mastodon') && mastodonAccount) ||
+      (selectedPlatforms.includes('telegram') && telegramAccount) ||
       (selectedPlatforms.includes('facebook') && facebookAccount) ||
-      (selectedPlatforms.includes('twitter') && twitterAccount);
+      ((selectedPlatforms.includes('twitter') || selectedPlatforms.includes('x')) && twitterAccount);
     
     if (!hasConnectedAccount) {
       const missingPlatforms = selectedPlatforms.filter(p => {
+        if (p === 'mastodon') return !mastodonAccount;
+        if (p === 'telegram') return !telegramAccount;
         if (p === 'facebook') return !facebookAccount;
-        if (p === 'twitter') return !twitterAccount;
+        if (p === 'twitter' || p === 'x') return !twitterAccount;
         return true;
       });
       toast({
@@ -444,7 +453,24 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
     const message = `${post.generated_caption}\n\n${post.generated_hashtags.join(' ')}`;
     const results = [];
 
-    // Only publish to platforms that are selected AND connected
+    if (mastodonAccount && selectedPlatforms.includes('mastodon')) {
+      const result = await publishToMastodon(
+        post.id,
+        message,
+        post.media_url || undefined
+      );
+      results.push({ platform: 'Mastodon', ...result });
+    }
+
+    if (telegramAccount && selectedPlatforms.includes('telegram')) {
+      const result = await publishToTelegram(
+        post.id,
+        message,
+        post.media_url || undefined
+      );
+      results.push({ platform: 'Telegram', ...result });
+    }
+
     if (facebookAccount && selectedPlatforms.includes('facebook')) {
       const result = await publishToFacebook(
         post.id,
@@ -455,7 +481,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
       results.push({ platform: 'Facebook', ...result });
     }
 
-    if (twitterAccount && selectedPlatforms.includes('twitter')) {
+    if (twitterAccount && (selectedPlatforms.includes('twitter') || selectedPlatforms.includes('x'))) {
       const result = await publishToTwitter(
         post.id,
         twitterAccount.id,
