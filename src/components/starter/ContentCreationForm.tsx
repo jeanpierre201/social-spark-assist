@@ -29,6 +29,9 @@ interface PostData {
   scheduledDate?: string;
   scheduledTime?: string;
   generatedContent?: GeneratedContent;
+  generated_caption?: string;
+  generated_hashtags?: string[];
+  media_url?: string;
 }
 
 interface ContentCreationFormProps {
@@ -413,6 +416,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           generated_caption: generatedContent.caption,
           generated_hashtags: generatedContent.hashtags,
           media_url: imageUrl || null,
+          uploaded_image_url: (!isImageGenerated && imageUrl) ? imageUrl : null,
+          ai_generated_image_1_url: isImageGenerated ? imageUrl : null,
+          selected_image_type: isImageGenerated ? 'ai_generated_1' : (imageUrl ? 'uploaded' : null),
           status: postStatus
         });
 
@@ -424,7 +430,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         nicheInfo: nicheInfo.trim(),
         scheduledDate: scheduledDate,
         scheduledTime: scheduledTime,
-        generatedContent
+        generatedContent,
+        generated_caption: caption,
+        generated_hashtags: hashtags,
+        media_url: imageUrl || undefined
       };
 
       // Increment monthly usage counter

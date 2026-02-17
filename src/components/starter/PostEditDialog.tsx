@@ -166,7 +166,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
   };
 
   useEffect(() => {
-    if (post) {
+    if (post && open) {
       // Store original post data for cancel functionality
       setOriginalPost(post);
       
@@ -231,7 +231,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       
       setAiImagePrompt('');
     }
-  }, [post]);
+  }, [post, open]);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

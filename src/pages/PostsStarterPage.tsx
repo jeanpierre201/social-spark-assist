@@ -186,8 +186,34 @@ const PostsStarterPage = () => {
     setShowEditDialog(true);
   };
 
-  const handlePostUpdated = () => {
+  const handlePostUpdated = async () => {
     setPostsRefreshTrigger(prev => prev + 1);
+    
+    // Re-fetch the selected post to update the edit dialog with fresh data
+    if (selectedPost?.id) {
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', selectedPost.id)
+          .single();
+        
+        if (!error && data) {
+          const normalizedPost = {
+            ...data,
+            social_platforms: Array.isArray(data.social_platforms) ? data.social_platforms : [],
+            generated_hashtags: Array.isArray(data.generated_hashtags) ? data.generated_hashtags : [],
+            generated_caption: data.generated_caption || '',
+            industry: data.industry || '',
+            goal: data.goal || '',
+            niche_info: data.niche_info || '',
+          };
+          setSelectedPost(normalizedPost);
+        }
+      } catch (err) {
+        console.error('Error re-fetching post:', err);
+      }
+    }
   };
 
   if (isLoading || isLoadingPosts) {
