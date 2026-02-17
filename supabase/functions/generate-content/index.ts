@@ -16,15 +16,44 @@ serve(async (req) => {
   try {
     console.log('=== Generate Content Function Started ===');
 
+    // Authenticate the user from the JWT token
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize Supabase client with service role for DB operations
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Create a client with the user's token to verify identity
+    const supabaseAnon = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } }
+    });
+    const { data: claimsData, error: claimsError } = await supabaseAnon.auth.getClaims(authHeader.replace('Bearer ', ''));
+    if (claimsError || !claimsData?.claims?.sub) {
+      console.error('Auth error:', claimsError);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const userId = claimsData.claims.sub as string;
+    console.log('Authenticated user:', userId);
+
     // Parse request body
     const body = await req.json();
     console.log('Request body:', JSON.stringify(body, null, 2));
 
     // Validate required fields
-    if (!body.industry || !body.goal || !body.userId) {
+    if (!body.industry || !body.goal) {
       console.error('Missing required fields');
       return new Response(
-        JSON.stringify({ error: 'Industry, Goal, and User ID are required' }),
+        JSON.stringify({ error: 'Industry and Goal are required' }),
         { 
           status: 400, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
@@ -32,16 +61,11 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     // Get user's subscription status
     const { data: subscriber, error: subError } = await supabase
       .from('subscribers')
       .select('subscribed, subscription_tier')
-      .eq('user_id', body.userId)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (subError) {
@@ -57,7 +81,7 @@ serve(async (req) => {
     // For free users, check monthly limit and use Lovable AI
     if (isFreeUser) {
       const { data: monthlyUsage, error: usageError } = await supabase
-        .rpc('get_monthly_usage_count', { user_uuid: body.userId });
+        .rpc('get_monthly_usage_count', { user_uuid: userId });
 
       if (usageError) {
         console.error('Error checking monthly usage:', usageError);
