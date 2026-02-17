@@ -51,14 +51,14 @@ const iconMap: Record<string, LucideIcon | typeof XIcon> = {
 };
 
 const colorMap: Record<string, string> = {
-  mastodon: 'text-[#6364FF]',
-  telegram: 'text-[#0088CC]',
-  instagram: 'text-[#E4405F]',
-  facebook: 'text-[#1877F2]',
-  linkedin: 'text-[#0A66C2]',
-  x: 'text-foreground',
-  twitter: 'text-foreground',
-  tiktok: 'text-foreground',
+  mastodon: 'text-primary',
+  telegram: 'text-primary',
+  instagram: 'text-primary',
+  facebook: 'text-primary',
+  linkedin: 'text-primary',
+  x: 'text-primary',
+  twitter: 'text-primary',
+  tiktok: 'text-primary',
 };
 
 export const PlatformIcon = ({
