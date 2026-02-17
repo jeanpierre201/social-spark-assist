@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, List, Calendar as CalendarIcon, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, isSameDay } from 'date-fns';
+import { toZonedTime } from 'date-fns-tz';
 import CalendarDisplay from '@/components/starter/calendar/CalendarDisplay';
 import PostsList from '@/components/starter/calendar/PostsList';
 import PostEditDialog from '@/components/starter/PostEditDialog';
@@ -189,21 +190,46 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
       setTotalPages(Math.ceil((count || 0) / postsPerPage));
 
       // Transform posts for calendar view
-      const transformed = typedPosts.map(post => ({
-        id: post.id,
-        industry: post.industry,
-        goal: post.goal,
-        nicheInfo: post.niche_info || '',
-        scheduledDate: post.scheduled_date || post.posted_at || post.created_at,
-        scheduledTime: post.scheduled_time,
-        generatedContent: {
-          caption: post.generated_caption,
-          hashtags: post.generated_hashtags || [],
-          image: post.media_url,
-        },
-        created_at: post.created_at,
-        status: post.status
-      }));
+      const transformed = typedPosts.map(post => {
+        // Convert UTC scheduled_date+time to user's local date for calendar placement
+        let localScheduledDate = post.scheduled_date || post.posted_at || post.created_at;
+        if (post.scheduled_date && post.scheduled_time) {
+          try {
+            const tz = post.user_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const utcDateTimeStr = `${post.scheduled_date}T${post.scheduled_time}Z`;
+            const localDate = toZonedTime(utcDateTimeStr, tz);
+            if (!isNaN(localDate.getTime())) {
+              localScheduledDate = format(localDate, 'yyyy-MM-dd');
+            }
+          } catch (e) {
+            console.error('Error converting scheduled date to local:', e);
+          }
+        } else if (post.posted_at) {
+          try {
+            const tz = post.user_timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const localDate = toZonedTime(new Date(post.posted_at), tz);
+            if (!isNaN(localDate.getTime())) {
+              localScheduledDate = format(localDate, 'yyyy-MM-dd');
+            }
+          } catch (e) { /* fallback to raw value */ }
+        }
+
+        return {
+          id: post.id,
+          industry: post.industry,
+          goal: post.goal,
+          nicheInfo: post.niche_info || '',
+          scheduledDate: localScheduledDate,
+          scheduledTime: post.scheduled_time,
+          generatedContent: {
+            caption: post.generated_caption,
+            hashtags: post.generated_hashtags || [],
+            image: post.media_url,
+          },
+          created_at: post.created_at,
+          status: post.status
+        };
+      });
       setTransformedPosts(transformed);
     } catch (error) {
       console.error('Error fetching posts:', error);
