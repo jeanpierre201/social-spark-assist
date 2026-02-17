@@ -48,7 +48,7 @@ interface Post {
   scheduled_time: string | null;
   user_timezone: string | null;
   social_platforms: string[];
-  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
+  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed' | 'partially_published';
   created_at: string;
   posted_at: string | null;
   error_message?: string | null;
