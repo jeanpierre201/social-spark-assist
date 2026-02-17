@@ -6,6 +6,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
 import { Button } from '@/components/ui/button';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
 import ProPostsSection from '@/components/dashboard/ProPostsSection';
 
@@ -52,48 +53,7 @@ const PostsProPage = () => {
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={false} title="Your Posts" />
 
-        {/* Navigation tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Overview
-              </button>
-              <Link 
-                to="/dashboard/content-generator-pro"
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Content Generator
-              </Link>
-              <button
-                className="border-purple-500 text-purple-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Your Posts
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/analytics')}
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Advanced Analytics
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/team')}
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Team Collaboration
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/social')}
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Social Accounts
-              </button>
-            </nav>
-          </div>
-        </div>
+        <ProDashboardNav />
 
         <div className="space-y-6">
           {/* Expired Banner */}
