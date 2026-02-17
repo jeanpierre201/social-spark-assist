@@ -47,7 +47,7 @@ export const SubscriptionProvider = ({ children }: { children: React.ReactNode }
       const { data, error } = await supabase
         .from('subscribers')
         .select('subscribed, subscription_tier, subscription_end')
-        .or(`user_id.eq.${user.id},email.eq.${user.email}`)
+        .eq('user_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
