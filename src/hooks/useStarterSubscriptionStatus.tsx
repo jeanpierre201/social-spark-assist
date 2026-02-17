@@ -42,9 +42,8 @@ export const useStarterSubscriptionStatus = () => {
         if (subscriberData && subscriberData.subscribed && 
             (subscriberData.subscription_tier === 'Starter' || subscriberData.subscription_tier === 'Pro')) {
           
-          // Use updated_at as subscription start date - it reflects when the tier was last changed
-          // (e.g., promo code redemption or Stripe upgrade), not when the record was first created
-          subscriptionStart = subscriberData.updated_at;
+          // Get subscription start date from created_at or updated_at when subscription became active
+          subscriptionStart = subscriberData.created_at;
           setSubscriptionStartDate(subscriptionStart);
 
           // Calculate if we're within 30 days of subscription start
