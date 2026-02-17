@@ -606,11 +606,16 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
       let utcTimeStr: string | null = formData.scheduled_time;
       
       if (formData.scheduled_date && formData.scheduled_time) {
-        const localDateTimeStr = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
-        const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
-        // Use toISOString() to correctly extract UTC components
-        utcDateStr = utcDate.toISOString().split('T')[0]; // YYYY-MM-DD in UTC
-        utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5); // HH:MM in UTC
+        try {
+          const localDateTimeStr = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
+          const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
+          if (!isNaN(utcDate.getTime())) {
+            utcDateStr = utcDate.toISOString().split('T')[0];
+            utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5);
+          }
+        } catch (e) {
+          console.error('Error converting schedule to UTC:', e);
+        }
       }
       
       // Determine status based on social media and scheduling
@@ -1288,11 +1293,14 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
               {formData.scheduled_date && formData.scheduled_time && (
                 <p className="text-xs text-muted-foreground">
                   {(() => {
-                    const localDateTimeStr = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
-                    const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
-                    const utcDateStr = utcDate.toISOString().split('T')[0];
-                    const utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5);
-                    return `Publishing at UTC: ${utcDateStr} ${utcTimeStr}`;
+                    try {
+                      const localDateTimeStr = `${formData.scheduled_date}T${formData.scheduled_time}:00`;
+                      const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
+                      if (isNaN(utcDate.getTime())) return 'Invalid schedule';
+                      const utcDateStr = utcDate.toISOString().split('T')[0];
+                      const utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5);
+                      return `Publishing at UTC: ${utcDateStr} ${utcTimeStr}`;
+                    } catch { return 'Invalid schedule'; }
                   })()}
                 </p>
               )}
