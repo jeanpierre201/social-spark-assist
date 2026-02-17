@@ -130,7 +130,7 @@ const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayP
               head_cell: "text-muted-foreground rounded-md flex-1 h-16 font-normal text-sm flex items-center justify-center",
               row: "flex w-full mt-2",
               cell: "flex-1 h-20 text-center text-sm p-0 relative [&:has([aria-selected].day-range-end)]:rounded-r-md [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-              day: "h-20 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+              day: "h-20 w-full p-0 font-normal aria-selected:opacity-100 aria-selected:text-primary-foreground hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
             }}
             modifiers={{
               hasPost: getDatesWithPosts()
