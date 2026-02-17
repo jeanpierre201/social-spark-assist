@@ -448,6 +448,9 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
                   <SelectItem value="ready">Ready</SelectItem>
                   <SelectItem value="scheduled">Scheduled</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
+                  <SelectItem value="partially_published">Partially Published</SelectItem>
+                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value="rescheduled">Rescheduled</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
