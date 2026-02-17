@@ -436,6 +436,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         // Don't block the user, just log the error
       }
 
+      // Notify parent component FIRST (before state updates that trigger re-renders)
+      onPostCreated?.(newPost);
+
       setPosts(prev => [...prev, newPost]);
       setMonthlyPosts(prev => prev + 1);
 
@@ -462,14 +465,6 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           input.value = '';
         }
       });
-
-      toast({
-        title: "Content Generated!",
-        description: "Your post has been generated and added to your collection",
-      });
-
-      // Notify parent component to refresh
-      onPostCreated?.(newPost);
 
     } catch (error) {
       console.error('Error generating content:', error);
