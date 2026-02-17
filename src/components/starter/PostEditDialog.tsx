@@ -36,7 +36,7 @@ interface Post {
   scheduled_time: string | null;
   user_timezone: string | null;
   social_platforms: string[];
-  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed';
+  status: 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed' | 'partially_published';
   created_at: string;
   posted_at: string | null;
   error_message?: string | null;
@@ -92,7 +92,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
     scheduled_date: '',
     scheduled_time: '',
     social_platforms: [] as string[],
-    status: 'draft' as 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed',
+    status: 'draft' as 'draft' | 'ready' | 'scheduled' | 'published' | 'archived' | 'rescheduled' | 'failed' | 'partially_published',
     media_url: '',
     uploaded_image_url: '',
     ai_generated_image_1_url: '',
@@ -778,7 +778,7 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
             <div>
               <Label className="text-sm font-medium">Status</Label>
               <Badge className={getStatusColor(post.status)}>
-                {post.status}
+                {post.status === 'partially_published' ? 'Partial' : post.status === 'rescheduled' ? 'Retrying' : post.status}
               </Badge>
             </div>
             <div>

@@ -533,7 +533,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
               <SelectItem value="published">Published</SelectItem>
               <SelectItem value="partially_published">Partially Published</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="rescheduled">Rescheduled</SelectItem>
+              <SelectItem value="rescheduled">Retrying</SelectItem>
               <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
@@ -613,7 +613,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <Badge className={getStatusColor(post.status)}>
-                      {post.status === 'partially_published' ? 'Partial' : post.status}
+                      {post.status === 'partially_published' ? 'Partial' : post.status === 'rescheduled' ? 'Retrying' : post.status}
                     </Badge>
                     <span className="text-sm text-gray-500">
                       {post.industry}
