@@ -5,6 +5,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useManualPublish } from '@/hooks/useManualPublish';
+import type { PlatformResults } from '@/hooks/useManualPublish';
+import { PlatformIcon } from '@/components/PlatformIcon';
 import { 
   Calendar,
   Clock,
@@ -14,9 +16,16 @@ import {
   Trash2,
   AlertCircle,
   Send,
+  RefreshCw,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useEffect, useState } from 'react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface PostsDisplayProps {
   posts: any[];
@@ -29,7 +38,7 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
   const { toast } = useToast();
   const { subscribed } = useSubscription();
   const { accounts } = useSocialAccounts();
-  const { publishToMastodon, publishToTelegram, isPublishingPost } = useManualPublish();
+  const { publishToMastodon, publishToTelegram, publishToFacebook, publishToTwitter, publishToInstagram, isPublishingPost } = useManualPublish();
   const isFreeUser = !subscribed;
   
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -38,13 +47,13 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
-    }, 60000); // Update every minute
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
   const getTimeRemaining = (createdAt: string) => {
     const created = new Date(createdAt);
-    const expiresAt = new Date(created.getTime() + 24 * 60 * 60 * 1000); // 24 hours later
+    const expiresAt = new Date(created.getTime() + 24 * 60 * 60 * 1000);
     const now = currentTime;
     const diff = expiresAt.getTime() - now.getTime();
     
@@ -63,7 +72,7 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
     const diff = expiresAt.getTime() - now.getTime();
     const hoursRemaining = diff / (1000 * 60 * 60);
     
-    return hoursRemaining <= 3; // Less than 3 hours remaining
+    return hoursRemaining <= 3;
   };
 
   const handleCopyToClipboard = (text: string) => {
@@ -82,48 +91,110 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
     element.click();
   };
 
-  const handlePostNow = async (post: any) => {
-    const selectedPlatforms = post.social_platforms || [];
-    
-    // Check for Mastodon
-    const hasMastodon = selectedPlatforms.includes('mastodon');
-    const mastodonAccount = accounts.find(acc => acc.platform === 'mastodon' && acc.is_active);
+  const buildMessage = (post: any, platform: string) => {
+    const caption = post.generated_caption || '';
+    const hashtags = (post.generated_hashtags || []).map((h: string) => `#${h}`).join(' ');
+    // Telegram doesn't use hashtags
+    if (platform === 'telegram') return caption;
+    return `${caption}\n\n${hashtags}`.trim();
+  };
 
-    if (hasMastodon && mastodonAccount) {
-      const message = `${post.generated_caption}\n\n${(post.generated_hashtags || []).map((h: string) => `#${h}`).join(' ')}`;
-      await publishToMastodon(post.id, message, post.media_url);
-    } else if (hasMastodon && !mastodonAccount) {
+  const publishToPlatform = async (post: any, platform: string) => {
+    const normalizedPlatform = platform.toLowerCase();
+    const account = accounts.find(acc => acc.platform === normalizedPlatform && acc.is_active);
+    
+    if (!account) {
       toast({
-        title: 'Mastodon not connected',
-        description: 'Please connect your Mastodon account first',
+        title: `${platform} not connected`,
+        description: `Please connect your ${platform} account first`,
         variant: 'destructive',
       });
+      return;
     }
 
-    // Check for Telegram
-    const hasTelegram = selectedPlatforms.includes('telegram');
-    const telegramAccount = accounts.find(acc => acc.platform === 'telegram' && acc.is_active);
+    const message = buildMessage(post, normalizedPlatform);
 
-    if (hasTelegram && telegramAccount) {
-      // Telegram doesn't support hashtags, just send caption
-      const message = post.generated_caption;
-      await publishToTelegram(post.id, message, post.media_url);
-    } else if (hasTelegram && !telegramAccount) {
-      toast({
-        title: 'Telegram not connected',
-        description: 'Please connect your Telegram channel first',
-        variant: 'destructive',
-      });
+    switch (normalizedPlatform) {
+      case 'mastodon':
+        await publishToMastodon(post.id, message, post.media_url);
+        break;
+      case 'telegram':
+        await publishToTelegram(post.id, message, post.media_url);
+        break;
+      case 'facebook':
+        await publishToFacebook(post.id, account.id, message, post.media_url);
+        break;
+      case 'twitter':
+      case 'x':
+        await publishToTwitter(post.id, account.id, message);
+        break;
+      case 'instagram':
+        await publishToInstagram(post.id, account.id, message, post.media_url);
+        break;
+      default:
+        toast({
+          title: 'Unsupported platform',
+          description: `Publishing to ${platform} is not yet supported`,
+          variant: 'destructive',
+        });
     }
   };
 
+  const handlePostNow = async (post: any) => {
+    const selectedPlatforms: string[] = post.social_platforms || [];
+    
+    for (const platform of selectedPlatforms) {
+      const normalizedPlatform = platform.toLowerCase();
+      // Skip already-published platforms
+      const platformResults = (post.platform_results as PlatformResults) || {};
+      if (platformResults[normalizedPlatform]?.status === 'success') continue;
+      
+      await publishToPlatform(post, normalizedPlatform);
+    }
+  };
+
+  const handleRetryFailed = async (post: any) => {
+    const platformResults = (post.platform_results as PlatformResults) || {};
+    const selectedPlatforms: string[] = post.social_platforms || [];
+    
+    for (const platform of selectedPlatforms) {
+      const normalizedPlatform = platform.toLowerCase();
+      if (platformResults[normalizedPlatform]?.status === 'failed') {
+        await publishToPlatform(post, normalizedPlatform);
+      }
+    }
+  };
+
+  const getFailedPlatforms = (post: any): string[] => {
+    const platformResults = (post.platform_results as PlatformResults) || {};
+    const selectedPlatforms: string[] = post.social_platforms || [];
+    return selectedPlatforms.filter(p => platformResults[p.toLowerCase()]?.status === 'failed');
+  };
+
   const canPostNow = (post: any) => {
-    const platforms = post.social_platforms || [];
+    const platforms: string[] = post.social_platforms || [];
     return platforms.some((p: string) => {
-      if (p === 'mastodon') return accounts.some(acc => acc.platform === 'mastodon' && acc.is_active);
-      if (p === 'telegram') return accounts.some(acc => acc.platform === 'telegram' && acc.is_active);
-      return false;
+      const normalized = p.toLowerCase();
+      return accounts.some(acc => acc.platform === normalized && acc.is_active);
     });
+  };
+
+  const getPlatformStatusColor = (platform: string, post: any): string => {
+    const platformResults = (post.platform_results as PlatformResults) || {};
+    const result = platformResults[platform.toLowerCase()];
+    if (!result) return 'text-muted-foreground';
+    if (result.status === 'success') return 'text-green-600';
+    if (result.status === 'failed') return 'text-destructive';
+    return 'text-muted-foreground';
+  };
+
+  const getPlatformTooltip = (platform: string, post: any): string => {
+    const platformResults = (post.platform_results as PlatformResults) || {};
+    const result = platformResults[platform.toLowerCase()];
+    if (!result) return `${platform}: pending`;
+    if (result.status === 'success') return `${platform}: Published${result.published_at ? ` at ${format(new Date(result.published_at), 'MMM dd, h:mm a')}` : ''}`;
+    if (result.status === 'failed') return `${platform}: Failed — ${result.error || 'Unknown error'}`;
+    return `${platform}: ${result.status}`;
   };
 
   return (
@@ -144,6 +215,8 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
           {posts.map((post) => {
             const timeRemaining = isFreeUser ? getTimeRemaining(post.created_at) : null;
             const expiringSoon = isFreeUser ? isExpiringSoon(post.created_at) : false;
+            const failedPlatforms = getFailedPlatforms(post);
+            const isPartiallyPublished = post.status === 'partially_published';
             
             return (
               <Card key={post.id} className={expiringSoon ? 'border-orange-300 bg-orange-50/30' : ''}>
@@ -207,25 +280,81 @@ const PostsDisplay = ({ posts, onEditPost, onUpdatePost, onDeletePost }: PostsDi
                       </p>
                     );
                   })()}
-                  {/* Platform badges and status */}
-                  <div className="flex items-center gap-2 mt-2">
+
+                  {/* Per-platform status badges */}
+                  <div className="flex items-center gap-3 mt-2">
                     {post.social_platforms && post.social_platforms.length > 0 && (
-                      <div className="flex gap-1">
-                        {post.social_platforms.map((platform: string) => (
-                          <Badge key={platform} variant="secondary" className="text-xs">
-                            {platform}
-                          </Badge>
-                        ))}
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex gap-2 items-center">
+                          {(post.social_platforms as string[]).map((platform: string) => {
+                            const statusColor = getPlatformStatusColor(platform, post);
+                            const tooltip = getPlatformTooltip(platform, post);
+                            const platformResults = (post.platform_results as PlatformResults) || {};
+                            const result = platformResults[platform.toLowerCase()];
+                            const isSuccess = result?.status === 'success';
+                            const isFailed = result?.status === 'failed';
+                            
+                            return (
+                              <Tooltip key={platform}>
+                                <TooltipTrigger asChild>
+                                  <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border transition-colors ${
+                                    isSuccess 
+                                      ? 'bg-green-50 border-green-300 text-green-700' 
+                                      : isFailed 
+                                        ? 'bg-red-50 border-red-300 text-red-700'
+                                        : 'bg-muted border-border text-muted-foreground'
+                                  }`}>
+                                    <PlatformIcon 
+                                      platform={platform} 
+                                      size={14} 
+                                      className={statusColor}
+                                    />
+                                    <span className="capitalize">{platform === 'x' ? 'X' : platform}</span>
+                                    {isSuccess && <span>✓</span>}
+                                    {isFailed && <span>✗</span>}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom" className="max-w-xs">
+                                  <p className="text-xs">{tooltip}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </div>
+                      </TooltipProvider>
                     )}
                     {post.status === 'published' && (
                       <Badge className="bg-green-500 text-white">
                         ✓ Published
                       </Badge>
                     )}
+                    {isPartiallyPublished && (
+                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+                        ⚠ Partially Published
+                      </Badge>
+                    )}
+                    {post.status === 'failed' && (
+                      <Badge variant="destructive">
+                        ✗ Failed
+                      </Badge>
+                    )}
                   </div>
+
                   <div className="flex flex-wrap justify-end gap-2 mt-3 pt-3 border-t">
-                    {post.status !== 'published' && canPostNow(post) && (
+                    {/* Retry Failed Platforms button for partially_published or failed posts */}
+                    {(isPartiallyPublished || post.status === 'failed') && failedPlatforms.length > 0 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleRetryFailed(post)}
+                        disabled={isPublishingPost(post.id)}
+                        className="border-orange-300 text-orange-700 hover:bg-orange-50"
+                      >
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        {isPublishingPost(post.id) ? 'Retrying...' : `Retry Failed (${failedPlatforms.length})`}
+                      </Button>
+                    )}
+                    {post.status !== 'published' && post.status !== 'partially_published' && canPostNow(post) && (
                       <Button 
                         variant="default" 
                         size="sm"

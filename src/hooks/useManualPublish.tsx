@@ -504,6 +504,81 @@ export const useManualPublish = () => {
     }
   };
 
+  const publishToInstagram = async (postId: string, accountId: string, message: string, imageUrl?: string) => {
+    setPublishingPosts(prev => new Set(prev).add(postId));
+
+    try {
+      console.log('[MANUAL-PUBLISH] Publishing to Instagram:', { postId, accountId });
+
+      if (!imageUrl) {
+        throw new Error('Image URL is required for Instagram posts');
+      }
+
+      const { data, error } = await supabase.functions.invoke('instagram-post', {
+        body: {
+          accountId,
+          message,
+          imageUrl
+        }
+      });
+
+      if (error) {
+        console.error('[MANUAL-PUBLISH] Instagram error:', error);
+        throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      console.log('[MANUAL-PUBLISH] Instagram success:', data);
+
+      const currentData = await getCurrentPostData(postId);
+      
+      await updatePlatformResult(postId, 'instagram', {
+        status: 'success',
+        published_at: new Date().toISOString(),
+        post_id: data?.postId
+      }, currentData);
+
+      toast({
+        title: 'Success',
+        description: 'Post published to Instagram successfully!',
+      });
+
+      return { success: true, data };
+    } catch (error: any) {
+      console.error('[MANUAL-PUBLISH] Instagram failed:', error);
+      
+      const parsedError = parseErrorResponse(error);
+      const errorMessage = parsedError.tip 
+        ? `${parsedError.message}. ${parsedError.tip}`
+        : parsedError.message;
+
+      const currentData = await getCurrentPostData(postId);
+      
+      await updatePlatformResult(postId, 'instagram', {
+        status: 'failed',
+        error: errorMessage,
+        attempted_at: new Date().toISOString()
+      }, currentData);
+
+      toast({
+        title: 'Instagram Post Failed',
+        description: parsedError.message,
+        variant: 'destructive',
+      });
+
+      return { success: false, error: errorMessage };
+    } finally {
+      setPublishingPosts(prev => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  };
+
   const isPublishingPost = (postId: string) => publishingPosts.has(postId);
 
   return {
@@ -511,6 +586,7 @@ export const useManualPublish = () => {
     publishToFacebook,
     publishToTwitter,
     publishToTelegram,
+    publishToInstagram,
     isPublishingPost
   };
 };
