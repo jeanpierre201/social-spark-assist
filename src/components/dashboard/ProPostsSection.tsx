@@ -53,6 +53,7 @@ interface PostData {
     image?: string;
   };
   created_at?: string;
+  status?: string;
 }
 
 type ViewMode = 'list' | 'calendar';
