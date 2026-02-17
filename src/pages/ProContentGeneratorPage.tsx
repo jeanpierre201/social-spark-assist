@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import UsageIndicators from '@/components/starter/UsageIndicators';
 import ProContentCreationForm from '@/components/dashboard/ProContentCreationForm';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
+import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import GeneratedPostPreview from '@/components/starter/GeneratedPostPreview';
@@ -91,48 +92,7 @@ const ContentGeneratorProPage2 = () => {
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={false} title="Create Content" />
 
-        {/* Navigation tabs */}
-        <div className="mb-6">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Overview
-              </button>
-              <button
-                className="border-purple-500 text-purple-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Content Generator
-              </button>
-              <Link 
-                to="/dashboard/posts-pro"
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Your Posts
-              </Link>
-              <button
-                onClick={() => navigate('/dashboard/analytics')}
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Advanced Analytics
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/team')}
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Team Collaboration
-              </button>
-              <button
-                onClick={() => navigate('/dashboard/social')}
-                className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-              >
-                Social Accounts
-              </button>
-            </nav>
-          </div>
-        </div>
+        <ProDashboardNav />
 
         <div className="space-y-6">
           {/* Expired Banner */}

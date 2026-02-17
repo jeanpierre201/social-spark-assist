@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePostsManager } from '@/hooks/usePostsManager';
 import DashboardHeader from './dashboard/DashboardHeader';
+import ProDashboardNav from './dashboard/ProDashboardNav';
 import QuickStats from './dashboard/QuickStats';
 import ActionCards from './dashboard/ActionCards';
 import UpgradePrompt from './dashboard/UpgradePrompt';
@@ -107,49 +108,7 @@ const Dashboard = () => {
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} showDashboardButton={false} />
 
         {/* Navigation tabs for Pro users only */}
-        {isProUser && (
-          <div className="mb-6">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-                <button
-                  className="border-purple-500 text-purple-600 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Overview
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/content-generator-pro')}
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Content Generator
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/posts-pro')}
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Your Posts
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/analytics')}
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Advanced Analytics
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/team')}
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Team Collaboration
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard/social')}
-                  className="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm"
-                >
-                  Social Accounts
-                </button>
-              </nav>
-            </div>
-          </div>
-        )}
+        {isProUser && <ProDashboardNav />}
 
         {/* Overview Content */}
         <div className="space-y-6">

@@ -15,6 +15,8 @@ import DashboardPage from "./pages/DashboardPage";
 import DashboardContentPage from "./pages/DashboardContentPage";
 import DashboardAnalyticsPage from "./pages/DashboardAnalyticsPage";
 import DashboardTeamPage from "./pages/DashboardTeamPage";
+import DashboardBrandPage from "./pages/DashboardBrandPage";
+import DashboardCampaignsPage from "./pages/DashboardCampaignsPage";
 import DashboardSocialPage from "./pages/DashboardSocialPage";
 import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
@@ -104,6 +106,16 @@ const App = () => (
                   <Route path="/dashboard/team" element={
                     <ProtectedRoute>
                       <DashboardTeamPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/brand" element={
+                    <ProtectedRoute>
+                      <DashboardBrandPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/campaigns" element={
+                    <ProtectedRoute>
+                      <DashboardCampaignsPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/dashboard/social" element={

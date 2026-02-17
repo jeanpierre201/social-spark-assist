@@ -152,6 +152,48 @@ export type Database = {
         }
         Relationships: []
       }
+      brands: {
+        Row: {
+          color_primary: string | null
+          color_secondary: string | null
+          created_at: string
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          tagline: string | null
+          updated_at: string
+          user_id: string
+          voice_tone: string | null
+        }
+        Insert: {
+          color_primary?: string | null
+          color_secondary?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          tagline?: string | null
+          updated_at?: string
+          user_id: string
+          voice_tone?: string | null
+        }
+        Update: {
+          color_primary?: string | null
+          color_secondary?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          tagline?: string | null
+          updated_at?: string
+          user_id?: string
+          voice_tone?: string | null
+        }
+        Relationships: []
+      }
       campaign_invitations: {
         Row: {
           accepted_at: string | null
@@ -348,6 +390,76 @@ export type Database = {
         }
         Relationships: []
       }
+      content_history: {
+        Row: {
+          brand_id: string | null
+          campaign_id: string | null
+          created_at: string
+          generated_caption: string | null
+          generated_hashtags: string[] | null
+          id: string
+          input_goal: string | null
+          input_industry: string | null
+          input_niche_info: string | null
+          media_url: string | null
+          post_id: string | null
+          user_id: string
+          was_published: boolean | null
+        }
+        Insert: {
+          brand_id?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          generated_caption?: string | null
+          generated_hashtags?: string[] | null
+          id?: string
+          input_goal?: string | null
+          input_industry?: string | null
+          input_niche_info?: string | null
+          media_url?: string | null
+          post_id?: string | null
+          user_id: string
+          was_published?: boolean | null
+        }
+        Update: {
+          brand_id?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          generated_caption?: string | null
+          generated_hashtags?: string[] | null
+          id?: string
+          input_goal?: string | null
+          input_industry?: string | null
+          input_niche_info?: string | null
+          media_url?: string | null
+          post_id?: string | null
+          user_id?: string
+          was_published?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_history_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_history_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_history_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_insights: {
         Row: {
           avg_engagement_rate: number | null
@@ -465,6 +577,8 @@ export type Database = {
           ai_generated_image_2_url: string | null
           ai_generations_count: number | null
           ai_image_prompts: Json | null
+          brand_id: string | null
+          campaign_id: string | null
           created_at: string | null
           error_message: string | null
           generated_caption: string
@@ -491,6 +605,8 @@ export type Database = {
           ai_generated_image_2_url?: string | null
           ai_generations_count?: number | null
           ai_image_prompts?: Json | null
+          brand_id?: string | null
+          campaign_id?: string | null
           created_at?: string | null
           error_message?: string | null
           generated_caption: string
@@ -517,6 +633,8 @@ export type Database = {
           ai_generated_image_2_url?: string | null
           ai_generations_count?: number | null
           ai_image_prompts?: Json | null
+          brand_id?: string | null
+          campaign_id?: string | null
           created_at?: string | null
           error_message?: string | null
           generated_caption?: string
@@ -538,7 +656,22 @@ export type Database = {
           user_id?: string
           user_timezone?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
