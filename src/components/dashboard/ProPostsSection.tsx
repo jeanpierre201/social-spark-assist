@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, List, Calendar as CalendarIcon, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, List, Calendar as CalendarIcon, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, isSameDay } from 'date-fns';
 import CalendarDisplay from '@/components/starter/calendar/CalendarDisplay';
@@ -76,17 +76,56 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [postToDelete, setPostToDelete] = useState<Post | null>(null);
+  const [sortField, setSortField] = useState<'created_at' | 'updated_at' | 'scheduled_date'>('updated_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const postsPerPage = 10;
 
+  // Real-time subscription for post status updates
+  useEffect(() => {
+    if (!user) return;
+    
+    const channel = supabase
+      .channel('pro-posts-status-changes')
+      .on('postgres_changes', 
+        { 
+          event: 'UPDATE', 
+          schema: 'public', 
+          table: 'posts',
+          filter: `user_id=eq.${user.id}`
+        }, 
+        (payload) => {
+          setPosts(prev => prev.map(p => {
+            if (p.id !== payload.new.id) return p;
+            const next = payload.new as Partial<Post>;
+            return {
+              ...p,
+              ...next,
+              media_url: (next.media_url ?? p.media_url) as any,
+              uploaded_image_url: (next.uploaded_image_url ?? p.uploaded_image_url) as any,
+              social_platforms: (Array.isArray(next.social_platforms) ? next.social_platforms : (p.social_platforms ?? [])) as any,
+              generated_hashtags: (Array.isArray(next.generated_hashtags) ? next.generated_hashtags : p.generated_hashtags) as any,
+              generated_caption: (next.generated_caption ?? p.generated_caption) as any,
+            } as Post;
+          }));
+        }
+      )
+      .subscribe();
+      
+    return () => { 
+      supabase.removeChannel(channel); 
+    };
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchPosts();
     }
-  }, [user, currentPage, searchTerm, statusFilter]);
+  }, [user, currentPage, searchTerm, statusFilter, sortField, sortOrder]);
 
   const fetchPosts = async () => {
     try {
@@ -96,7 +135,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
         .from('posts')
         .select('*', { count: 'exact' })
         .eq('user_id', user!.id)
-        .order('created_at', { ascending: false });
+        .order(sortField, { ascending: sortOrder === 'asc' });
 
       // Apply status filter
       if (statusFilter !== 'all') {
@@ -152,14 +191,15 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
         industry: post.industry,
         goal: post.goal,
         nicheInfo: post.niche_info || '',
-        scheduledDate: post.scheduled_date,
+        scheduledDate: post.scheduled_date || post.posted_at || post.created_at,
         scheduledTime: post.scheduled_time,
         generatedContent: {
           caption: post.generated_caption,
           hashtags: post.generated_hashtags || [],
           image: post.media_url,
         },
-        created_at: post.created_at
+        created_at: post.created_at,
+        status: post.status
       }));
       setTransformedPosts(transformed);
     } catch (error) {
@@ -298,10 +338,37 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
     setIsEditDialogOpen(true);
   };
 
-  const handlePostUpdated = () => {
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
+    toast({ description: "Posts refreshed" });
+  };
+
+  const handlePostUpdated = async () => {
     fetchPosts();
-    setIsEditDialogOpen(false);
-    setEditingPost(null);
+    // Re-fetch the editing post to update the dialog with fresh data (e.g. new AI image)
+    if (editingPost?.id) {
+      try {
+        const { data, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', editingPost.id)
+          .single();
+        
+        if (!error && data) {
+          const normalizedPost = {
+            ...data,
+            social_platforms: Array.isArray(data.social_platforms) ? data.social_platforms : [],
+            generated_hashtags: Array.isArray(data.generated_hashtags) ? data.generated_hashtags : [],
+            generated_caption: data.generated_caption || '',
+          } as Post;
+          setEditingPost(normalizedPost);
+        }
+      } catch (err) {
+        console.error('Error re-fetching post:', err);
+      }
+    }
   };
 
   // Manual publish to social platforms
@@ -454,6 +521,34 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={sortField} onValueChange={(val) => setSortField(val as any)}>
+                <SelectTrigger className="w-44">
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="updated_at">Updated Date</SelectItem>
+                  <SelectItem value="created_at">Created Date</SelectItem>
+                  <SelectItem value="scheduled_date">Scheduled Date</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
+                title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+              >
+                {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh posts"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
 
             {/* Posts List */}
