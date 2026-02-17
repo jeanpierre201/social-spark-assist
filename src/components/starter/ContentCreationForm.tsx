@@ -36,7 +36,7 @@ interface ContentCreationFormProps {
   setMonthlyPosts: (value: number | ((prev: number) => number)) => void;
   canCreatePosts: boolean;
   setPosts: (value: PostData[] | ((prev: PostData[]) => PostData[])) => void;
-  onPostCreated?: () => void;
+  onPostCreated?: (post?: PostData) => void;
 }
 
 const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, setPosts, onPostCreated }: ContentCreationFormProps) => {
@@ -469,7 +469,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       });
 
       // Notify parent component to refresh
-      onPostCreated?.();
+      onPostCreated?.(newPost);
 
     } catch (error) {
       console.error('Error generating content:', error);
