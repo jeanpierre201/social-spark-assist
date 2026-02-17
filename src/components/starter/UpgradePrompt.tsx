@@ -49,6 +49,7 @@ const UpgradePrompt = ({ subscribed, canCreatePosts }: UpgradePromptProps) => {
 
     setIsExtending(true);
     try {
+      // First try to extend via the DB function (only works if subscription_end > now())
       const { data, error } = await supabase.functions.invoke('extend-creation-period', {
         headers: {
           Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
@@ -57,18 +58,30 @@ const UpgradePrompt = ({ subscribed, canCreatePosts }: UpgradePromptProps) => {
 
       if (error) throw error;
 
-      toast({
-        title: "Success!",
-        description: "Your creation period has been extended for another 30 days",
-      });
-
-      // Refresh the page to update the UI
-      window.location.reload();
+      if (data?.success) {
+        toast({
+          title: "Success!",
+          description: "Your creation period has been extended for another 30 days",
+        });
+        window.location.reload();
+      } else {
+        // Payment expired — redirect to Stripe customer portal to renew
+        toast({
+          title: "Payment required",
+          description: "Your subscription payment has expired. Redirecting to billing...",
+        });
+        
+        const { data: portalData, error: portalError } = await supabase.functions.invoke('customer-portal');
+        if (portalError) throw portalError;
+        if (portalData?.url) {
+          window.open(portalData.url, '_blank');
+        }
+      }
     } catch (error) {
       console.error('Error extending creation period:', error);
       toast({
         title: "Error",
-        description: "Failed to extend creation period. Please try again.",
+        description: "Failed to process request. Please try again.",
         variant: "destructive",
       });
     } finally {
