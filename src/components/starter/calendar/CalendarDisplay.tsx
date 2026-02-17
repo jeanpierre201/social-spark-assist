@@ -35,9 +35,24 @@ const getStatusDotColor = (status: string) => {
     case 'ready': return 'bg-purple-500';
     case 'scheduled': return 'bg-blue-500';
     case 'published': return 'bg-green-500';
+    case 'partially_published': return 'bg-emerald-400';
     case 'failed': return 'bg-red-500';
     case 'rescheduled': return 'bg-yellow-500';
     default: return 'bg-gray-400';
+  }
+};
+
+// Get status background highlight for calendar cells
+const getStatusBgColor = (status: string) => {
+  switch (status) {
+    case 'draft': return '#f3f4f6';
+    case 'ready': return '#faf5ff';
+    case 'scheduled': return '#eff6ff';
+    case 'published': return '#f0fdf4';
+    case 'partially_published': return '#ecfdf5';
+    case 'failed': return '#fef2f2';
+    case 'rescheduled': return '#fefce8';
+    default: return '#f9fafb';
   }
 };
 
@@ -75,16 +90,16 @@ const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayP
       <div className="w-full h-full relative flex flex-col items-center justify-center">
         <span className="text-sm font-medium">{date.getDate()}</span>
         {dayPosts.length > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-0.5">
+          <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-0.5 flex-wrap">
             {Object.entries(statusCounts).slice(0, 4).map(([status, count], idx) => (
               <div
                 key={idx}
-                className={`w-2 h-2 rounded-full ${getStatusDotColor(status)}`}
+                className={`w-2.5 h-2.5 rounded-full ${getStatusDotColor(status)} ring-1 ring-white`}
                 title={`${count} ${status}`}
               />
             ))}
             {Object.keys(statusCounts).length > 4 && (
-              <div className="w-2 h-2 rounded-full bg-gray-300" title="More posts" />
+              <div className="w-2.5 h-2.5 rounded-full bg-muted ring-1 ring-white" title="More posts" />
             )}
           </div>
         )}
@@ -131,7 +146,7 @@ const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayP
             }}
           />
         </div>
-        <div className="mt-4 text-xs text-gray-600">
+        <div className="mt-4 text-xs text-muted-foreground">
           <div className="flex items-center justify-center flex-wrap gap-x-4 gap-y-2">
             <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 bg-gray-400 rounded-full"></div>
@@ -148,6 +163,10 @@ const CalendarDisplay = ({ posts, selectedDate, onDateSelect }: CalendarDisplayP
             <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
               <span>Published</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 bg-emerald-400 rounded-full"></div>
+              <span>Partial</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
