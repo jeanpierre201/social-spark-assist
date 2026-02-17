@@ -19,7 +19,6 @@ interface PromoCode {
   max_uses: number;
   used_count: number;
   redeemed_by_user_id: string | null;
-  redeemed_by_email: string | null;
   redeemed_at: string | null;
   created_at: string;
   is_active: boolean;
@@ -457,8 +456,8 @@ const PromoCodesManagement = ({ loading: parentLoading }: PromoCodesManagementPr
                         </div>
                       </TableCell>
                       <TableCell>
-                        {promo.redeemed_by_email ? (
-                          <span className="text-sm">{promo.redeemed_by_email}</span>
+                        {promo.redeemed_by_user_id ? (
+                          <span className="text-sm text-muted-foreground">{promo.redeemed_by_user_id.substring(0, 8)}...</span>
                         ) : (
                           <span className="text-sm text-muted-foreground">—</span>
                         )}

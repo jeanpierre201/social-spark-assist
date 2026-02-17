@@ -577,7 +577,6 @@ export type Database = {
           is_active: boolean
           max_uses: number
           redeemed_at: string | null
-          redeemed_by_email: string | null
           redeemed_by_user_id: string | null
           subscription_tier: string
           updated_at: string
@@ -592,7 +591,6 @@ export type Database = {
           is_active?: boolean
           max_uses?: number
           redeemed_at?: string | null
-          redeemed_by_email?: string | null
           redeemed_by_user_id?: string | null
           subscription_tier: string
           updated_at?: string
@@ -607,7 +605,6 @@ export type Database = {
           is_active?: boolean
           max_uses?: number
           redeemed_at?: string | null
-          redeemed_by_email?: string | null
           redeemed_by_user_id?: string | null
           subscription_tier?: string
           updated_at?: string
