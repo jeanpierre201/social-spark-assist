@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Home, ArrowLeft, Clock, List, ExternalLink } from 'lucide-react';
+import { Loader2, Home, ArrowLeft, Clock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
@@ -90,7 +90,7 @@ const ContentGeneratorProPage2 = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6">
-        <DashboardHeader isProUser={isProUser} isStarterUser={false} title="Create Content" />
+        <DashboardHeader isProUser={isProUser} isStarterUser={false} title="Content Generation" />
 
         <ProDashboardNav />
 
@@ -110,18 +110,6 @@ const ContentGeneratorProPage2 = () => {
             </div>
           )}
 
-
-          {/* Quick link to posts */}
-          <div className="flex justify-end">
-            <Link to="/dashboard/posts-pro">
-              <Button variant="outline" className="flex items-center gap-2">
-                <List className="h-4 w-4" />
-                View All Posts
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-
           {/* Content Creation Form */}
           {!isCreationExpired ? (
             <ProContentCreationForm 
@@ -134,13 +122,12 @@ const ContentGeneratorProPage2 = () => {
           ) : (
             <div className="text-center p-8 bg-white rounded-lg border">
               <p className="text-muted-foreground mb-4">Your creation period has expired. View your existing posts.</p>
-              <Link to="/dashboard/posts-pro">
-                <Button className="flex items-center gap-2 mx-auto">
-                  <List className="h-4 w-4" />
-                  View Your Posts
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </Link>
+              <Button 
+                onClick={() => navigate('/dashboard/posts-pro')}
+                className="flex items-center gap-2 mx-auto"
+              >
+                View Your Posts
+              </Button>
             </div>
           )}
 

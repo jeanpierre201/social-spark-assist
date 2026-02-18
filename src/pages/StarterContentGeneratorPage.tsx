@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Home, ArrowLeft, Clock, List, ExternalLink } from 'lucide-react';
+import { Loader2, Home, ArrowLeft, Clock } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
@@ -94,7 +94,7 @@ const ContentGeneratorStarterPage2 = () => {
         {/* Header - Mobile */}
         <div className="mb-6 md:mb-8 md:hidden">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-foreground">Create Content</h1>
+            <h1 className="text-2xl font-bold text-foreground">Content Generation</h1>
             <div className="flex items-center gap-2">
               <div className="h-8 w-px bg-border" />
               <ProfileAvatar />
@@ -120,19 +120,13 @@ const ContentGeneratorStarterPage2 = () => {
               <Home className="h-4 w-4" />
               Home
             </Button>
-            <Link to="/dashboard/posts-starter">
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <List className="h-4 w-4" />
-                View Posts
-              </Button>
-            </Link>
           </div>
         </div>
 
         {/* Header - Desktop */}
         <div className="mb-8 hidden md:flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Create Content</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">Content Generation</h1>
             <p className="text-muted-foreground">
               {isCreationExpired 
                 ? "Your creation period has ended."
@@ -141,12 +135,6 @@ const ContentGeneratorStarterPage2 = () => {
             </p>
           </div>
           <div className="flex items-center space-x-3">
-            <Link to="/dashboard/posts-starter">
-              <Button variant="outline" className="flex items-center gap-2">
-                <List className="h-4 w-4" />
-                View Posts
-              </Button>
-            </Link>
             <Button 
               variant="outline" 
               onClick={() => navigate('/dashboard')}
@@ -214,13 +202,12 @@ const ContentGeneratorStarterPage2 = () => {
         ) : (
           <div className="mt-6 text-center p-8 bg-white rounded-lg border">
             <p className="text-muted-foreground mb-4">Your creation period has expired. View your existing posts or extend your period.</p>
-            <Link to="/dashboard/posts-starter">
-              <Button className="flex items-center gap-2 mx-auto">
-                <List className="h-4 w-4" />
-                View Your Posts
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </Link>
+            <Button 
+              onClick={() => navigate('/dashboard/posts-starter')}
+              className="flex items-center gap-2 mx-auto"
+            >
+              View Your Posts
+            </Button>
           </div>
         )}
 
