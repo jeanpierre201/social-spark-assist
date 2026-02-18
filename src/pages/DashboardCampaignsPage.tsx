@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCampaigns } from '@/hooks/useCampaigns';
-import { Loader2, FolderPlus, Plus, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, FolderPlus, Plus, MoreVertical, Pencil, Trash2, Megaphone } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -133,16 +133,18 @@ const DashboardCampaignsPage = () => {
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Campaigns" />
         <ProDashboardNav />
 
-        <div className="space-y-6">
-          {/* Header row */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">Your Campaigns</h2>
-              <p className="text-sm text-muted-foreground">Organize content by project, topic, or campaign</p>
-            </div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Megaphone className="h-5 w-5 text-primary" />
+              Your Campaigns
+            </CardTitle>
+            <CardDescription>
+              Organize content by project, topic, or campaign
+            </CardDescription>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
-                <Button>
+                <Button className="w-full mt-2">
                   <Plus className="h-4 w-4 mr-2" />
                   New Campaign
                 </Button>
@@ -185,7 +187,8 @@ const DashboardCampaignsPage = () => {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-          </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
 
           {/* Campaigns Grid */}
           {campaigns.length === 0 ? (
@@ -248,7 +251,8 @@ const DashboardCampaignsPage = () => {
               ))}
             </div>
           )}
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Edit Campaign Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
