@@ -112,7 +112,7 @@ const ActionCards = ({
           <CardHeader>
             <CardTitle className="flex items-center">
               <BarChart3 className="h-5 w-5 mr-2 text-purple-600" />
-              Advanced Analytics
+              Analytics
             </CardTitle>
             <CardDescription>
               Deep insights, competitor analysis, and performance tracking
