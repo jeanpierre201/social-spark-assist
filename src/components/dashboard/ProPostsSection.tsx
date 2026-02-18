@@ -512,11 +512,11 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-3">
-          <CardTitle className="flex items-center text-lg">
-            <FileText className="h-5 w-5 text-primary mr-2" />
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
             Manage Posts
           </CardTitle>
-          <CardDescription className="text-sm">
+          <CardDescription>
             Manage and view all your generated content
           </CardDescription>
           <div className="flex items-center space-x-1 bg-muted rounded-lg p-1 w-fit">
