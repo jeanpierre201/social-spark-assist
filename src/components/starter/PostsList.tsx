@@ -532,7 +532,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
           </Button>
         </div>
         {/* Filters row - single line */}
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}>
             <SelectTrigger className="w-[130px] h-9 text-sm">
               <Filter className="h-3.5 w-3.5 mr-1.5 shrink-0" />
