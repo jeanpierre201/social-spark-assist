@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useBrand } from '@/hooks/useBrand';
-import { Loader2, Building2, Upload, Palette } from 'lucide-react';
+import { Loader2, Building2, Upload, Palette, Sparkles } from 'lucide-react';
+import { extractColorsFromImage } from '@/utils/colorExtractor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,6 +43,7 @@ const DashboardBrandPage = () => {
   const [colorSecondary, setColorSecondary] = useState('#8b5cf6');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [extractingColors, setExtractingColors] = useState(false);
 
   useEffect(() => {
     if (brand) {
@@ -74,8 +76,21 @@ const DashboardBrandPage = () => {
         .from('media')
         .getPublicUrl(filePath);
 
-      setLogoUrl(urlData.publicUrl);
-      toast({ title: 'Logo uploaded', description: 'Your brand logo has been uploaded.' });
+      const publicUrl = urlData.publicUrl;
+      setLogoUrl(publicUrl);
+
+      // Auto-extract colors
+      setExtractingColors(true);
+      try {
+        const colors = await extractColorsFromImage(publicUrl);
+        setColorPrimary(colors.primary);
+        setColorSecondary(colors.secondary);
+        toast({ title: 'Logo uploaded', description: 'Colors extracted from your logo. You can adjust them manually.' });
+      } catch {
+        toast({ title: 'Logo uploaded', description: 'Could not extract colors automatically. Set them manually.' });
+      } finally {
+        setExtractingColors(false);
+      }
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     } finally {
@@ -192,6 +207,11 @@ const DashboardBrandPage = () => {
                 </CardTitle>
                 <CardDescription>
                   Set your brand colors for visual consistency across content.
+                  {extractingColors && (
+                    <span className="flex items-center gap-1 text-primary mt-1">
+                      <Sparkles className="h-3 w-3 animate-pulse" /> Extracting colors from logo...
+                    </span>
+                  )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
