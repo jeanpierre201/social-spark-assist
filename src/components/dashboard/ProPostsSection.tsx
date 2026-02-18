@@ -516,30 +516,28 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
             <FileText className="h-5 w-5 text-primary mr-2" />
             Manage Posts
           </CardTitle>
-          <div className="flex items-center justify-between">
-            <CardDescription className="text-sm">
-              Manage and view all your generated content
-            </CardDescription>
-            <div className="flex items-center space-x-1 bg-muted rounded-lg p-1">
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="flex items-center space-x-1 h-8 px-2.5"
-              >
-                <List className="h-4 w-4" />
-                <span>List</span>
-              </Button>
-              <Button
-                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('calendar')}
-                className="flex items-center space-x-1 h-8 px-2.5"
-              >
-                <CalendarIcon className="h-4 w-4" />
-                <span>Calendar</span>
-              </Button>
-            </div>
+          <CardDescription className="text-sm">
+            Manage and view all your generated content
+          </CardDescription>
+          <div className="flex items-center space-x-1 bg-muted rounded-lg p-1 w-fit">
+            <Button
+              variant={viewMode === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('list')}
+              className="flex items-center space-x-1 h-8 px-2.5"
+            >
+              <List className="h-4 w-4" />
+              <span>List</span>
+            </Button>
+            <Button
+              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('calendar')}
+              className="flex items-center space-x-1 h-8 px-2.5"
+            >
+              <CalendarIcon className="h-4 w-4" />
+              <span>Calendar</span>
+            </Button>
           </div>
         </div>
       </CardHeader>
@@ -573,7 +571,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
             </div>
 
             {/* Filters row - single line */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
               <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[130px] h-9 text-sm">
                   <Filter className="h-3.5 w-3.5 mr-1.5 shrink-0" />
