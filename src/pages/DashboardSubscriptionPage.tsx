@@ -11,6 +11,7 @@ import SubscriptionStatusBadge from '@/components/SubscriptionStatusBadge';
 import SubscriptionManagement from '@/components/dashboard/SubscriptionManagement';
 import UsageIndicators from '@/components/starter/UsageIndicators';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
+import StarterDashboardNav from '@/components/dashboard/StarterDashboardNav';
 
 const DashboardSubscriptionPage = () => {
   const { user, logout } = useAuth();
@@ -66,6 +67,7 @@ const DashboardSubscriptionPage = () => {
 
         {/* Pro nav */}
         {isProUser && <ProDashboardNav />}
+        {isStarterUser && <StarterDashboardNav />}
 
         {/* Usage Indicators for paid plans */}
         {hasAnyPlan && (

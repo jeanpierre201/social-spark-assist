@@ -4,6 +4,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import SocialMediaSettings from '@/components/SocialMediaSettings';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
+import StarterDashboardNav from '@/components/dashboard/StarterDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
 
 const DashboardSocialPage = () => {
@@ -40,6 +41,7 @@ const DashboardSocialPage = () => {
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Social Media" showLogout={false} />
         {isProUser && <ProDashboardNav />}
+        {isStarterUser && <StarterDashboardNav />}
         <SocialMediaSettings />
       </div>
     </div>

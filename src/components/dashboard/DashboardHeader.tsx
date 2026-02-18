@@ -19,7 +19,7 @@ const DashboardHeader = ({
   isStarterUser, 
   title = 'Dashboard', 
   showLogout = true,
-  showDashboardButton = true 
+  showDashboardButton = false 
 }: DashboardHeaderProps) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
