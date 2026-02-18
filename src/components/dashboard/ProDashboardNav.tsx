@@ -7,6 +7,7 @@ const navItems = [
   { label: 'Content', path: '/dashboard/content-generator-pro' },
   { label: 'Posts', path: '/dashboard/posts-pro' },
   { label: 'Campaigns', path: '/dashboard/campaigns' },
+  { label: 'Subscription', path: '/dashboard/subscription' },
   { label: 'Analytics', path: '/dashboard/analytics' },
   { label: 'Team', path: '/dashboard/team' },
   { label: 'Social', path: '/dashboard/social' },
