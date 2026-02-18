@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Clock, Plus } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Loader2, Clock } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
 import { Button } from '@/components/ui/button';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
@@ -51,7 +51,7 @@ const PostsProPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6">
-        <DashboardHeader isProUser={isProUser} isStarterUser={false} title="Your Posts" />
+        <DashboardHeader isProUser={isProUser} isStarterUser={false} title="Manage Posts" />
 
         <ProDashboardNav />
 
@@ -71,17 +71,6 @@ const PostsProPage = () => {
             </div>
           )}
 
-          {/* Quick link to create */}
-          {!isCreationExpired && (
-            <div className="flex justify-end">
-              <Link to="/dashboard/content-generator-pro">
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create New Post
-                </Button>
-              </Link>
-            </div>
-          )}
 
           {/* Posts Section */}
           <ProPostsSection 
