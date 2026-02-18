@@ -54,12 +54,12 @@ const QuickStats = ({
           <Sparkles className={`h-4 w-4 ${iconClassName}`} />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{currentMonthPosts || '--'}</div>
+          <div className="text-2xl font-bold">{totalPosts || '--'}</div>
           <p className="text-xs text-muted-foreground">
             {isProUser 
-              ? `${currentMonthPosts}/100 this month`
+              ? `${currentMonthPosts}/100 this period`
               : isStarterUser 
-                ? `${currentMonthPosts}/10 this month`
+                ? `${currentMonthPosts}/10 this period`
                 : 'No posts yet'
             }
           </p>
