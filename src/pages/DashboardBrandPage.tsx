@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useBrand } from '@/hooks/useBrand';
-import { Loader2, Upload, Palette, Sparkles } from 'lucide-react';
+import { Loader2, Building2, Upload, Palette, Sparkles } from 'lucide-react';
 import { extractColorsFromImage } from '@/utils/colorExtractor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
-import PageTitleCard from '@/components/dashboard/PageTitleCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -140,18 +139,18 @@ const DashboardBrandPage = () => {
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Brand Profile" />
         <ProDashboardNav />
 
-        <PageTitleCard
-          icon={Palette}
-          title="Brand Identity"
-          description="Define your corporate identity. This will be used to generate consistent branded content."
-        />
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Brand Identity */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Brand Details</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Brand Identity
+                </CardTitle>
+                <CardDescription>
+                  Define your corporate identity. This will be used to generate consistent branded content.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>

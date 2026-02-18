@@ -1,12 +1,10 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
-import { Share2 } from 'lucide-react';
 import SocialMediaSettings from '@/components/SocialMediaSettings';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
-import PageTitleCard from '@/components/dashboard/PageTitleCard';
 
 const DashboardSocialPage = () => {
   const { user } = useAuth();
@@ -42,11 +40,6 @@ const DashboardSocialPage = () => {
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Social Media" showLogout={false} />
         {isProUser && <ProDashboardNav />}
-        <PageTitleCard
-          icon={Share2}
-          title="Social Accounts"
-          description="Connect and manage your social media platforms."
-        />
         <SocialMediaSettings />
       </div>
     </div>
