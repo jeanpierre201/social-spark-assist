@@ -510,58 +510,58 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="flex items-center">
-              <Calendar className="h-5 w-5 text-purple-600 mr-2" />
+      <CardHeader className="pb-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center text-lg">
+              <Calendar className="h-5 w-5 text-primary mr-2" />
               Your Posts
             </CardTitle>
-            <CardDescription>
-              Manage and view all your generated content
-            </CardDescription>
+            <div className="flex items-center space-x-1 bg-muted rounded-lg p-1">
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="flex items-center space-x-1 h-8 px-2.5"
+              >
+                <List className="h-4 w-4" />
+                <span>List</span>
+              </Button>
+              <Button
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('calendar')}
+                className="flex items-center space-x-1 h-8 px-2.5"
+              >
+                <CalendarIcon className="h-4 w-4" />
+                <span>Calendar</span>
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="flex items-center space-x-1"
-            >
-              <List className="h-4 w-4" />
-              <span>List</span>
-            </Button>
-            <Button
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-              className="flex items-center space-x-1"
-            >
-              <CalendarIcon className="h-4 w-4" />
-              <span>Calendar</span>
-            </Button>
-          </div>
+          <CardDescription className="text-sm">
+            Manage and view all your generated content
+          </CardDescription>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3">
         {viewMode === 'list' ? (
           <>
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search posts..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search posts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {/* Filters row - compact inline */}
+            <div className="flex items-center gap-2 flex-wrap">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <Filter className="h-4 w-4 mr-2" />
+                <SelectTrigger className="w-[130px] h-9 text-sm">
+                  <Filter className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -570,15 +570,15 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
                   <SelectItem value="ready">Ready</SelectItem>
                   <SelectItem value="scheduled">Scheduled</SelectItem>
                   <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="partially_published">Partially Published</SelectItem>
+                  <SelectItem value="partially_published">Partial</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>
                   <SelectItem value="rescheduled">Retrying</SelectItem>
                   <SelectItem value="archived">Archived</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={sortField} onValueChange={(val) => setSortField(val as any)}>
-                <SelectTrigger className="w-44">
-                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                <SelectTrigger className="w-[140px] h-9 text-sm">
+                  <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -590,6 +590,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
               <Button
                 variant="outline"
                 size="icon"
+                className="h-9 w-9 shrink-0"
                 onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
                 title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
               >
@@ -598,6 +599,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
               <Button
                 variant="outline"
                 size="icon"
+                className="h-9 w-9 shrink-0"
                 onClick={handleRefresh}
                 disabled={refreshing}
                 title="Refresh posts"
