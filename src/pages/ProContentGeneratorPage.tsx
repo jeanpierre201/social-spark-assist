@@ -7,7 +7,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import UsageIndicators from '@/components/starter/UsageIndicators';
+
 import ProContentCreationForm from '@/components/dashboard/ProContentCreationForm';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
@@ -110,15 +110,6 @@ const ContentGeneratorProPage2 = () => {
             </div>
           )}
 
-          <UsageIndicators 
-            monthlyPosts={monthlyPosts}
-            previousPeriodPosts={previousPeriodPosts}
-            daysRemaining={daysRemaining}
-            maxPosts={100}
-            isProPlan={true}
-            subscriptionStartDate={subscriptionStartDate}
-            canCreatePosts={canCreatePosts}
-          />
 
           {/* Quick link to posts */}
           <div className="flex justify-end">

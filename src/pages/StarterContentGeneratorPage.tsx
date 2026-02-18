@@ -7,7 +7,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import UsageIndicators from '@/components/starter/UsageIndicators';
+
 import ContentCreationForm from '@/components/starter/ContentCreationForm';
 import UpgradePrompt from '@/components/starter/UpgradePrompt';
 import ProfileAvatar from '@/components/ProfileAvatar';
@@ -199,15 +199,6 @@ const ContentGeneratorStarterPage2 = () => {
           </div>
         )}
 
-        <UsageIndicators 
-          monthlyPosts={monthlyPosts} 
-          previousPeriodPosts={previousPeriodPosts}
-          daysRemaining={daysRemaining} 
-          maxPosts={10}
-          isProPlan={false}
-          subscriptionStartDate={subscriptionStartDate}
-          canCreatePosts={canCreatePosts}
-        />
 
         {/* Content Creation Form */}
         {!isCreationExpired ? (
