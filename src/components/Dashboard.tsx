@@ -159,6 +159,7 @@ const Dashboard = () => {
                 onCalendarView={() => navigate('/dashboard/posts-starter', { state: { viewMode: 'calendar' } })}
                 onConnectAccounts={() => navigate('/dashboard/social')}
                 onSocial={() => navigate('/dashboard/social')}
+                onSubscription={() => navigate('/dashboard/subscription')}
                 onSetActiveTab={() => {}}
               />
             </>
@@ -175,6 +176,7 @@ const Dashboard = () => {
                   onBrand={() => navigate('/dashboard/brand')}
                   onCampaigns={() => navigate('/dashboard/campaigns')}
                   onSocial={() => navigate('/dashboard/social')}
+                  onSubscription={() => navigate('/dashboard/subscription')}
                   onSetActiveTab={(tab) => {
                     if (tab === 'content') navigate('/dashboard/content-generator-pro');
                     else if (tab === 'social') navigate('/dashboard/social');

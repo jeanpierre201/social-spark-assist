@@ -18,6 +18,7 @@ import DashboardTeamPage from "./pages/DashboardTeamPage";
 import DashboardBrandPage from "./pages/DashboardBrandPage";
 import DashboardCampaignsPage from "./pages/DashboardCampaignsPage";
 import DashboardSocialPage from "./pages/DashboardSocialPage";
+import DashboardSubscriptionPage from "./pages/DashboardSubscriptionPage";
 import ProfilePage from "./pages/ProfilePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
@@ -121,6 +122,11 @@ const App = () => (
                   <Route path="/dashboard/social" element={
                     <ProtectedRoute>
                       <DashboardSocialPage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/dashboard/subscription" element={
+                    <ProtectedRoute>
+                      <DashboardSubscriptionPage />
                     </ProtectedRoute>
                   } />
                   <Route path="/profile" element={

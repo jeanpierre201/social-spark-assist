@@ -9,7 +9,8 @@ import {
   CalendarDays,
   Palette,
   Megaphone,
-  Share2
+  Share2,
+  CreditCard
 } from 'lucide-react';
 
 interface ActionCardsProps {
@@ -24,6 +25,7 @@ interface ActionCardsProps {
   onBrand?: () => void;
   onCampaigns?: () => void;
   onSocial?: () => void;
+  onSubscription?: () => void;
 }
 
 const ActionCards = ({
@@ -37,7 +39,8 @@ const ActionCards = ({
   onSetActiveTab,
   onBrand,
   onCampaigns,
-  onSocial
+  onSocial,
+  onSubscription
 }: ActionCardsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -210,6 +213,25 @@ const ActionCards = ({
           <CardContent>
             <Button variant="outline" className="w-full" onClick={onSocial}>
               Manage Social
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {hasAnyPlan && onSubscription && (
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <CreditCard className="h-5 w-5 mr-2 text-primary" />
+              Subscription
+            </CardTitle>
+            <CardDescription>
+              Manage your plan, billing, and usage
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full" onClick={onSubscription}>
+              Manage Subscription
             </Button>
           </CardContent>
         </Card>
