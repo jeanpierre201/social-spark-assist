@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { usePostsManager } from '@/hooks/usePostsManager';
 import DashboardHeader from './dashboard/DashboardHeader';
 import ProDashboardNav from './dashboard/ProDashboardNav';
+import StarterDashboardNav from './dashboard/StarterDashboardNav';
 import QuickStats from './dashboard/QuickStats';
 import ActionCards from './dashboard/ActionCards';
 import UpgradePrompt from './dashboard/UpgradePrompt';
@@ -127,8 +128,9 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} showDashboardButton={false} />
 
-        {/* Navigation tabs for Pro users only */}
+        {/* Navigation tabs */}
         {isProUser && <ProDashboardNav />}
+        {isStarterUser && <StarterDashboardNav />}
 
         {/* Overview Content */}
         <div className="space-y-6">
