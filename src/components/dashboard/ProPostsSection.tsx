@@ -514,7 +514,7 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
         <div className="flex flex-col gap-3">
           <CardTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Manage Posts
+            Your Posts
           </CardTitle>
           <CardDescription>
             Manage and view all your generated content
