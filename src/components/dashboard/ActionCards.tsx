@@ -6,7 +6,10 @@ import {
   BarChart3, 
   Users, 
   FileText,
-  CalendarDays
+  CalendarDays,
+  Palette,
+  Megaphone,
+  Share2
 } from 'lucide-react';
 
 interface ActionCardsProps {
@@ -18,6 +21,9 @@ interface ActionCardsProps {
   onCalendarView: () => void;
   onConnectAccounts: () => void;
   onSetActiveTab: (tab: string) => void;
+  onBrand?: () => void;
+  onCampaigns?: () => void;
+  onSocial?: () => void;
 }
 
 const ActionCards = ({
@@ -28,7 +34,10 @@ const ActionCards = ({
   onViewAllPosts,
   onCalendarView,
   onConnectAccounts,
-  onSetActiveTab
+  onSetActiveTab,
+  onBrand,
+  onCampaigns,
+  onSocial
 }: ActionCardsProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -145,6 +154,62 @@ const ActionCards = ({
               }}
             >
               {isProUser ? 'Manage Team' : 'Connect Accounts'}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+      {isProUser && onBrand && (
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Palette className="h-5 w-5 mr-2 text-primary" />
+              Brand Profile
+            </CardTitle>
+            <CardDescription>
+              Manage your brand identity, logo, and color palette
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full" onClick={onBrand}>
+              Manage Brand
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {isProUser && onCampaigns && (
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Megaphone className="h-5 w-5 mr-2 text-primary" />
+              Campaigns
+            </CardTitle>
+            <CardDescription>
+              Create and manage marketing campaigns
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full" onClick={onCampaigns}>
+              View Campaigns
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {hasAnyPlan && onSocial && (
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Share2 className="h-5 w-5 mr-2 text-primary" />
+              Social Accounts
+            </CardTitle>
+            <CardDescription>
+              Connect and manage your social media platforms
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full" onClick={onSocial}>
+              Manage Social
             </Button>
           </CardContent>
         </Card>

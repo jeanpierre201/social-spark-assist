@@ -126,38 +126,14 @@ const Dashboard = () => {
           {/* Free User Layout: Vertical Stack */}
           {!hasAnyPlan ? (
             <>
-              <ActionCards
+               <ActionCards
                 isProUser={isProUser}
                 isStarterUser={isStarterUser}
                 hasAnyPlan={hasAnyPlan}
-                onContentGeneration={() => {
-                  if (isProUser) {
-                    navigate('/dashboard/content-generator-pro');
-                  } else if (isStarterUser) {
-                    navigate('/dashboard/content-generator-starter');
-                  } else {
-                    navigate('/content-generator');
-                  }
-                }}
-                onViewAllPosts={() => {
-                  if (isProUser) {
-                    navigate('/dashboard/posts-pro');
-                  } else if (isStarterUser) {
-                    navigate('/dashboard/posts-starter');
-                  }
-                }}
-                onCalendarView={() => {
-                  if (isProUser) {
-                    navigate('/dashboard/posts-pro', { state: { viewMode: 'calendar' } });
-                  } else if (isStarterUser) {
-                    navigate('/dashboard/posts-starter', { state: { viewMode: 'calendar' } });
-                  }
-                }}
-                onConnectAccounts={() => {
-                  if (isProUser) {
-                    navigate('/dashboard/social');
-                  }
-                }}
+                onContentGeneration={() => navigate('/content-generator')}
+                onViewAllPosts={() => {}}
+                onCalendarView={() => {}}
+                onConnectAccounts={() => {}}
                 onSetActiveTab={(tab) => {
                   if (tab === 'content') navigate('/dashboard/content');
                   else if (tab === 'social') navigate('/dashboard/social');
@@ -178,19 +154,12 @@ const Dashboard = () => {
                 isProUser={isProUser}
                 isStarterUser={isStarterUser}
                 hasAnyPlan={hasAnyPlan}
-                onContentGeneration={() => {
-                  navigate('/dashboard/content-generator-starter');
-                }}
-                onViewAllPosts={() => {
-                  navigate('/dashboard/posts-starter');
-                }}
-              onCalendarView={() => {
-                navigate('/dashboard/posts-starter', { state: { viewMode: 'calendar' } });
-              }}
-              onConnectAccounts={() => {
-                navigate('/dashboard/social');
-              }}
-              onSetActiveTab={() => {}}
+                onContentGeneration={() => navigate('/dashboard/content-generator-starter')}
+                onViewAllPosts={() => navigate('/dashboard/posts-starter')}
+                onCalendarView={() => navigate('/dashboard/posts-starter', { state: { viewMode: 'calendar' } })}
+                onConnectAccounts={() => navigate('/dashboard/social')}
+                onSocial={() => navigate('/dashboard/social')}
+                onSetActiveTab={() => {}}
               />
             </>
           ) : (
@@ -199,18 +168,13 @@ const Dashboard = () => {
                   isProUser={isProUser}
                   isStarterUser={isStarterUser}
                   hasAnyPlan={hasAnyPlan}
-                  onContentGeneration={() => {
-                    navigate('/dashboard/content-generator-pro');
-                  }}
-                  onViewAllPosts={() => {
-                    navigate('/dashboard/posts-pro');
-                  }}
-                  onCalendarView={() => {
-                    navigate('/dashboard/posts-pro', { state: { viewMode: 'calendar' } });
-                  }}
-                  onConnectAccounts={() => {
-                    navigate('/dashboard/social');
-                  }}
+                  onContentGeneration={() => navigate('/dashboard/content-generator-pro')}
+                  onViewAllPosts={() => navigate('/dashboard/posts-pro')}
+                  onCalendarView={() => navigate('/dashboard/posts-pro', { state: { viewMode: 'calendar' } })}
+                  onConnectAccounts={() => navigate('/dashboard/social')}
+                  onBrand={() => navigate('/dashboard/brand')}
+                  onCampaigns={() => navigate('/dashboard/campaigns')}
+                  onSocial={() => navigate('/dashboard/social')}
                   onSetActiveTab={(tab) => {
                     if (tab === 'content') navigate('/dashboard/content-generator-pro');
                     else if (tab === 'social') navigate('/dashboard/social');
