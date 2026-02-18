@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -110,12 +110,18 @@ const TeamCollaboration = () => {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="text-center mb-8">
-        <Users className="h-12 w-12 text-purple-600 mx-auto mb-4" />
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Team Collaboration</h1>
-        <p className="text-gray-600">Manage campaigns and collaborate with your team</p>
-      </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Manage your team
+          </CardTitle>
+          <CardDescription>
+            Manage campaigns and collaborate with your team
+          </CardDescription>
+        </CardHeader>
+      </Card>
 
       {/* Create Campaign */}
       <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
@@ -197,12 +203,12 @@ const TeamCollaboration = () => {
           <CardContent>
             <div className="space-y-6">
               {campaigns.map((campaign) => (
-                <div key={campaign.id} className="border border-green-200 rounded-lg p-6 bg-white shadow-sm">
-                  <div className="flex items-center justify-between mb-4">
+                <div key={campaign.id} className="border border-green-200 rounded-lg p-4 sm:p-6 bg-white shadow-sm">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
                     <div>
-                      <h3 className="text-xl font-semibold text-gray-900">{campaign.name}</h3>
+                      <h3 className="text-lg sm:text-xl font-semibold text-foreground">{campaign.name}</h3>
                       {campaign.description && (
-                        <p className="text-gray-600 mt-1">{campaign.description}</p>
+                        <p className="text-muted-foreground mt-1">{campaign.description}</p>
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
@@ -282,7 +288,7 @@ const TeamCollaboration = () => {
                       {campaignInvitations
                         .filter(invitation => invitation.campaign_id === campaign.id && invitation.status === 'pending')
                         .map((invitation) => (
-                          <div key={invitation.id} className="flex items-center justify-between bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-2">
+                          <div key={invitation.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-2">
                             <div className="flex items-center">
                               <Mail className="h-5 w-5 text-yellow-600 mr-3" />
                               <div>
