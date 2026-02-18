@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Loader2, Wand2, Calendar, Clock } from 'lucide-react';
+import { Plus, Loader2, Sparkles, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { fromZonedTime } from 'date-fns-tz';
@@ -671,7 +671,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Plus className="h-5 w-5 text-purple-600 mr-2" />
+          <Sparkles className="h-5 w-5 text-purple-600 mr-2" />
           Create Content
         </CardTitle>
         <CardDescription>
@@ -968,7 +968,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
               variant="outline"
               className="w-full"
             >
-              <Wand2 className="h-4 w-4 mr-2" />
+              <Sparkles className="h-4 w-4 mr-2" />
               Generate Remaining Posts ({10 - monthlyPosts} left)
             </Button>
           )}

@@ -11,7 +11,7 @@ import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useBrand } from '@/hooks/useBrand';
 import { useCampaigns } from '@/hooks/useCampaigns';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Loader2, Wand2, Calendar, Clock, Building2 } from 'lucide-react';
+import { Plus, Loader2, Sparkles, Calendar, Clock, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { fromZonedTime } from 'date-fns-tz';
@@ -775,8 +775,8 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Wand2 className="h-5 w-5" />
-          Generate Social Media Content
+          <Sparkles className="h-5 w-5" />
+          Create Content
         </CardTitle>
         <CardDescription>
           Enter your business details to generate engaging content.
@@ -1139,12 +1139,12 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
               ) : (
                 remainingPosts >= 10 ? (
                   <>
-                    <Wand2 className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-2 h-4 w-4" />
                     Generate 10 Posts
                   </>
                 ) : (
                   <>
-                    <Wand2 className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-2 h-4 w-4" />
                     Generate Remaining Posts ({remainingPosts} left)
                   </>
                 )
