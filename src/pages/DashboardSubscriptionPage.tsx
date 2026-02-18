@@ -4,14 +4,13 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useProSubscriptionStatus } from '@/hooks/useProSubscriptionStatus';
 import { useStarterSubscriptionStatus } from '@/hooks/useStarterSubscriptionStatus';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Home, LogOut, CreditCard } from 'lucide-react';
+import { ArrowLeft, Home, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ProfileAvatar from '@/components/ProfileAvatar';
 import SubscriptionStatusBadge from '@/components/SubscriptionStatusBadge';
 import SubscriptionManagement from '@/components/dashboard/SubscriptionManagement';
 import UsageIndicators from '@/components/starter/UsageIndicators';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
-import PageTitleCard from '@/components/dashboard/PageTitleCard';
 
 const DashboardSubscriptionPage = () => {
   const { user, logout } = useAuth();
@@ -67,12 +66,6 @@ const DashboardSubscriptionPage = () => {
 
         {/* Pro nav */}
         {isProUser && <ProDashboardNav />}
-
-        <PageTitleCard
-          icon={CreditCard}
-          title="Subscription"
-          description="Manage your plan, billing, and usage."
-        />
 
         {/* Usage Indicators for paid plans */}
         {hasAnyPlan && (

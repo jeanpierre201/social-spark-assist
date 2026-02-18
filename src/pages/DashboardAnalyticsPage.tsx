@@ -1,12 +1,10 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
-import { BarChart3 } from 'lucide-react';
 import ProAnalytics from '@/components/ProAnalytics';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
-import PageTitleCard from '@/components/dashboard/PageTitleCard';
 
 const DashboardAnalyticsPage = () => {
   const { user } = useAuth();
@@ -42,11 +40,6 @@ const DashboardAnalyticsPage = () => {
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} />
         <ProDashboardNav />
-        <PageTitleCard
-          icon={BarChart3}
-          title="Advanced Analytics"
-          description="Deep insights, competitor analysis, and performance tracking for your content."
-        />
         <ProAnalytics />
       </div>
     </div>
