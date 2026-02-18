@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
+import PageTitleCard from '@/components/dashboard/PageTitleCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -139,18 +140,18 @@ const DashboardBrandPage = () => {
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Brand Profile" />
         <ProDashboardNav />
 
+        <PageTitleCard
+          icon={Palette}
+          title="Brand Identity"
+          description="Define your corporate identity. This will be used to generate consistent branded content."
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Brand Identity */}
           <div className="lg:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5 text-primary" />
-                  Brand Identity
-                </CardTitle>
-                <CardDescription>
-                  Define your corporate identity. This will be used to generate consistent branded content.
-                </CardDescription>
+                <CardTitle>Brand Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>

@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useCampaigns } from '@/hooks/useCampaigns';
-import { Loader2, FolderPlus, Plus, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, FolderPlus, Plus, MoreVertical, Pencil, Trash2, Megaphone } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,7 @@ import { useState } from 'react';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
+import PageTitleCard from '@/components/dashboard/PageTitleCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
@@ -132,6 +133,12 @@ const DashboardCampaignsPage = () => {
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Campaigns" />
         <ProDashboardNav />
+
+        <PageTitleCard
+          icon={Megaphone}
+          title="Campaigns"
+          description="Create and manage marketing campaigns to organize your content."
+        />
 
         <div className="space-y-6">
           {/* Header row */}
