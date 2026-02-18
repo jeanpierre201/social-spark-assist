@@ -107,18 +107,20 @@ const SocialMediaSettings = () => {
 
   return (
     <>
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Share2 className="h-5 w-5 text-primary" />
+          Social Media Accounts
+        </CardTitle>
+        <CardDescription>
+          Connect your social media accounts to get real-time analytics
+        </CardDescription>
+      </CardHeader>
+    </Card>
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <Share2 className="h-5 w-5 text-primary" />
-              Social Media Accounts
-            </CardTitle>
-            <CardDescription>
-              Connect your social media accounts to get real-time analytics
-            </CardDescription>
-          </div>
+        <div className="flex justify-end">
           <Button variant="outline" onClick={refreshMetrics} className="w-full sm:w-auto">
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh Data
