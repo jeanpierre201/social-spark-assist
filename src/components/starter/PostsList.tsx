@@ -500,7 +500,7 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
       <CardHeader>
         <CardTitle className="flex items-center">
           <FileText className="h-5 w-5 text-primary mr-2" />
-          Manage Posts
+          Your Posts
         </CardTitle>
         <CardDescription>
           Manage and view all your generated content
