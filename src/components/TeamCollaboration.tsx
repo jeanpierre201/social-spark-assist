@@ -110,62 +110,51 @@ const TeamCollaboration = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary" />
-            Manage your team
-          </CardTitle>
-          <CardDescription>
-            Manage campaigns and collaborate with your team
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
-      {/* Create Campaign */}
-      <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
-        <CardHeader>
-          <CardTitle className="flex items-center text-purple-700">
-            <UserPlus className="h-5 w-5 mr-2" />
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5 text-primary" />
+          Manage your team
+        </CardTitle>
+        <CardDescription>
+          Manage campaigns and collaborate with your team
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Create Campaign */}
+        <div className="border rounded-lg p-4 space-y-4">
+          <h3 className="flex items-center gap-2 font-semibold text-foreground">
+            <UserPlus className="h-5 w-5 text-primary" />
             Create New Campaign
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </h3>
           <Input
             placeholder="Campaign name"
             value={newCampaignName}
             onChange={(e) => setNewCampaignName(e.target.value)}
-            className="border-purple-300 focus:border-purple-500"
           />
           <Input
             placeholder="Campaign description (optional)"
             value={newCampaignDescription}
             onChange={(e) => setNewCampaignDescription(e.target.value)}
-            className="border-purple-300 focus:border-purple-500"
           />
           <Button 
             onClick={handleCreateCampaign}
             disabled={createCampaignMutation.isPending}
-            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            className="w-full"
           >
             {createCampaignMutation.isPending ? 'Creating...' : 'Create Campaign'}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Invite Team Members */}
-      {campaigns.length > 0 && (
-        <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-blue-700">
-              <Mail className="h-5 w-5 mr-2" />
+        {/* Invite Team Members */}
+        {campaigns.length > 0 && (
+          <div className="border rounded-lg p-4 space-y-4">
+            <h3 className="flex items-center gap-2 font-semibold text-foreground">
+              <Mail className="h-5 w-5 text-primary" />
               Invite Team Members
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+            </h3>
             <select
-              className="w-full p-3 border border-blue-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              className="w-full p-3 border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20"
               value={selectedCampaign}
               onChange={(e) => setSelectedCampaign(e.target.value)}
             >
@@ -181,124 +170,69 @@ const TeamCollaboration = () => {
               placeholder="Email address"
               value={inviteEmail}
               onChange={(e) => setInviteEmail(e.target.value)}
-              className="border-blue-300 focus:border-blue-500"
             />
             <Button 
               onClick={handleInviteUser}
               disabled={inviteMemberMutation.isPending}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+              className="w-full"
             >
               {inviteMemberMutation.isPending ? 'Sending...' : 'Send Invitation'}
             </Button>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        )}
 
-      {/* Campaigns & Projects Overview */}
-      {campaigns.length > 0 && (
-        <Card className="border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
-          <CardHeader>
-            <CardTitle className="text-green-700">Your Campaigns & Projects</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-6">
-              {campaigns.map((campaign) => (
-                <div key={campaign.id} className="border border-green-200 rounded-lg p-4 sm:p-6 bg-white shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-semibold text-foreground">{campaign.name}</h3>
-                      {campaign.description && (
-                        <p className="text-muted-foreground mt-1">{campaign.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
-                        <Crown className="h-3 w-3 mr-1" />
-                        Owner
-                      </Badge>
-                      <Badge variant="outline" className="border-gray-300">
-                        {campaign.status}
-                      </Badge>
-                    </div>
+        {/* Campaigns & Projects Overview */}
+        {campaigns.length > 0 && (
+          <div className="space-y-4">
+            <h3 className="font-semibold text-foreground">Your Campaigns & Projects</h3>
+            {campaigns.map((campaign) => (
+              <div key={campaign.id} className="border rounded-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                  <div>
+                    <h4 className="text-lg sm:text-xl font-semibold text-foreground">{campaign.name}</h4>
+                    {campaign.description && (
+                      <p className="text-muted-foreground mt-1">{campaign.description}</p>
+                    )}
                   </div>
-                  
-                  {/* Team Members Section */}
-                  <div className="space-y-4">
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                        <Users className="h-4 w-4 mr-2 text-blue-600" />
-                        Team Members ({campaignMembers.filter(member => member.campaign_id === campaign.id).length})
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {campaignMembers
-                          .filter(member => member.campaign_id === campaign.id)
-                          .map((member) => (
-                            <div key={member.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border">
-                              <div className="flex items-center">
-                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3">
-                                  {(member.profiles as any)?.full_name?.charAt(0)?.toUpperCase() || member.user_id?.charAt(0)?.toUpperCase() || 'U'}
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {(member.profiles as any)?.full_name || `User ${member.user_id?.slice(0, 8)}`}
-                                  </p>
-                                  <div className="flex items-center mt-1">
-                                    <Badge 
-                                      variant={member.role === 'admin' ? 'default' : 'secondary'} 
-                                      className={`text-xs ${
-                                        member.role === 'admin' 
-                                          ? 'bg-red-100 text-red-800 border-red-300' 
-                                          : member.role === 'editor'
-                                          ? 'bg-blue-100 text-blue-800 border-blue-300'
-                                          : 'bg-gray-100 text-gray-800 border-gray-300'
-                                      }`}
-                                    >
-                                      {member.role === 'admin' ? (
-                                        <Crown className="h-3 w-3 mr-1" />
-                                      ) : member.role === 'editor' ? (
-                                        <Eye className="h-3 w-3 mr-1" />
-                                      ) : (
-                                        <Eye className="h-3 w-3 mr-1" />
-                                      )}
-                                      {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
-                                    </Badge>
-                                  </div>
-                                </div>
-                              </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveMember(member.id, (member.profiles as any)?.full_name || `User ${member.user_id?.slice(0, 8)}`)}
-                                disabled={removeMemberMutation.isPending}
-                                className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-
-                    {/* Pending Invitations Section */}
-                    <div className="border-t pt-4">
-                      <h4 className="font-medium text-gray-900 mb-3 flex items-center">
-                        <Mail className="h-4 w-4 mr-2 text-yellow-600" />
-                        Pending Invitations ({campaignInvitations.filter(inv => inv.campaign_id === campaign.id && inv.status === 'pending').length})
-                      </h4>
-                      {campaignInvitations
-                        .filter(invitation => invitation.campaign_id === campaign.id && invitation.status === 'pending')
-                        .map((invitation) => (
-                          <div key={invitation.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-yellow-50 p-3 rounded-lg border border-yellow-200 mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="secondary">
+                      <Crown className="h-3 w-3 mr-1" />
+                      Owner
+                    </Badge>
+                    <Badge variant="outline">
+                      {campaign.status}
+                    </Badge>
+                  </div>
+                </div>
+                
+                {/* Team Members Section */}
+                <div className="space-y-4">
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-foreground mb-3 flex items-center">
+                      <Users className="h-4 w-4 mr-2 text-primary" />
+                      Team Members ({campaignMembers.filter(member => member.campaign_id === campaign.id).length})
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {campaignMembers
+                        .filter(member => member.campaign_id === campaign.id)
+                        .map((member) => (
+                          <div key={member.id} className="flex items-center justify-between bg-muted/50 p-3 rounded-lg border">
                             <div className="flex items-center">
-                              <Mail className="h-5 w-5 text-yellow-600 mr-3" />
+                              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-medium mr-3">
+                                {(member.profiles as any)?.full_name?.charAt(0)?.toUpperCase() || member.user_id?.charAt(0)?.toUpperCase() || 'U'}
+                              </div>
                               <div>
-                                <span className="text-sm font-medium text-gray-900">{invitation.email}</span>
-                                <div className="flex items-center mt-1 space-x-2">
-                                  <Badge variant="outline" className="text-xs border-yellow-300 text-yellow-800">
-                                    Pending
-                                  </Badge>
-                                  <Badge variant="secondary" className="text-xs bg-gray-100 text-gray-600">
-                                    {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                                <p className="text-sm font-medium text-foreground">
+                                  {(member.profiles as any)?.full_name || `User ${member.user_id?.slice(0, 8)}`}
+                                </p>
+                                <div className="flex items-center mt-1">
+                                  <Badge variant="secondary" className="text-xs">
+                                    {member.role === 'admin' ? (
+                                      <Crown className="h-3 w-3 mr-1" />
+                                    ) : (
+                                      <Eye className="h-3 w-3 mr-1" />
+                                    )}
+                                    {member.role.charAt(0).toUpperCase() + member.role.slice(1)}
                                   </Badge>
                                 </div>
                               </div>
@@ -306,46 +240,80 @@ const TeamCollaboration = () => {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleResendInvitation(invitation.id, invitation.email)}
-                              disabled={inviteMemberMutation.isPending}
-                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+                              onClick={() => handleRemoveMember(member.id, (member.profiles as any)?.full_name || `User ${member.user_id?.slice(0, 8)}`)}
+                              disabled={removeMemberMutation.isPending}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             >
-                              <Send className="h-4 w-4 mr-1" />
-                              Resend
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         ))}
-                      {campaignInvitations.filter(inv => inv.campaign_id === campaign.id && inv.status === 'pending').length === 0 && (
-                        <p className="text-gray-500 text-sm italic">No pending invitations</p>
-                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
-      {campaigns.length === 0 && (
-        <Card className="border-gray-200">
-          <CardContent className="text-center py-12">
-            <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No campaigns yet</h3>
-            <p className="text-gray-600 mb-6">Create your first campaign to start collaborating with your team.</p>
+                  {/* Pending Invitations Section */}
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-foreground mb-3 flex items-center">
+                      <Mail className="h-4 w-4 mr-2 text-primary" />
+                      Pending Invitations ({campaignInvitations.filter(inv => inv.campaign_id === campaign.id && inv.status === 'pending').length})
+                    </h4>
+                    {campaignInvitations
+                      .filter(invitation => invitation.campaign_id === campaign.id && invitation.status === 'pending')
+                      .map((invitation) => (
+                        <div key={invitation.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-muted/50 p-3 rounded-lg border mb-2">
+                          <div className="flex items-center">
+                            <Mail className="h-5 w-5 text-muted-foreground mr-3" />
+                            <div>
+                              <span className="text-sm font-medium text-foreground">{invitation.email}</span>
+                              <div className="flex items-center mt-1 space-x-2">
+                                <Badge variant="outline" className="text-xs">
+                                  Pending
+                                </Badge>
+                                <Badge variant="secondary" className="text-xs">
+                                  {invitation.role.charAt(0).toUpperCase() + invitation.role.slice(1)}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleResendInvitation(invitation.id, invitation.email)}
+                            disabled={inviteMemberMutation.isPending}
+                            className="text-primary hover:text-primary hover:bg-primary/10"
+                          >
+                            <Send className="h-4 w-4 mr-1" />
+                            Resend
+                          </Button>
+                        </div>
+                      ))}
+                    {campaignInvitations.filter(inv => inv.campaign_id === campaign.id && inv.status === 'pending').length === 0 && (
+                      <p className="text-muted-foreground text-sm italic">No pending invitations</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {campaigns.length === 0 && (
+          <div className="text-center py-12">
+            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-xl font-medium text-foreground mb-2">No campaigns yet</h3>
+            <p className="text-muted-foreground mb-6">Create your first campaign to start collaborating with your team.</p>
             <Button 
               onClick={() => {
                 const input = document.querySelector('input[placeholder="Campaign name"]') as HTMLInputElement;
                 input?.focus();
               }}
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
             >
               Get Started
             </Button>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
