@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Plus, Loader2, Wand2, Calendar, Clock, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
+import { fromZonedTime } from 'date-fns-tz';
 
 interface GeneratedContent {
   caption: string;
@@ -29,6 +30,10 @@ interface PostData {
   scheduledDate?: string;
   scheduledTime?: string;
   generatedContent?: GeneratedContent;
+  generated_caption?: string;
+  generated_hashtags?: string[];
+  media_url?: string;
+  created_at?: string;
 }
 
 interface ProContentCreationFormProps {
@@ -36,7 +41,7 @@ interface ProContentCreationFormProps {
   setMonthlyPosts: (value: number | ((prev: number) => number)) => void;
   canCreatePosts: boolean;
   setPosts: (value: PostData[] | ((prev: PostData[]) => PostData[])) => void;
-  onPostCreated?: () => void;
+  onPostCreated?: (post?: PostData) => void;
 }
 
 const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, setPosts, onPostCreated }: ProContentCreationFormProps) => {
@@ -63,6 +68,42 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
   const [manualHashtags, setManualHashtags] = useState('');
   const [includeBrand, setIncludeBrand] = useState(false);
   const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
+  const [userTimezone, setUserTimezone] = useState<string>('UTC');
+  const [timezoneDisplay, setTimezoneDisplay] = useState<string>('');
+
+  // Fetch user timezone from profile
+  useEffect(() => {
+    const fetchUserTimezone = async () => {
+      if (!user?.id) return;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('timezone')
+        .eq('id', user.id)
+        .single();
+      
+      if (!error && data?.timezone) {
+        setUserTimezone(data.timezone);
+      } else {
+        const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        setUserTimezone(browserTz);
+      }
+    };
+    
+    fetchUserTimezone();
+  }, [user?.id]);
+
+  // Calculate and display timezone offset
+  useEffect(() => {
+    const now = new Date();
+    const offsetMinutes = -now.getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const absMinutes = Math.abs(offsetMinutes);
+    const hours = Math.floor(absMinutes / 60);
+    const minutes = absMinutes % 60;
+    const gmtOffset = `GMT${sign}${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    setTimezoneDisplay(`${userTimezone} (${gmtOffset})`);
+  }, [userTimezone]);
 
   // Auto-select brand checkbox if brand has at least a name
   useEffect(() => {
@@ -72,12 +113,13 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
   }, [brand]);
 
   const socialPlatforms = [
+    { id: 'mastodon', name: 'Mastodon' },
+    { id: 'telegram', name: 'Telegram' },
     { id: 'facebook', name: 'Facebook' },
     { id: 'instagram', name: 'Instagram' },
-    { id: 'twitter', name: 'X (Twitter)' },
+    { id: 'x', name: 'X (Twitter)' },
     { id: 'linkedin', name: 'LinkedIn' },
-    { id: 'tiktok', name: 'TikTok' },
-    { id: 'snapchat', name: 'Snapchat' }
+    { id: 'tiktok', name: 'TikTok' }
   ];
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -377,8 +419,18 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         if (scheduledDate && scheduledTime) {
           postStatus = 'scheduled';
         } else {
-          postStatus = 'ready'; // Has platforms but no schedule
+          postStatus = 'ready';
         }
+      }
+
+      // Convert local time to UTC for storage
+      let utcDateStr: string | null = null;
+      let utcTimeStr: string | null = null;
+      if (scheduledDate && scheduledTime) {
+        const localDateTimeStr = `${scheduledDate}T${scheduledTime}:00`;
+        const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
+        utcDateStr = utcDate.toISOString().split('T')[0];
+        utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5);
       }
 
       // Save to database
@@ -389,12 +441,16 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           industry: industry.trim(),
           goal: goal.trim(),
           niche_info: nicheInfo.trim() || null,
-          scheduled_date: scheduledDate || null,
-          scheduled_time: scheduledTime || null,
+          scheduled_date: utcDateStr,
+          scheduled_time: utcTimeStr,
+          user_timezone: userTimezone,
           social_platforms: selectedSocialPlatforms,
           generated_caption: generatedContent.caption,
           generated_hashtags: generatedContent.hashtags,
           media_url: imageUrl || null,
+          uploaded_image_url: (!isImageGenerated && imageUrl) ? imageUrl : null,
+          ai_generated_image_1_url: isImageGenerated ? imageUrl : null,
+          selected_image_type: isImageGenerated ? 'ai_generated_1' : (imageUrl ? 'uploaded' : null),
           status: postStatus,
           brand_id: includeBrand && brand?.id ? brand.id : null,
           campaign_id: includeBrand && selectedCampaignId && selectedCampaignId !== 'none' ? selectedCampaignId : null,
@@ -408,10 +464,22 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         nicheInfo: nicheInfo.trim(),
         scheduledDate: scheduledDate,
         scheduledTime: scheduledTime,
-        generatedContent
+        generatedContent,
+        generated_caption: caption,
+        generated_hashtags: hashtags,
+        media_url: imageUrl || undefined
       };
 
-      // The monthlyPosts counter is already incremented via setMonthlyPosts below
+      // Increment monthly usage counter
+      const { error: incrementError } = await supabase
+        .rpc('increment_monthly_usage', { user_uuid: user.id });
+
+      if (incrementError) {
+        console.error('Error incrementing usage:', incrementError);
+      }
+
+      // Notify parent component FIRST
+      onPostCreated?.(newPost);
 
       setPosts(prev => [...prev, newPost]);
       setMonthlyPosts(prev => prev + 1);
@@ -439,13 +507,6 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           input.value = '';
         }
       });
-
-      toast({
-        title: "Content Generated!",
-        description: "Your post has been generated and added to your collection",
-      });
-
-      onPostCreated?.();
 
     } catch (error) {
       console.error('Error generating content:', error);
@@ -632,10 +693,18 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           if (scheduledDate && scheduledTime) {
             postStatus = 'scheduled';
           } else {
-            postStatus = 'ready'; // Has platforms but no schedule
+            postStatus = 'ready';
           }
-        } else {
-          postStatus = 'draft';
+        }
+
+        // Convert local time to UTC for storage
+        let utcDateStr: string | null = null;
+        let utcTimeStr: string | null = null;
+        if (scheduledDate && scheduledTime) {
+          const localDateTimeStr = `${scheduledDate}T${scheduledTime}:00`;
+          const utcDate = fromZonedTime(localDateTimeStr, userTimezone);
+          utcDateStr = utcDate.toISOString().split('T')[0];
+          utcTimeStr = utcDate.toISOString().split('T')[1].substring(0, 5);
         }
 
         // Save to database
@@ -646,12 +715,16 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             industry: industry.trim(),
             goal: currentGoal,
             niche_info: nicheInfo.trim() || null,
-            scheduled_date: scheduledDate || null,
-            scheduled_time: scheduledTime || null,
+            scheduled_date: utcDateStr,
+            scheduled_time: utcTimeStr,
+            user_timezone: userTimezone,
             social_platforms: selectedSocialPlatforms,
             generated_caption: generatedContent.caption,
             generated_hashtags: generatedContent.hashtags,
             media_url: imageUrl || null,
+            uploaded_image_url: (!isImageGenerated && imageUrl) ? imageUrl : null,
+            ai_generated_image_1_url: isImageGenerated ? imageUrl : null,
+            selected_image_type: isImageGenerated ? 'ai_generated_1' : (imageUrl ? 'uploaded' : null),
             status: postStatus,
             brand_id: includeBrand && brand?.id ? brand.id : null,
             campaign_id: includeBrand && selectedCampaignId && selectedCampaignId !== 'none' ? selectedCampaignId : null,
@@ -978,7 +1051,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           </div>
           {connectedPlatforms.length === 0 && (
             <p className="text-sm text-muted-foreground mt-2">
-              <Link to="/social-accounts" className="text-blue-600 hover:underline">
+              <Link to="/dashboard/social" className="text-primary hover:underline">
                 Connect your social media accounts
               </Link> to enable scheduling and direct posting.
             </p>
@@ -1026,6 +1099,9 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
               />
             </div>
           </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Your timezone: {timezoneDisplay}. Choose the date and time in your local time; we'll automatically convert it to UTC for publishing.
+          </p>
         </div>
 
         {/* Generate Buttons */}
