@@ -7,7 +7,7 @@ import {
   Users, 
   FileText,
   CalendarDays,
-  Palette,
+  Building2,
   Megaphone,
   Share2,
   CreditCard
@@ -165,7 +165,7 @@ const ActionCards = ({
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
             <CardTitle className="flex items-center">
-              <Palette className="h-5 w-5 mr-2 text-primary" />
+              <Building2 className="h-5 w-5 mr-2 text-primary" />
               Brand Profile
             </CardTitle>
             <CardDescription>

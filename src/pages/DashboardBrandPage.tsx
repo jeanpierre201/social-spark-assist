@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useBrand } from '@/hooks/useBrand';
-import { Loader2, Upload, Palette, Sparkles } from 'lucide-react';
+import { Loader2, Upload, Building2, Palette, Sparkles } from 'lucide-react';
 import { extractColorsFromImage } from '@/utils/colorExtractor';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -145,7 +145,7 @@ const DashboardBrandPage = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5 text-primary" />
+                  <Building2 className="h-5 w-5 text-primary" />
                   Brand Identity
                 </CardTitle>
                 <CardDescription>
