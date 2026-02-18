@@ -38,6 +38,7 @@ const Dashboard = () => {
   // Fetch subscription start date for Pro users
   const [subscriptionStartDate, setSubscriptionStartDate] = useState<string | null>(null);
   const [daysRemaining, setDaysRemaining] = useState<number>(30);
+  const [teamMembersCount, setTeamMembersCount] = useState<number>(0);
 
   React.useEffect(() => {
     const fetchSubscriptionData = async () => {
@@ -73,6 +74,25 @@ const Dashboard = () => {
     };
 
     fetchSubscriptionData();
+  }, [user, isProUser]);
+
+  // Fetch team members count for Pro users
+  React.useEffect(() => {
+    const fetchTeamMembers = async () => {
+      if (!user || !isProUser) return;
+      try {
+        const { count, error } = await supabase
+          .from('campaign_members')
+          .select('user_id', { count: 'exact', head: true })
+          .eq('invited_by', user.id);
+        if (!error && count) {
+          setTeamMembersCount(count);
+        }
+      } catch (error) {
+        console.error('Error fetching team members:', error);
+      }
+    };
+    fetchTeamMembers();
   }, [user, isProUser]);
 
   // Calculate real metrics - only show for subscribed users
@@ -121,6 +141,7 @@ const Dashboard = () => {
             isStarterUser={isStarterUser}
             subscribed={subscribed}
             currentMonthPosts={currentMonthPosts}
+            teamMembersCount={teamMembersCount}
           />
           
           {/* Free User Layout: Vertical Stack */}

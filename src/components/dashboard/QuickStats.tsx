@@ -18,6 +18,7 @@ interface QuickStatsProps {
   avgEngagementRate: string | null;
   totalScheduledPosts: number;
   totalFollowers: number;
+  teamMembersCount?: number;
 }
 
 const QuickStats = ({ 
@@ -28,7 +29,8 @@ const QuickStats = ({
   currentMonthPosts,
   avgEngagementRate,
   totalScheduledPosts,
-  totalFollowers
+  totalFollowers,
+  teamMembersCount = 0
 }: QuickStatsProps) => {
   if (!subscribed) return null;
 
@@ -52,7 +54,7 @@ const QuickStats = ({
           <Sparkles className={`h-4 w-4 ${iconClassName}`} />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{totalPosts || '--'}</div>
+          <div className="text-2xl font-bold">{currentMonthPosts || '--'}</div>
           <p className="text-xs text-muted-foreground">
             {isProUser 
               ? `${currentMonthPosts}/100 this month`
@@ -103,10 +105,10 @@ const QuickStats = ({
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {isProUser ? '3' : totalFollowers ? totalFollowers.toLocaleString() : '--'}
+            {isProUser ? (teamMembersCount || '--') : totalFollowers ? totalFollowers.toLocaleString() : '--'}
           </div>
           <p className="text-xs text-muted-foreground">
-            {isProUser ? 'Active collaborators' : totalFollowers ? 'Total followers' : 'No followers data'}
+            {isProUser ? (teamMembersCount ? 'Active collaborators' : 'No team members') : totalFollowers ? 'Total followers' : 'No followers data'}
           </p>
         </CardContent>
       </Card>

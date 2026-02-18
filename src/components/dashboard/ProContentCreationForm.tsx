@@ -1071,7 +1071,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
               </p>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label htmlFor="scheduled-date" className="text-sm">Date</Label>
               <Input

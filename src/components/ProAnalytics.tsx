@@ -149,20 +149,9 @@ const ProAnalytics = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-purple-900">
-              <Crown className="h-5 w-5 mr-2 text-purple-600" />
-              Advanced Analytics
-              <Badge className="ml-2 bg-purple-100 text-purple-800">Pro</Badge>
-            </CardTitle>
-            <CardDescription className="text-purple-700">
-              Loading analytics data...
-            </CardDescription>
-          </CardHeader>
-        </Card>
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-sm text-muted-foreground mt-2">Loading analytics...</p>
         </div>
       </div>
     );
@@ -174,23 +163,6 @@ const ProAnalytics = () => {
 
   return (
     <div className="space-y-6">
-      {/* Pro Analytics Header */}
-      <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50">
-        <CardHeader>
-          <CardTitle className="flex items-center text-purple-900">
-            <Crown className="h-5 w-5 mr-2 text-purple-600" />
-            Advanced Analytics
-            <Badge className="ml-2 bg-purple-100 text-purple-800">Pro</Badge>
-          </CardTitle>
-          <CardDescription className="text-purple-700">
-            {hasAnalyticsData 
-              ? 'Deep insights into your social media performance across all platforms'
-              : 'No analytics data available yet. Connect your accounts and generate content to see insights here.'
-            }
-          </CardDescription>
-        </CardHeader>
-      </Card>
-
       {/* Show charts only if we have data */}
       {hasAnalyticsData && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
