@@ -221,6 +221,20 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
       let hashtags: string[];
 
       if (generateCaptionWithAI) {
+        // Build brand/campaign context for AI
+        const brandContext: Record<string, string> = {};
+        if (includeBrand && brand) {
+          if (brand.name) brandContext.brandName = brand.name;
+          if (brand.voice_tone) brandContext.brandVoiceTone = brand.voice_tone;
+          if (brand.description) brandContext.brandDescription = brand.description;
+          if (brand.tagline) brandContext.brandTagline = brand.tagline;
+        }
+        const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+        if (includeBrand && selectedCampaign) {
+          brandContext.campaignName = selectedCampaign.name;
+          if (selectedCampaign.description) brandContext.campaignDescription = selectedCampaign.description;
+        }
+
         // Generate with AI
         const { data, error } = await supabase.functions.invoke('generate-content', {
           body: {
@@ -228,7 +242,8 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             industry: industry.trim(),
             goal: goal.trim(),
             nicheInfo: nicheInfo.trim(),
-            includeEmojis
+            includeEmojis,
+            ...brandContext,
           }
         });
 
@@ -273,6 +288,13 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             if (nicheInfo.trim()) {
               imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
             }
+          }
+
+          // Add brand colors to image prompt
+          if (includeBrand && brand) {
+            if (brand.name) imagePrompt += `. Brand: ${brand.name}`;
+            if (brand.color_primary) imagePrompt += `. Use brand primary color ${brand.color_primary}`;
+            if (brand.color_secondary) imagePrompt += ` and secondary color ${brand.color_secondary} in the design`;
           }
           
           if (uploadedImage) {
@@ -504,13 +526,28 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
       for (let i = 0; i < remainingPosts; i++) {
         const currentGoal = i === 0 ? goal.trim() : `${goal.trim()} - ${variations[i % variations.length]}`;
         
+        // Build brand/campaign context for AI
+        const brandContext: Record<string, string> = {};
+        if (includeBrand && brand) {
+          if (brand.name) brandContext.brandName = brand.name;
+          if (brand.voice_tone) brandContext.brandVoiceTone = brand.voice_tone;
+          if (brand.description) brandContext.brandDescription = brand.description;
+          if (brand.tagline) brandContext.brandTagline = brand.tagline;
+        }
+        const selectedCampaign = campaigns.find(c => c.id === selectedCampaignId);
+        if (includeBrand && selectedCampaign) {
+          brandContext.campaignName = selectedCampaign.name;
+          if (selectedCampaign.description) brandContext.campaignDescription = selectedCampaign.description;
+        }
+
         const { data, error } = await supabase.functions.invoke('generate-content', {
           body: {
             userId: user?.id,
             industry: industry.trim(),
             goal: currentGoal,
             nicheInfo: nicheInfo.trim(),
-            includeEmojis
+            includeEmojis,
+            ...brandContext,
           }
         });
 
@@ -525,6 +562,12 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             let imagePrompt = customImagePrompt.trim() || `Create a professional image for ${industry.trim()} industry. Goal: ${currentGoal}`;
             if (!customImagePrompt.trim() && nicheInfo.trim()) {
               imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
+            }
+            // Add brand colors to batch image prompt
+            if (includeBrand && brand) {
+              if (brand.name) imagePrompt += `. Brand: ${brand.name}`;
+              if (brand.color_primary) imagePrompt += `. Use brand primary color ${brand.color_primary}`;
+              if (brand.color_secondary) imagePrompt += ` and secondary color ${brand.color_secondary} in the design`;
             }
             if (uploadedImage) {
               imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";

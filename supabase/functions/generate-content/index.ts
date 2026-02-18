@@ -180,6 +180,12 @@ async function generateWithLovableAI(body: any, apiKey: string) {
   const prompt = `Create a social media post for the ${body.industry} industry. 
 Goal: ${body.goal}
 ${body.nicheInfo ? `Additional context: ${body.nicheInfo}` : ''}
+${body.brandName ? `Brand: ${body.brandName}` : ''}
+${body.brandVoiceTone ? `Voice & Tone: ${body.brandVoiceTone}` : ''}
+${body.brandDescription ? `Brand description: ${body.brandDescription}` : ''}
+${body.brandTagline ? `Brand tagline: ${body.brandTagline}` : ''}
+${body.campaignName ? `Campaign: ${body.campaignName}` : ''}
+${body.campaignDescription ? `Campaign context: ${body.campaignDescription}` : ''}
 
 Please provide:
 1. An engaging caption (max 150 words)
@@ -187,6 +193,7 @@ Please provide:
 
 ${emojiInstructions}
 
+${body.brandName ? `Make sure the content reflects the brand "${body.brandName}" identity and ${body.brandVoiceTone || 'professional'} tone.` : ''}
 Make the content professional, engaging, and appropriate for social media platforms like Instagram, LinkedIn, and Twitter.`;
 
   console.log('Calling Lovable AI...');
@@ -244,6 +251,12 @@ async function generateWithOpenAI(body: any, apiKey: string) {
   const prompt = `Create a social media post for the ${body.industry} industry. 
 Goal: ${body.goal}
 ${body.nicheInfo ? `Additional context: ${body.nicheInfo}` : ''}
+${body.brandName ? `Brand: ${body.brandName}` : ''}
+${body.brandVoiceTone ? `Voice & Tone: ${body.brandVoiceTone}` : ''}
+${body.brandDescription ? `Brand description: ${body.brandDescription}` : ''}
+${body.brandTagline ? `Brand tagline: ${body.brandTagline}` : ''}
+${body.campaignName ? `Campaign: ${body.campaignName}` : ''}
+${body.campaignDescription ? `Campaign context: ${body.campaignDescription}` : ''}
 
 Please provide:
 1. An engaging caption (max 150 words)
@@ -251,6 +264,7 @@ Please provide:
 
 ${emojiInstructions}
 
+${body.brandName ? `Make sure the content reflects the brand "${body.brandName}" identity and ${body.brandVoiceTone || 'professional'} tone.` : ''}
 Make the content professional, engaging, and appropriate for social media platforms like Instagram, LinkedIn, and Twitter.`;
 
   console.log('Calling OpenAI API...');
