@@ -108,14 +108,14 @@ const SocialMediaSettings = () => {
   return (
     <>
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Share2 className="h-5 w-5 text-primary" />
               Social Media Accounts
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="mt-2">
               Connect your social media accounts to get real-time analytics
             </CardDescription>
           </div>
