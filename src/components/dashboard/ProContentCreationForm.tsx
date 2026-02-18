@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useBrand } from '@/hooks/useBrand';
+import { useCampaigns } from '@/hooks/useCampaigns';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Loader2, Wand2, Calendar, Clock } from 'lucide-react';
+import { Plus, Loader2, Wand2, Calendar, Clock, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 
@@ -39,6 +42,8 @@ interface ProContentCreationFormProps {
 const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, setPosts, onPostCreated }: ProContentCreationFormProps) => {
   const { user } = useAuth();
   const { accounts } = useSocialAccounts();
+  const { brand } = useBrand();
+  const { campaigns } = useCampaigns();
   const { toast } = useToast();
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
@@ -56,6 +61,15 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
   const [generateCaptionWithAI, setGenerateCaptionWithAI] = useState(true);
   const [manualCaption, setManualCaption] = useState('');
   const [manualHashtags, setManualHashtags] = useState('');
+  const [includeBrand, setIncludeBrand] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<string>('');
+
+  // Auto-select brand checkbox if brand has at least a name
+  useEffect(() => {
+    if (brand?.name) {
+      setIncludeBrand(true);
+    }
+  }, [brand]);
 
   const socialPlatforms = [
     { id: 'facebook', name: 'Facebook' },
@@ -359,7 +373,9 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           generated_caption: generatedContent.caption,
           generated_hashtags: generatedContent.hashtags,
           media_url: imageUrl || null,
-          status: postStatus
+          status: postStatus,
+          brand_id: includeBrand && brand?.id ? brand.id : null,
+          campaign_id: includeBrand && selectedCampaignId && selectedCampaignId !== 'none' ? selectedCampaignId : null,
         });
 
       if (dbError) throw dbError;
@@ -593,7 +609,9 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             generated_caption: generatedContent.caption,
             generated_hashtags: generatedContent.hashtags,
             media_url: imageUrl || null,
-            status: postStatus
+            status: postStatus,
+            brand_id: includeBrand && brand?.id ? brand.id : null,
+            campaign_id: includeBrand && selectedCampaignId && selectedCampaignId !== 'none' ? selectedCampaignId : null,
           });
 
         if (dbError) throw dbError;
@@ -648,8 +666,60 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           Enter your business details to generate engaging content.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* AI Caption Generation Toggle - at the top */}
+        <CardContent className="space-y-4">
+        {/* Brand Context Toggle */}
+        <div className="p-3 rounded-lg border border-border bg-muted/30 space-y-3">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="include-brand"
+              checked={includeBrand}
+              onCheckedChange={(checked) => {
+                setIncludeBrand(checked as boolean);
+                if (!checked) setSelectedCampaignId('');
+              }}
+              disabled={!brand?.name}
+            />
+            <Label htmlFor="include-brand" className="text-sm font-medium flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Include Brand context
+              {brand?.name && (
+                <span className="text-xs text-muted-foreground">({brand.name})</span>
+              )}
+            </Label>
+          </div>
+          {!brand?.name && (
+            <p className="text-xs text-muted-foreground ml-6">
+              <Link to="/dashboard/brand" className="text-primary underline">Create a brand profile</Link> to enable this option.
+            </p>
+          )}
+
+          {/* Campaign Selector - only if brand is included */}
+          {includeBrand && (
+            <div className="ml-6 space-y-1">
+              <Label htmlFor="campaign-select" className="text-sm">Campaign (optional)</Label>
+              <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+                <SelectTrigger id="campaign-select" className="w-full">
+                  <SelectValue placeholder="No campaign selected" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No campaign</SelectItem>
+                  {campaigns.map((campaign) => (
+                    <SelectItem key={campaign.id} value={campaign.id}>
+                      {campaign.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {campaigns.length === 0 && (
+                <p className="text-xs text-muted-foreground">
+                  <Link to="/dashboard/campaigns" className="text-primary underline">Create a campaign</Link> to organize your content.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* AI Caption Generation Toggle */}
         <div className="flex items-center space-x-2">
           <Checkbox
             id="generate-caption-ai"
