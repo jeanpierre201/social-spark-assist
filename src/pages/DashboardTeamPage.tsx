@@ -1,10 +1,12 @@
 import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
+import { Users } from 'lucide-react';
 import TeamCollaboration from '@/components/TeamCollaboration';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
+import PageTitleCard from '@/components/dashboard/PageTitleCard';
 
 const DashboardTeamPage = () => {
   const { user } = useAuth();
@@ -40,6 +42,11 @@ const DashboardTeamPage = () => {
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Team" />
         <ProDashboardNav />
+        <PageTitleCard
+          icon={Users}
+          title="Team Collaboration"
+          description="Manage team members, roles, and collaborative workflows."
+        />
         <TeamCollaboration />
       </div>
     </div>
