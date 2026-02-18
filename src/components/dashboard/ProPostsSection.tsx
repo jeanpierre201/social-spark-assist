@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, List, Calendar as CalendarIcon, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Edit, Eye, FileText, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, List, Calendar as CalendarIcon, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format, isAfter, startOfMonth, isSameDay } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
@@ -512,11 +512,14 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
     <Card>
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-3">
+          <CardTitle className="flex items-center text-lg">
+            <FileText className="h-5 w-5 text-primary mr-2" />
+            Manage Posts
+          </CardTitle>
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center text-lg">
-              <Calendar className="h-5 w-5 text-primary mr-2" />
-              Your Posts
-            </CardTitle>
+            <CardDescription className="text-sm">
+              Manage and view all your generated content
+            </CardDescription>
             <div className="flex items-center space-x-1 bg-muted rounded-lg p-1">
               <Button
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
@@ -538,28 +541,40 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
               </Button>
             </div>
           </div>
-          <CardDescription className="text-sm">
-            Manage and view all your generated content
-          </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {viewMode === 'list' ? (
           <>
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search posts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            {/* Search + Refresh row */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search posts..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 shrink-0"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                title="Refresh posts"
+              >
+                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+              </Button>
             </div>
 
-            {/* Filters row - compact inline */}
+            {/* Filters row - single line */}
             <div className="flex items-center gap-2 flex-wrap">
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[130px] h-9 text-sm">
                   <Filter className="h-3.5 w-3.5 mr-1.5 shrink-0" />
                   <SelectValue />
@@ -595,16 +610,6 @@ const ProPostsSection = ({ onEditPost, onUpdatePost, onDeletePost, canCreatePost
                 title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
               >
                 {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 shrink-0"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                title="Refresh posts"
-              >
-                <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               </Button>
             </div>
 

@@ -234,7 +234,7 @@ const PostsStarterPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6">
-        <DashboardHeader isProUser={false} isStarterUser={isStarterUser} title="Your Posts" />
+        <DashboardHeader isProUser={false} isStarterUser={isStarterUser} title="Manage Posts" />
         <StarterDashboardNav />
 
         <div className="space-y-6">
@@ -273,22 +273,11 @@ const PostsStarterPage = () => {
             </div>
           )}
 
-          {/* Quick link to create */}
-          {!isCreationExpired && (
-            <div className="flex justify-end">
-              <Link to="/dashboard/content-generator-starter">
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Create New Post
-                </Button>
-              </Link>
-            </div>
-          )}
 
           {/* Posts Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">All Posts ({posts.length})</h2>
+              <p className="text-sm text-muted-foreground">View and manage all your generated content</p>
               <div className="flex items-center space-x-2 bg-muted rounded-lg p-1">
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'ghost'}

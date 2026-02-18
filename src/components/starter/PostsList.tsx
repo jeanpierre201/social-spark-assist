@@ -8,7 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, Edit, Eye, Calendar, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, CheckCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Edit, Eye, Calendar, FileText, Filter, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Send, RefreshCw, AlertCircle, Facebook, Twitter, Instagram, Linkedin, CheckCircle, Clock, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { format, addMinutes } from 'date-fns';
@@ -499,30 +499,43 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Calendar className="h-5 w-5 text-purple-600 mr-2" />
-          Your Posts
+          <FileText className="h-5 w-5 text-primary mr-2" />
+          Manage Posts
         </CardTitle>
         <CardDescription>
           Manage and view all your generated content
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search posts..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        {/* Search + Refresh row */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search posts..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="pl-10"
+            />
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-40">
-              <Filter className="h-4 w-4 mr-2" />
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="h-10 w-10 shrink-0"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
+        {/* Filters row - single line */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setCurrentPage(1); }}>
+            <SelectTrigger className="w-[130px] h-9 text-sm">
+              <Filter className="h-3.5 w-3.5 mr-1.5 shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -531,40 +544,31 @@ const PostsList = ({ onEditPost, refreshTrigger, subscriptionStartDate, canCreat
               <SelectItem value="ready">Ready</SelectItem>
               <SelectItem value="scheduled">Scheduled</SelectItem>
               <SelectItem value="published">Published</SelectItem>
-              <SelectItem value="partially_published">Partially Published</SelectItem>
+              <SelectItem value="partially_published">Partial</SelectItem>
               <SelectItem value="failed">Failed</SelectItem>
               <SelectItem value="rescheduled">Retrying</SelectItem>
               <SelectItem value="archived">Archived</SelectItem>
             </SelectContent>
           </Select>
           <Select value={sortField} onValueChange={(value) => setSortField(value as 'created_at' | 'updated_at' | 'scheduled_date')}>
-            <SelectTrigger className="w-36">
-              <ArrowUpDown className="h-4 w-4 mr-2" />
+            <SelectTrigger className="w-[140px] h-9 text-sm">
+              <ArrowUpDown className="h-3.5 w-3.5 mr-1.5 shrink-0" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="created_at">Created</SelectItem>
-              <SelectItem value="updated_at">Updated</SelectItem>
-              <SelectItem value="scheduled_date">Scheduled</SelectItem>
+              <SelectItem value="updated_at">Updated Date</SelectItem>
+              <SelectItem value="created_at">Created Date</SelectItem>
+              <SelectItem value="scheduled_date">Scheduled Date</SelectItem>
             </SelectContent>
           </Select>
           <Button 
             variant="outline" 
             size="icon" 
             onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
-            className="shrink-0"
+            className="h-9 w-9 shrink-0"
             title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
           >
             {sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-          </Button>
-          <Button 
-            variant="outline" 
-            size="icon" 
-            onClick={handleRefresh}
-            disabled={refreshing}
-            className="shrink-0"
-          >
-            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
           </Button>
           {failedPostsCount > 0 && canCreatePosts !== false && (
             <TooltipProvider>
