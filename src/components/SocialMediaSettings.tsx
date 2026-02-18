@@ -18,7 +18,8 @@ import {
   Plus,
   Unlink,
   RefreshCw,
-  Lock
+  Lock,
+  Share2
 } from 'lucide-react';
 import PlatformIcon from '@/components/PlatformIcon';
 import { Link } from 'react-router-dom';
@@ -110,7 +111,10 @@ const SocialMediaSettings = () => {
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <CardTitle>Social Media Accounts</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-primary" />
+              Social Media Accounts
+            </CardTitle>
             <CardDescription>
               Connect your social media accounts to get real-time analytics
             </CardDescription>
