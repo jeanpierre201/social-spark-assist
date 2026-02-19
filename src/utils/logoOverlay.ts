@@ -119,7 +119,7 @@ export const applyLogoOverlay = async (
 
   // Apply watermark opacity if enabled
   if (watermark) {
-    ctx.globalAlpha = 0.10;
+    ctx.globalAlpha = 0.50;
   }
 
   // Draw logo
