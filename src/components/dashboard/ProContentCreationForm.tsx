@@ -15,6 +15,7 @@ import { Plus, Loader2, Sparkles, Calendar, Clock, Building2 } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { fromZonedTime } from 'date-fns-tz';
+import { applyLogoOverlay, LogoPlacement } from '@/utils/logoOverlay';
 
 interface GeneratedContent {
   caption: string;
