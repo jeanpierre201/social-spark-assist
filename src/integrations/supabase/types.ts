@@ -168,6 +168,7 @@ export type Database = {
           visual_style: string | null
           voice_tone: string | null
           watermark_enabled: boolean | null
+          watermark_opacity: number | null
         }
         Insert: {
           color_primary?: string | null
@@ -184,6 +185,7 @@ export type Database = {
           visual_style?: string | null
           voice_tone?: string | null
           watermark_enabled?: boolean | null
+          watermark_opacity?: number | null
         }
         Update: {
           color_primary?: string | null
@@ -200,6 +202,7 @@ export type Database = {
           visual_style?: string | null
           voice_tone?: string | null
           watermark_enabled?: boolean | null
+          watermark_opacity?: number | null
         }
         Relationships: []
       }

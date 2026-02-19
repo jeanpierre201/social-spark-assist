@@ -333,6 +333,7 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
             logoUrl: brand.logo_url,
             placement: brand.logo_placement as LogoPlacement,
             watermark: brand.watermark_enabled || false,
+            watermarkOpacity: brand.watermark_opacity ?? 0.5,
           });
           // Convert blob back to data URL
           const reader = new FileReader();

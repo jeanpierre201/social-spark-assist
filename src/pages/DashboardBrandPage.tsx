@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useBrand } from '@/hooks/useBrand';
 import { Loader2, Upload, Building2, Paintbrush, ImageIcon } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -66,6 +67,7 @@ const DashboardBrandPage = () => {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [logoPlacement, setLogoPlacement] = useState('none');
   const [watermarkEnabled, setWatermarkEnabled] = useState(false);
+  const [watermarkOpacity, setWatermarkOpacity] = useState(50);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -81,6 +83,7 @@ const DashboardBrandPage = () => {
       setLogoUrl(brand.logo_url || null);
       setLogoPlacement(brand.logo_placement || 'none');
       setWatermarkEnabled(brand.watermark_enabled || false);
+      setWatermarkOpacity(brand.watermark_opacity != null ? Math.round(brand.watermark_opacity * 100) : 50);
     }
   }, [brand]);
 
@@ -128,6 +131,7 @@ const DashboardBrandPage = () => {
       color_secondary: brandColorEnabled ? colorSecondary : null,
       logo_placement: logoPlacement,
       watermark_enabled: logoPlacement !== 'none' ? watermarkEnabled : false,
+      watermark_opacity: logoPlacement !== 'none' && watermarkEnabled ? watermarkOpacity / 100 : 0.5,
     } as any);
   };
 
@@ -302,13 +306,31 @@ const DashboardBrandPage = () => {
 
                 {/* Watermark Toggle - only when placement selected */}
                 {logoPlacement !== 'none' && (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="watermarkEnabled"
-                      checked={watermarkEnabled}
-                      onCheckedChange={(checked) => setWatermarkEnabled(checked === true)}
-                    />
-                    <Label htmlFor="watermarkEnabled" className="cursor-pointer">Watermark style (semi-transparent)</Label>
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="watermarkEnabled"
+                        checked={watermarkEnabled}
+                        onCheckedChange={(checked) => setWatermarkEnabled(checked === true)}
+                      />
+                      <Label htmlFor="watermarkEnabled" className="cursor-pointer">Watermark style (semi-transparent)</Label>
+                    </div>
+                    {watermarkEnabled && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Opacity</Label>
+                          <span className="text-sm text-muted-foreground">{watermarkOpacity}%</span>
+                        </div>
+                        <Slider
+                          value={[watermarkOpacity]}
+                          onValueChange={(value) => setWatermarkOpacity(value[0])}
+                          min={10}
+                          max={100}
+                          step={5}
+                          className="w-full"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

@@ -408,6 +408,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             logoUrl: brand.logo_url,
             placement: brand.logo_placement as LogoPlacement,
             watermark: brand.watermark_enabled || false,
+            watermarkOpacity: brand.watermark_opacity ?? 0.5,
           });
 
           const timestamp = new Date().getTime();
