@@ -106,9 +106,9 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
     setTimezoneDisplay(`${userTimezone} (${gmtOffset})`);
   }, [userTimezone]);
 
-  // Auto-select brand checkbox if brand has at least a name
+  // Auto-select brand checkbox if brand has at least one input filled
   useEffect(() => {
-    if (brand?.name) {
+    if (brand && (brand.name || brand.tagline || brand.description || brand.voice_tone || brand.visual_style || brand.color_primary || brand.color_secondary || brand.logo_url)) {
       setIncludeBrand(true);
     }
   }, [brand]);
@@ -333,14 +333,14 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             }
           }
 
-          // Add brand visual style and colors to image prompt by default
-          if (brand) {
+          // Add brand visual style and colors to image prompt only when Include Brand is selected
+          if (includeBrand && brand) {
             if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
               imagePrompt += `. Visual style: ${brand.visual_style.replace(/-/g, ' ')}`;
             }
             if (brand.color_primary) imagePrompt += `. Use brand primary color ${brand.color_primary}`;
             if (brand.color_secondary) imagePrompt += ` and secondary color ${brand.color_secondary} in the design`;
-            if (includeBrand && brand.name) imagePrompt += `. Brand: ${brand.name}`;
+            if (brand.name) imagePrompt += `. Brand: ${brand.name}`;
           }
           
           if (uploadedImage) {

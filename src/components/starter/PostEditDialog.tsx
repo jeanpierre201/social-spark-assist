@@ -414,8 +414,9 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         }
       }
 
-      // Add brand visual style and colors to image prompt by default
-      if (brand) {
+      // Add brand visual style and colors only when brand has data
+      const brandHasData = brand && (brand.name || brand.tagline || brand.description || brand.voice_tone || brand.visual_style || brand.color_primary || brand.color_secondary || brand.logo_url);
+      if (brandHasData && brand) {
         if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
           prompt += `. Visual style: ${(brand.visual_style || '').replace(/-/g, ' ')}`;
         }
