@@ -66,6 +66,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const [generateCaptionWithAI, setGenerateCaptionWithAI] = useState(true);
   const [manualCaption, setManualCaption] = useState('');
   const [manualHashtags, setManualHashtags] = useState('');
+  const [includeBrand, setIncludeBrand] = useState(false);
+
+  // Auto-select brand if brand has at least one input filled
+  useEffect(() => {
+    if (brand && (brand.name || brand.tagline || brand.description || brand.voice_tone || brand.visual_style || brand.color_primary || brand.color_secondary || brand.logo_url)) {
+      setIncludeBrand(true);
+    }
+  }, [brand]);
 
   // Fetch user timezone from profile
   useEffect(() => {
@@ -313,8 +321,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
           }
 
-          // Add brand visual style and colors to image prompt by default
-          if (brand) {
+          // Add brand visual style and colors only when brand context is included
+          if (includeBrand && brand) {
             if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
               imagePrompt += `. Visual style: ${(brand.visual_style || '').replace(/-/g, ' ')}`;
             }
@@ -392,8 +400,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         isGenerated: isImageGenerated
       };
 
-      // Apply logo overlay if brand has logo placement enabled
-      if (imageUrl && brand?.logo_url && brand?.logo_placement && brand.logo_placement !== 'none') {
+      // Apply logo overlay if brand context is included and logo placement enabled
+      if (imageUrl && includeBrand && brand?.logo_url && brand?.logo_placement && brand.logo_placement !== 'none') {
         try {
           const overlayBlob = await applyLogoOverlay({
             imageUrl,
