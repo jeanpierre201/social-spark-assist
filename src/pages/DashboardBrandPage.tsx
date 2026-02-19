@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useBrand } from '@/hooks/useBrand';
-import { Loader2, Upload, Building2, Palette, Sparkles } from 'lucide-react';
-import { extractColorsFromImage } from '@/utils/colorExtractor';
+import { Loader2, Upload, Building2, Paintbrush } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
@@ -26,6 +26,17 @@ const voiceTones = [
   { value: 'luxury', label: 'Luxury & Premium' },
 ];
 
+const visualStyles = [
+  { value: 'clean-minimal', label: 'Clean & minimal' },
+  { value: 'modern-gradient', label: 'Modern gradient' },
+  { value: 'flat-design', label: 'Flat design' },
+  { value: '3d-render', label: '3D render' },
+  { value: 'photorealistic', label: 'Photorealistic' },
+  { value: 'illustration', label: 'Illustration' },
+  { value: 'cinematic', label: 'Cinematic' },
+  { value: 'social-media-bold', label: 'Social media bold' },
+];
+
 const DashboardBrandPage = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, loading } = useSubscription();
@@ -39,11 +50,12 @@ const DashboardBrandPage = () => {
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [voiceTone, setVoiceTone] = useState('professional');
+  const [visualStyle, setVisualStyle] = useState('clean-minimal');
   const [colorPrimary, setColorPrimary] = useState('#3b82f6');
   const [colorSecondary, setColorSecondary] = useState('#8b5cf6');
+  const [brandColorEnabled, setBrandColorEnabled] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [extractingColors, setExtractingColors] = useState(false);
 
   useEffect(() => {
     if (brand) {
@@ -53,6 +65,7 @@ const DashboardBrandPage = () => {
       setVoiceTone(brand.voice_tone || 'professional');
       setColorPrimary(brand.color_primary || '#3b82f6');
       setColorSecondary(brand.color_secondary || '#8b5cf6');
+      setBrandColorEnabled(!!(brand.color_primary || brand.color_secondary));
       setLogoUrl(brand.logo_url || null);
     }
   }, [brand]);
@@ -76,21 +89,8 @@ const DashboardBrandPage = () => {
         .from('media')
         .getPublicUrl(filePath);
 
-      const publicUrl = urlData.publicUrl;
-      setLogoUrl(publicUrl);
-
-      // Auto-extract colors
-      setExtractingColors(true);
-      try {
-        const colors = await extractColorsFromImage(publicUrl);
-        setColorPrimary(colors.primary);
-        setColorSecondary(colors.secondary);
-        toast({ title: 'Logo uploaded', description: 'Colors extracted from your logo. You can adjust them manually.' });
-      } catch {
-        toast({ title: 'Logo uploaded', description: 'Could not extract colors automatically. Set them manually.' });
-      } finally {
-        setExtractingColors(false);
-      }
+      setLogoUrl(urlData.publicUrl);
+      toast({ title: 'Logo uploaded', description: 'Your brand logo has been uploaded successfully.' });
     } catch (error: any) {
       toast({ title: 'Upload failed', description: error.message, variant: 'destructive' });
     } finally {
@@ -198,81 +198,9 @@ const DashboardBrandPage = () => {
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5 text-primary" />
-                  Brand Colors
-                </CardTitle>
-                <CardDescription>
-                  Set your brand colors for visual consistency across content.
-                  {extractingColors && (
-                    <span className="flex items-center gap-1 text-primary mt-1">
-                      <Sparkles className="h-3 w-3 animate-pulse" /> Extracting colors from logo...
-                    </span>
-                  )}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="colorPrimary">Primary Color</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <input
-                        type="color"
-                        id="colorPrimary"
-                        value={colorPrimary}
-                        onChange={(e) => setColorPrimary(e.target.value)}
-                        className="h-10 w-14 rounded border border-input cursor-pointer"
-                      />
-                      <Input
-                        value={colorPrimary}
-                        onChange={(e) => setColorPrimary(e.target.value)}
-                        className="flex-1"
-                        placeholder="#3b82f6"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="colorSecondary">Secondary Color</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <input
-                        type="color"
-                        id="colorSecondary"
-                        value={colorSecondary}
-                        onChange={(e) => setColorSecondary(e.target.value)}
-                        className="h-10 w-14 rounded border border-input cursor-pointer"
-                      />
-                      <Input
-                        value={colorSecondary}
-                        onChange={(e) => setColorSecondary(e.target.value)}
-                        className="flex-1"
-                        placeholder="#8b5cf6"
-                      />
-                    </div>
-                  </div>
-                </div>
-                {/* Color Preview */}
-                <div className="mt-4 flex gap-3">
-                  <div
-                    className="h-16 flex-1 rounded-lg border border-border flex items-center justify-center text-sm font-medium"
-                    style={{ backgroundColor: colorPrimary, color: '#fff' }}
-                  >
-                    Primary
-                  </div>
-                  <div
-                    className="h-16 flex-1 rounded-lg border border-border flex items-center justify-center text-sm font-medium"
-                    style={{ backgroundColor: colorSecondary, color: '#fff' }}
-                  >
-                    Secondary
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
 
-          {/* Logo & Preview Sidebar */}
+          {/* Logo & Brand Style Sidebar */}
           <div className="space-y-6">
             <Card>
               <CardHeader>
@@ -327,6 +255,102 @@ const DashboardBrandPage = () => {
               </CardContent>
             </Card>
 
+            {/* Brand Style Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Paintbrush className="h-5 w-5 text-primary" />
+                  Brand Style
+                </CardTitle>
+                <CardDescription>
+                  Set your brand style for visual consistency across content.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="visualStyle">Visual Style</Label>
+                  <Select value={visualStyle} onValueChange={setVisualStyle}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {visualStyles.map((style) => (
+                        <SelectItem key={style.value} value={style.value}>
+                          {style.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="brandColorEnabled"
+                    checked={brandColorEnabled}
+                    onCheckedChange={(checked) => setBrandColorEnabled(checked === true)}
+                  />
+                  <Label htmlFor="brandColorEnabled" className="cursor-pointer">Brand Color</Label>
+                </div>
+
+                {brandColorEnabled && (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="colorPrimary">Primary Color</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="color"
+                            id="colorPrimary"
+                            value={colorPrimary}
+                            onChange={(e) => setColorPrimary(e.target.value)}
+                            className="h-10 w-14 rounded border border-input cursor-pointer"
+                          />
+                          <Input
+                            value={colorPrimary}
+                            onChange={(e) => setColorPrimary(e.target.value)}
+                            className="flex-1"
+                            placeholder="#3b82f6"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="colorSecondary">Secondary Color</Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="color"
+                            id="colorSecondary"
+                            value={colorSecondary}
+                            onChange={(e) => setColorSecondary(e.target.value)}
+                            className="h-10 w-14 rounded border border-input cursor-pointer"
+                          />
+                          <Input
+                            value={colorSecondary}
+                            onChange={(e) => setColorSecondary(e.target.value)}
+                            className="flex-1"
+                            placeholder="#8b5cf6"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <div
+                        className="h-16 flex-1 rounded-lg border border-border flex items-center justify-center text-sm font-medium"
+                        style={{ backgroundColor: colorPrimary, color: '#fff' }}
+                      >
+                        Primary
+                      </div>
+                      <div
+                        className="h-16 flex-1 rounded-lg border border-border flex items-center justify-center text-sm font-medium"
+                        style={{ backgroundColor: colorSecondary, color: '#fff' }}
+                      >
+                        Secondary
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Brand Preview Card */}
             <Card>
               <CardHeader>
@@ -340,15 +364,19 @@ const DashboardBrandPage = () => {
                   <h3 className="font-bold text-foreground">{name || 'Your Brand'}</h3>
                   {tagline && <p className="text-sm text-muted-foreground italic">{tagline}</p>}
                   {description && <p className="text-xs text-muted-foreground line-clamp-3">{description}</p>}
-                  <div className="flex gap-2">
-                    <span
-                      className="inline-block h-4 w-4 rounded-full border border-border"
-                      style={{ backgroundColor: colorPrimary }}
-                    />
-                    <span
-                      className="inline-block h-4 w-4 rounded-full border border-border"
-                      style={{ backgroundColor: colorSecondary }}
-                    />
+                  <div className="flex gap-2 items-center">
+                    {brandColorEnabled && (
+                      <>
+                        <span
+                          className="inline-block h-4 w-4 rounded-full border border-border"
+                          style={{ backgroundColor: colorPrimary }}
+                        />
+                        <span
+                          className="inline-block h-4 w-4 rounded-full border border-border"
+                          style={{ backgroundColor: colorSecondary }}
+                        />
+                      </>
+                    )}
                     <span className="text-xs text-muted-foreground capitalize">{voiceTone} tone</span>
                   </div>
                 </div>
