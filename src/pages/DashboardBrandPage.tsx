@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useBrand } from '@/hooks/useBrand';
-import { Loader2, Upload, Building2, Paintbrush } from 'lucide-react';
+import { Loader2, Upload, Building2, Paintbrush, ImageIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,6 +37,15 @@ const visualStyles = [
   { value: 'social-media-bold', label: 'Social media bold' },
 ];
 
+const logoPositions = [
+  { value: 'top-left', label: 'Top Left' },
+  { value: 'top-center', label: 'Top Center' },
+  { value: 'top-right', label: 'Top Right' },
+  { value: 'bottom-left', label: 'Bottom Left' },
+  { value: 'bottom-center', label: 'Bottom Center' },
+  { value: 'bottom-right', label: 'Bottom Right' },
+];
+
 const DashboardBrandPage = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, loading } = useSubscription();
@@ -55,6 +64,8 @@ const DashboardBrandPage = () => {
   const [colorSecondary, setColorSecondary] = useState('#8b5cf6');
   const [brandColorEnabled, setBrandColorEnabled] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoPlacement, setLogoPlacement] = useState('bottom-right');
+  const [watermarkEnabled, setWatermarkEnabled] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -211,46 +222,85 @@ const DashboardBrandPage = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {logoUrl ? (
-                  <div className="relative">
+                  <div>
                     <img
                       src={logoUrl}
                       alt="Brand logo"
                       className="w-full h-40 object-contain rounded-lg border border-border bg-muted p-2"
                     />
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 w-full"
-                      onClick={() => setLogoUrl(null)}
-                    >
-                      Remove Logo
-                    </Button>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setLogoUrl(null)}
+                      >
+                        Remove Logo
+                      </Button>
+                      <Label htmlFor="logoUpload" className="cursor-pointer">
+                        <Button variant="outline" size="sm" className="w-full" disabled={uploading} asChild>
+                          <span>
+                            {uploading ? (
+                              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</>
+                            ) : (
+                              'Change File'
+                            )}
+                          </span>
+                        </Button>
+                      </Label>
+                    </div>
                   </div>
                 ) : (
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-2">Upload your logo</p>
+                  <div>
+                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                      <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground mb-2">Upload your logo</p>
+                    </div>
+                    <Label htmlFor="logoUpload" className="cursor-pointer">
+                      <Button variant="outline" className="w-full mt-2" disabled={uploading} asChild>
+                        <span>
+                          {uploading ? (
+                            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</>
+                          ) : (
+                            'Choose File'
+                          )}
+                        </span>
+                      </Button>
+                    </Label>
                   </div>
                 )}
+                <input
+                  id="logoUpload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+
+                {/* Logo Placement */}
                 <div>
-                  <Label htmlFor="logoUpload" className="cursor-pointer">
-                    <Button variant="outline" className="w-full" disabled={uploading} asChild>
-                      <span>
-                        {uploading ? (
-                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</>
-                        ) : (
-                          'Choose File'
-                        )}
-                      </span>
-                    </Button>
-                  </Label>
-                  <input
-                    id="logoUpload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleLogoUpload}
+                  <Label htmlFor="logoPlacement">Logo Placement</Label>
+                  <Select value={logoPlacement} onValueChange={setLogoPlacement}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {logoPositions.map((pos) => (
+                        <SelectItem key={pos.value} value={pos.value}>
+                          {pos.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Watermark Toggle */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="watermarkEnabled"
+                    checked={watermarkEnabled}
+                    onCheckedChange={(checked) => setWatermarkEnabled(checked === true)}
                   />
+                  <Label htmlFor="watermarkEnabled" className="cursor-pointer">Watermark style (semi-transparent)</Label>
                 </div>
               </CardContent>
             </Card>
@@ -378,6 +428,7 @@ const DashboardBrandPage = () => {
                       </>
                     )}
                     <span className="text-xs text-muted-foreground capitalize">{voiceTone} tone</span>
+                    <span className="text-xs text-muted-foreground">· {visualStyles.find(s => s.value === visualStyle)?.label}</span>
                   </div>
                 </div>
               </CardContent>
