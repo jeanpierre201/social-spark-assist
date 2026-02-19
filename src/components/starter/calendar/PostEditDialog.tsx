@@ -8,8 +8,11 @@ import { Save, X, Upload, ImageIcon, Wand2, Edit, Trash2, RotateCcw, CheckCircle
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { usePostsManager } from '@/hooks/usePostsManager';
+import { useBrand } from '@/hooks/useBrand';
 import { useState, useEffect, useMemo } from 'react';
 import { getLowestLimit, getLimitingPlatform, hasDifferentLimits, getCharacterCountColor, PLATFORM_CHARACTER_LIMITS } from '@/config/characterLimits';
+import { applyLogoOverlay, LogoPlacement } from '@/utils/logoOverlay';
+import { supabase as supabaseClient } from '@/integrations/supabase/client';
 
 interface GeneratedContent {
   caption: string;
@@ -49,6 +52,7 @@ interface PostEditDialogProps {
 const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: PostEditDialogProps) => {
   const { toast } = useToast();
   const { updatePostMutation } = usePostsManager();
+  const { brand } = useBrand();
   const [showFullImage, setShowFullImage] = useState(false);
   const [imagePrompt, setImagePrompt] = useState('');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
@@ -297,6 +301,15 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         // Default prompt if no custom prompt provided
         prompt = `Create a professional image for ${editingPost?.industry} industry. Goal: ${editingPost?.goal}. Caption: ${editingPost?.generatedContent?.caption}`;
       }
+
+      // Add brand visual style and colors to image prompt by default
+      if (brand) {
+        if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
+          prompt += `. Visual style: ${(brand.visual_style || '').replace(/-/g, ' ')}`;
+        }
+        if (brand.color_primary) prompt += `. Use brand primary color ${brand.color_primary}`;
+        if (brand.color_secondary) prompt += ` and secondary color ${brand.color_secondary} in the design`;
+      }
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
@@ -309,6 +322,28 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
 
       if (error) throw error;
 
+      let finalImage = data.image;
+
+      // Apply logo overlay if brand has logo placement enabled
+      if (brand?.logo_url && brand?.logo_placement && brand.logo_placement !== 'none') {
+        try {
+          const overlayBlob = await applyLogoOverlay({
+            imageUrl: data.image,
+            logoUrl: brand.logo_url,
+            placement: brand.logo_placement as LogoPlacement,
+            watermark: brand.watermark_enabled || false,
+          });
+          // Convert blob back to data URL
+          const reader = new FileReader();
+          finalImage = await new Promise<string>((resolve) => {
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(overlayBlob);
+          });
+        } catch (overlayError) {
+          console.error('Logo overlay failed, using original image:', overlayError);
+        }
+      }
+
       const isFirstGeneration = !content?.aiImage1;
       const newGenerationsCount = generationsCount + 1;
       const newPrompts = [...(content?.aiImagePrompts || []), prompt];
@@ -316,13 +351,13 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
       const updatedContent = {
         ...content!,
         ...(isFirstGeneration ? { 
-          aiImage1: data.image,
+          aiImage1: finalImage,
           selectedImageType: 'ai_1' as const,
-          image: data.image
+          image: finalImage
         } : { 
-          aiImage2: data.image,
+          aiImage2: finalImage,
           selectedImageType: 'ai_2' as const,
-          image: data.image
+          image: finalImage
         }),
         aiGenerationsCount: newGenerationsCount,
         aiImagePrompts: newPrompts

@@ -8,12 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
+import { useBrand } from '@/hooks/useBrand';
 import { supabase } from '@/integrations/supabase/client';
 import { Plus, Loader2, Sparkles, Calendar, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { fromZonedTime } from 'date-fns-tz';
 import { format } from 'date-fns';
+import { applyLogoOverlay, LogoPlacement } from '@/utils/logoOverlay';
 
 interface GeneratedContent {
   caption: string;
@@ -45,6 +47,7 @@ interface ContentCreationFormProps {
 const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, setPosts, onPostCreated }: ContentCreationFormProps) => {
   const { user } = useAuth();
   const { accounts } = useSocialAccounts();
+  const { brand } = useBrand();
   const { toast } = useToast();
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
@@ -310,6 +313,15 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
           }
 
+          // Add brand visual style and colors to image prompt by default
+          if (brand) {
+            if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
+              imagePrompt += `. Visual style: ${(brand.visual_style || '').replace(/-/g, ' ')}`;
+            }
+            if (brand.color_primary) imagePrompt += `. Use brand primary color ${brand.color_primary}`;
+            if (brand.color_secondary) imagePrompt += ` and secondary color ${brand.color_secondary} in the design`;
+          }
+
           const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {
             body: {
               prompt: imagePrompt,
@@ -380,6 +392,37 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         isGenerated: isImageGenerated
       };
 
+      // Apply logo overlay if brand has logo placement enabled
+      if (imageUrl && brand?.logo_url && brand?.logo_placement && brand.logo_placement !== 'none') {
+        try {
+          const overlayBlob = await applyLogoOverlay({
+            imageUrl,
+            logoUrl: brand.logo_url,
+            placement: brand.logo_placement as LogoPlacement,
+            watermark: brand.watermark_enabled || false,
+          });
+
+          const timestamp = new Date().getTime();
+          const storagePath = `${user.id}/${timestamp}-branded.png`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('ai-images')
+            .upload(storagePath, overlayBlob, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: 'image/png',
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = supabase.storage
+              .from('ai-images')
+              .getPublicUrl(uploadData.path);
+            imageUrl = publicUrlData.publicUrl;
+            generatedContent.image = imageUrl;
+          }
+        } catch (overlayError) {
+          console.error('Logo overlay failed, using original image:', overlayError);
+        }
+      }
       // Convert local time to UTC for storage
       let utcDateStr: string | null = null;
       let utcTimeStr: string | null = null;

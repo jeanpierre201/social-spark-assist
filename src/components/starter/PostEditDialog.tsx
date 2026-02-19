@@ -19,6 +19,8 @@ import { Calendar, Clock, Save, Eye, ImageIcon, Upload, X, Loader2, RotateCcw, S
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { fromZonedTime, toZonedTime } from 'date-fns-tz';
+import { useBrand } from '@/hooks/useBrand';
+import { applyLogoOverlay, LogoPlacement } from '@/utils/logoOverlay';
 
 interface Post {
   id: string;
@@ -52,6 +54,7 @@ interface PostEditDialogProps {
 const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDialogProps) => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { brand } = useBrand();
   const { subscriptionEnd, subscriptionTier } = useSubscription();
   
   // Use optional hook - returns null if provider missing
@@ -411,6 +414,15 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         }
       }
 
+      // Add brand visual style and colors to image prompt by default
+      if (brand) {
+        if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
+          prompt += `. Visual style: ${(brand.visual_style || '').replace(/-/g, ' ')}`;
+        }
+        if (brand.color_primary) prompt += `. Use brand primary color ${brand.color_primary}`;
+        if (brand.color_secondary) prompt += ` and secondary color ${brand.color_secondary} in the design`;
+      }
+
 
       // Use the regular generate-image function for new images
       const response = await supabase.functions.invoke('generate-image', {
@@ -435,21 +447,53 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         throw new Error("Failed to upload AI image to storage");
       }
 
-      // Update form data with persistent URL and specific type
+      // Apply logo overlay if brand has logo placement enabled
+      let finalUrl = persistentUrl;
+      if (brand?.logo_url && brand?.logo_placement && brand.logo_placement !== 'none') {
+        try {
+          const overlayBlob = await applyLogoOverlay({
+            imageUrl: persistentUrl,
+            logoUrl: brand.logo_url,
+            placement: brand.logo_placement as LogoPlacement,
+            watermark: brand.watermark_enabled || false,
+          });
+
+          const timestamp = new Date().getTime();
+          const storagePath = `${user!.id}/${timestamp}-branded.png`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('ai-images')
+            .upload(storagePath, overlayBlob, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: 'image/png',
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = supabase.storage
+              .from('ai-images')
+              .getPublicUrl(uploadData.path);
+            finalUrl = publicUrlData.publicUrl;
+          }
+        } catch (overlayError) {
+          console.error('Logo overlay failed, using original image:', overlayError);
+        }
+      }
+
+      // Update form data with final URL (with logo overlay if applicable) and specific type
       const specificType = useAI1 ? 'ai_generated_1' : 'ai_generated_2';
       
       // Create the updated form data
       const updatedFormData = { 
         ...formData, 
-        media_url: persistentUrl,
-        [aiField]: persistentUrl,
+        media_url: finalUrl,
+        [aiField]: finalUrl,
         selected_image_type: specificType
       };
       
       setFormData(updatedFormData);
       
-      // Update available images with persistent URL
-      setAvailableImages(prev => ({ ...prev, [aiSlot]: persistentUrl }));
+      // Update available images with final URL
+      setAvailableImages(prev => ({ ...prev, [aiSlot]: finalUrl }));
 
       // Immediately save to database
       const updates = {
@@ -458,10 +502,10 @@ const PostEditDialog = ({ post, open, onOpenChange, onPostUpdated }: PostEditDia
         scheduled_date: updatedFormData.scheduled_date || null,
         scheduled_time: updatedFormData.scheduled_time || null,
         status: updatedFormData.status,
-        media_url: persistentUrl,
+        media_url: finalUrl,
         uploaded_image_url: updatedFormData.uploaded_image_url || null,
-        ai_generated_image_1_url: useAI1 ? persistentUrl : (updatedFormData.ai_generated_image_1_url || null),
-        ai_generated_image_2_url: useAI1 ? (updatedFormData.ai_generated_image_2_url || null) : persistentUrl,
+        ai_generated_image_1_url: useAI1 ? finalUrl : (updatedFormData.ai_generated_image_1_url || null),
+        ai_generated_image_2_url: useAI1 ? (updatedFormData.ai_generated_image_2_url || null) : finalUrl,
         selected_image_type: specificType,
         updated_at: new Date().toISOString()
       };

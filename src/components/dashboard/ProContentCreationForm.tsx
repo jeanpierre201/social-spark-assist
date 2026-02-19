@@ -333,11 +333,14 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             }
           }
 
-          // Add brand colors to image prompt
-          if (includeBrand && brand) {
-            if (brand.name) imagePrompt += `. Brand: ${brand.name}`;
+          // Add brand visual style and colors to image prompt by default
+          if (brand) {
+            if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
+              imagePrompt += `. Visual style: ${brand.visual_style.replace(/-/g, ' ')}`;
+            }
             if (brand.color_primary) imagePrompt += `. Use brand primary color ${brand.color_primary}`;
             if (brand.color_secondary) imagePrompt += ` and secondary color ${brand.color_secondary} in the design`;
+            if (includeBrand && brand.name) imagePrompt += `. Brand: ${brand.name}`;
           }
           
           if (uploadedImage) {
