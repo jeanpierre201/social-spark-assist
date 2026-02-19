@@ -64,7 +64,7 @@ const DashboardBrandPage = () => {
   const [colorSecondary, setColorSecondary] = useState('#8b5cf6');
   const [brandColorEnabled, setBrandColorEnabled] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [logoPlacement, setLogoPlacement] = useState('bottom-right');
+  const [logoPlacement, setLogoPlacement] = useState('none');
   const [watermarkEnabled, setWatermarkEnabled] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -229,13 +229,6 @@ const DashboardBrandPage = () => {
                       className="w-full h-40 object-contain rounded-lg border border-border bg-muted p-2"
                     />
                     <div className="grid grid-cols-2 gap-2 mt-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setLogoUrl(null)}
-                      >
-                        Remove Logo
-                      </Button>
                       <Label htmlFor="logoUpload" className="cursor-pointer">
                         <Button variant="outline" size="sm" className="w-full" disabled={uploading} asChild>
                           <span>
@@ -247,6 +240,13 @@ const DashboardBrandPage = () => {
                           </span>
                         </Button>
                       </Label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setLogoUrl(null)}
+                      >
+                        Remove Logo
+                      </Button>
                     </div>
                   </div>
                 ) : (
@@ -284,6 +284,7 @@ const DashboardBrandPage = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="none">Do not include</SelectItem>
                       {logoPositions.map((pos) => (
                         <SelectItem key={pos.value} value={pos.value}>
                           {pos.label}
@@ -293,15 +294,17 @@ const DashboardBrandPage = () => {
                   </Select>
                 </div>
 
-                {/* Watermark Toggle */}
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="watermarkEnabled"
-                    checked={watermarkEnabled}
-                    onCheckedChange={(checked) => setWatermarkEnabled(checked === true)}
-                  />
-                  <Label htmlFor="watermarkEnabled" className="cursor-pointer">Watermark style (semi-transparent)</Label>
-                </div>
+                {/* Watermark Toggle - only when placement selected */}
+                {logoPlacement !== 'none' && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="watermarkEnabled"
+                      checked={watermarkEnabled}
+                      onCheckedChange={(checked) => setWatermarkEnabled(checked === true)}
+                    />
+                    <Label htmlFor="watermarkEnabled" className="cursor-pointer">Watermark style (semi-transparent)</Label>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
