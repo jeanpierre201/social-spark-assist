@@ -287,6 +287,8 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          audience_refinement: string | null
+          audience_type: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -294,8 +296,11 @@ export type Database = {
           name: string
           status: string
           updated_at: string
+          visual_style: string | null
         }
         Insert: {
+          audience_refinement?: string | null
+          audience_type?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -303,8 +308,11 @@ export type Database = {
           name: string
           status?: string
           updated_at?: string
+          visual_style?: string | null
         }
         Update: {
+          audience_refinement?: string | null
+          audience_type?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -312,6 +320,7 @@ export type Database = {
           name?: string
           status?: string
           updated_at?: string
+          visual_style?: string | null
         }
         Relationships: []
       }
