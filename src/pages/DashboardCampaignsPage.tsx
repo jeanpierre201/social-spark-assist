@@ -26,6 +26,31 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
+const VISUAL_STYLE_OPTIONS = [
+  { value: 'auto', label: 'Auto Style (Recommended)' },
+  { value: 'clean-minimal', label: 'Clean & Minimal' },
+  { value: 'bold-impact', label: 'Bold & High Impact' },
+  { value: 'corporate', label: 'Corporate & Structured' },
+  { value: 'modern-gradient', label: 'Modern Gradient' },
+  { value: 'dark-dramatic', label: 'Dark & Dramatic' },
+  { value: 'futuristic-tech', label: 'Futuristic & Tech' },
+  { value: 'soft-lifestyle', label: 'Soft & Lifestyle' },
+  { value: 'editorial-magazine', label: 'Editorial & Magazine' },
+  { value: 'playful-colorful', label: 'Playful & Colorful' },
+];
+
+const AUDIENCE_TYPE_OPTIONS = [
+  { value: 'general', label: 'General Audience' },
+  { value: 'young-adults', label: 'Young Adults (18–30)' },
+  { value: 'professionals', label: 'Professionals / B2B' },
+  { value: 'entrepreneurs', label: 'Entrepreneurs' },
+  { value: 'families', label: 'Families & Parents' },
+  { value: 'students', label: 'Students' },
+  { value: 'luxury', label: 'Luxury Consumers' },
+  { value: 'fitness', label: 'Fitness Enthusiasts' },
+  { value: 'tech-savvy', label: 'Tech-Savvy Users' },
+];
+
 const DashboardCampaignsPage = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, loading } = useSubscription();
@@ -40,26 +65,43 @@ const DashboardCampaignsPage = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [campaignName, setCampaignName] = useState('');
   const [campaignDescription, setCampaignDescription] = useState('');
+  const [visualStyle, setVisualStyle] = useState('auto');
+  const [audienceType, setAudienceType] = useState('general');
+  const [audienceRefinement, setAudienceRefinement] = useState('');
 
   // Edit state
   const [editingCampaign, setEditingCampaign] = useState<any | null>(null);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editStatus, setEditStatus] = useState('active');
+  const [editVisualStyle, setEditVisualStyle] = useState('auto');
+  const [editAudienceType, setEditAudienceType] = useState('general');
+  const [editAudienceRefinement, setEditAudienceRefinement] = useState('');
   const [showEditDialog, setShowEditDialog] = useState(false);
 
-  const handleCreateCampaign = () => {
+  const handleCreateCampaign = async () => {
     if (!campaignName.trim()) return;
-    createCampaignMutation.mutate(
-      { name: campaignName.trim(), description: campaignDescription.trim() || undefined },
-      {
-        onSuccess: () => {
-          setCampaignName('');
-          setCampaignDescription('');
-          setShowCreateDialog(false);
-        },
-      }
-    );
+    try {
+      const { error } = await supabase.from('campaigns').insert({
+        name: campaignName.trim(),
+        description: campaignDescription.trim() || null,
+        visual_style: visualStyle,
+        audience_type: audienceType,
+        audience_refinement: audienceRefinement.trim() || null,
+        created_by: user!.id,
+      });
+      if (error) throw error;
+      queryClient.invalidateQueries({ queryKey: ['campaigns'] });
+      toast({ title: 'Campaign created!' });
+      setCampaignName('');
+      setCampaignDescription('');
+      setVisualStyle('auto');
+      setAudienceType('general');
+      setAudienceRefinement('');
+      setShowCreateDialog(false);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
   };
 
   const handleEditCampaign = (campaign: any) => {
@@ -67,6 +109,9 @@ const DashboardCampaignsPage = () => {
     setEditName(campaign.name);
     setEditDescription(campaign.description || '');
     setEditStatus(campaign.status);
+    setEditVisualStyle(campaign.visual_style || 'auto');
+    setEditAudienceType(campaign.audience_type || 'general');
+    setEditAudienceRefinement(campaign.audience_refinement || '');
     setShowEditDialog(true);
   };
 
@@ -79,6 +124,9 @@ const DashboardCampaignsPage = () => {
           name: editName.trim(),
           description: editDescription.trim() || null,
           status: editStatus,
+          visual_style: editVisualStyle,
+          audience_type: editAudienceType,
+          audience_refinement: editAudienceRefinement.trim() || null,
         })
         .eq('id', editingCampaign.id);
       if (error) throw error;
@@ -153,7 +201,7 @@ const DashboardCampaignsPage = () => {
                 <DialogHeader>
                   <DialogTitle>Create New Campaign</DialogTitle>
                   <DialogDescription>
-                    Organize your content around a specific project or theme.
+                    Define the creative direction for a series of content.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
@@ -176,13 +224,50 @@ const DashboardCampaignsPage = () => {
                       rows={3}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="visualStyle">Visual Style</Label>
+                    <Select value={visualStyle} onValueChange={setVisualStyle}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {VISUAL_STYLE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">This controls the visual aesthetic of all generated content.</p>
+                  </div>
+                  <div>
+                    <Label htmlFor="audienceType">Audience Type</Label>
+                    <Select value={audienceType} onValueChange={setAudienceType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AUDIENCE_TYPE_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">Content tone and visuals will adapt to this audience.</p>
+                  </div>
+                  <div>
+                    <Input
+                      id="audienceRefinement"
+                      placeholder="Add specific audience details"
+                      value={audienceRefinement}
+                      onChange={(e) => setAudienceRefinement(e.target.value)}
+                      className="text-sm"
+                    />
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button
                     onClick={handleCreateCampaign}
-                    disabled={!campaignName.trim() || createCampaignMutation.isPending}
+                    disabled={!campaignName.trim()}
                   >
-                    {createCampaignMutation.isPending ? 'Creating...' : 'Create Campaign'}
+                    Create Campaign
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -259,7 +344,7 @@ const DashboardCampaignsPage = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Edit Campaign</DialogTitle>
-              <DialogDescription>Update your campaign details.</DialogDescription>
+              <DialogDescription>Define the creative direction for a series of content.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -292,6 +377,43 @@ const DashboardCampaignsPage = () => {
                     <SelectItem value="archived">Archived</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label htmlFor="editVisualStyle">Visual Style</Label>
+                <Select value={editVisualStyle} onValueChange={setEditVisualStyle}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {VISUAL_STYLE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">This controls the visual aesthetic of all generated content.</p>
+              </div>
+              <div>
+                <Label htmlFor="editAudienceType">Audience Type</Label>
+                <Select value={editAudienceType} onValueChange={setEditAudienceType}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AUDIENCE_TYPE_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">Content tone and visuals will adapt to this audience.</p>
+              </div>
+              <div>
+                <Input
+                  id="editAudienceRefinement"
+                  placeholder="Add specific audience details"
+                  value={editAudienceRefinement}
+                  onChange={(e) => setEditAudienceRefinement(e.target.value)}
+                  className="text-sm"
+                />
               </div>
             </div>
             <DialogFooter>
