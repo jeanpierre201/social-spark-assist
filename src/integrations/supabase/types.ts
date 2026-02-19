@@ -159,12 +159,15 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          logo_placement: string | null
           logo_url: string | null
           name: string
           tagline: string | null
           updated_at: string
           user_id: string
+          visual_style: string | null
           voice_tone: string | null
+          watermark_enabled: boolean | null
         }
         Insert: {
           color_primary?: string | null
@@ -172,12 +175,15 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          logo_placement?: string | null
           logo_url?: string | null
           name: string
           tagline?: string | null
           updated_at?: string
           user_id: string
+          visual_style?: string | null
           voice_tone?: string | null
+          watermark_enabled?: boolean | null
         }
         Update: {
           color_primary?: string | null
@@ -185,12 +191,15 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          logo_placement?: string | null
           logo_url?: string | null
           name?: string
           tagline?: string | null
           updated_at?: string
           user_id?: string
+          visual_style?: string | null
           voice_tone?: string | null
+          watermark_enabled?: boolean | null
         }
         Relationships: []
       }
