@@ -407,6 +407,40 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         }
       }
 
+      // Apply logo overlay if brand has logo placement enabled
+      if (imageUrl && includeBrand && brand?.logo_url && brand?.logo_placement && brand.logo_placement !== 'none') {
+        try {
+          const overlayBlob = await applyLogoOverlay({
+            imageUrl,
+            logoUrl: brand.logo_url,
+            placement: brand.logo_placement as LogoPlacement,
+            watermark: brand.watermark_enabled || false,
+          });
+
+          // Upload the composited image to storage
+          const timestamp = new Date().getTime();
+          const storagePath = `${user.id}/${timestamp}-branded.png`;
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('ai-images')
+            .upload(storagePath, overlayBlob, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: 'image/png',
+            });
+
+          if (!uploadError && uploadData) {
+            const { data: publicUrlData } = supabase.storage
+              .from('ai-images')
+              .getPublicUrl(uploadData.path);
+            imageUrl = publicUrlData.publicUrl;
+          } else {
+            console.error('Error uploading branded image:', uploadError);
+          }
+        } catch (overlayError) {
+          console.error('Logo overlay failed, using original image:', overlayError);
+        }
+      }
+
       const generatedContent: GeneratedContent = {
         caption: caption,
         hashtags: hashtags,

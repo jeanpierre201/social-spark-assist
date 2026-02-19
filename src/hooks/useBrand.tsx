@@ -13,6 +13,9 @@ export interface Brand {
   voice_tone: string;
   color_primary: string | null;
   color_secondary: string | null;
+  visual_style: string | null;
+  logo_placement: string | null;
+  watermark_enabled: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -74,10 +74,13 @@ const DashboardBrandPage = () => {
       setTagline(brand.tagline || '');
       setDescription(brand.description || '');
       setVoiceTone(brand.voice_tone || 'professional');
+      setVisualStyle(brand.visual_style || 'clean-minimal');
       setColorPrimary(brand.color_primary || '#3b82f6');
       setColorSecondary(brand.color_secondary || '#8b5cf6');
       setBrandColorEnabled(!!(brand.color_primary || brand.color_secondary));
       setLogoUrl(brand.logo_url || null);
+      setLogoPlacement(brand.logo_placement || 'none');
+      setWatermarkEnabled(brand.watermark_enabled || false);
     }
   }, [brand]);
 
@@ -120,9 +123,12 @@ const DashboardBrandPage = () => {
       description: description.trim() || null,
       logo_url: logoUrl,
       voice_tone: voiceTone,
-      color_primary: colorPrimary,
-      color_secondary: colorSecondary,
-    });
+      visual_style: visualStyle,
+      color_primary: brandColorEnabled ? colorPrimary : null,
+      color_secondary: brandColorEnabled ? colorSecondary : null,
+      logo_placement: logoPlacement,
+      watermark_enabled: logoPlacement !== 'none' ? watermarkEnabled : false,
+    } as any);
   };
 
   if (loading || brandLoading) {
