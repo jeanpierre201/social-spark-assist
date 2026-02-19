@@ -1,0 +1,1 @@
+ALTER TABLE public.brands ADD COLUMN watermark_opacity numeric DEFAULT 0.5;

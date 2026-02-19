@@ -16,6 +16,7 @@ export interface Brand {
   visual_style: string | null;
   logo_placement: string | null;
   watermark_enabled: boolean;
+  watermark_opacity: number | null;
   created_at: string;
   updated_at: string;
 }

@@ -25,6 +25,8 @@ export interface LogoOverlayOptions {
   logoSizePercent?: number;
   /** Padding from edges in pixels (default: 20) */
   padding?: number;
+  /** Watermark opacity 0-1 (default: 0.5) */
+  watermarkOpacity?: number;
 }
 
 /**
@@ -83,6 +85,7 @@ export const applyLogoOverlay = async (
     watermark,
     logoSizePercent = 15,
     padding = 20,
+    watermarkOpacity = 0.5,
   } = options;
 
   // Load both images in parallel
@@ -119,7 +122,7 @@ export const applyLogoOverlay = async (
 
   // Apply watermark opacity if enabled
   if (watermark) {
-    ctx.globalAlpha = 0.50;
+    ctx.globalAlpha = watermarkOpacity;
   }
 
   // Draw logo

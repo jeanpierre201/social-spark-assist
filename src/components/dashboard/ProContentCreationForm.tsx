@@ -418,6 +418,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             logoUrl: brand.logo_url,
             placement: brand.logo_placement as LogoPlacement,
             watermark: brand.watermark_enabled || false,
+            watermarkOpacity: brand.watermark_opacity ?? 0.5,
           });
 
           // Upload the composited image to storage
