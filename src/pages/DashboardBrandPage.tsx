@@ -171,356 +171,366 @@ const DashboardBrandPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-6 space-y-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Brand Profile" />
         {isProUser ? <ProDashboardNav /> : <StarterDashboardNav />}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Brand Identity */}
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5 text-primary" />
-                  Brand Identity
-                </CardTitle>
-                <CardDescription>
-                  Define your corporate identity. This will be used to generate consistent branded content.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="brandName">Brand Name *</Label>
-                  <Input
-                    id="brandName"
-                    placeholder="Your company or brand name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="tagline">Tagline</Label>
-                  <Input
-                    id="tagline"
-                    placeholder="A short memorable phrase (e.g., 'Just Do It')"
-                    value={tagline}
-                    onChange={(e) => setTagline(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="description">Brand Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Describe your brand's mission, values, and what makes you unique..."
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="voiceTone">Brand Voice & Tone</Label>
-                  <Select value={voiceTone} onValueChange={setVoiceTone}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {voiceTones.map((tone) => (
-                        <SelectItem key={tone.value} value={tone.value}>
-                          {tone.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Row 1: Brand Identity — full width */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-primary" />
+              Brand Identity
+            </CardTitle>
+            <CardDescription>
+              Define your corporate identity. This will be used to generate consistent branded content.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+            <div>
+              <Label htmlFor="brandName">Brand Name *</Label>
+              <Input
+                id="brandName"
+                placeholder="Your company or brand name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="tagline">Tagline</Label>
+              <Input
+                id="tagline"
+                placeholder="A short memorable phrase"
+                value={tagline}
+                onChange={(e) => setTagline(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="voiceTone">Brand Voice & Tone</Label>
+              <Select value={voiceTone} onValueChange={setVoiceTone}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {voiceTones.map((tone) => (
+                    <SelectItem key={tone.value} value={tone.value}>
+                      {tone.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="description">Brand Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe your brand's mission, values, and what makes you unique..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Logo & Brand Style Sidebar */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5 text-primary" />
-                  Brand Logo
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {logoUrl ? (
-                  <div>
-                    <img
-                      src={logoUrl}
-                      alt="Brand logo"
-                      className="w-full h-40 object-contain rounded-lg border border-border bg-muted p-2"
-                    />
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      <Label htmlFor="logoUpload" className="cursor-pointer">
-                        <Button variant="outline" size="sm" className="w-full" disabled={uploading} asChild>
-                          <span>
-                            {uploading ? (
-                              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</>
-                            ) : (
-                              'Change File'
-                            )}
-                          </span>
-                        </Button>
-                      </Label>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setLogoUrl(null)}
-                      >
-                        Remove Logo
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
-                      <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground mb-2">Upload your logo</p>
-                    </div>
+        {/* Row 2: 3 equal columns — Logo | Style | Preview */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* Column 1: Brand Logo */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5 text-primary" />
+                Brand Logo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {logoUrl ? (
+                <div>
+                  <img
+                    src={logoUrl}
+                    alt="Brand logo"
+                    className="w-full h-40 object-contain rounded-lg border border-border bg-muted p-2"
+                  />
+                  <div className="grid grid-cols-2 gap-2 mt-2">
                     <Label htmlFor="logoUpload" className="cursor-pointer">
-                      <Button variant="outline" className="w-full mt-2" disabled={uploading} asChild>
+                      <Button variant="outline" size="sm" className="w-full" disabled={uploading} asChild>
                         <span>
                           {uploading ? (
                             <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</>
                           ) : (
-                            'Choose File'
+                            'Change File'
                           )}
                         </span>
                       </Button>
                     </Label>
-                  </div>
-                )}
-                <input
-                  id="logoUpload"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleLogoUpload}
-                />
-
-                {/* Logo Placement */}
-                <div>
-                  <Label htmlFor="logoPlacement">Logo Placement</Label>
-                  <Select value={logoPlacement} onValueChange={setLogoPlacement}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">Do not include</SelectItem>
-                      {logoPositions.map((pos) => (
-                        <SelectItem key={pos.value} value={pos.value}>
-                          {pos.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Watermark Toggle - only when placement selected */}
-                {logoPlacement !== 'none' && (
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="watermarkEnabled"
-                        checked={watermarkEnabled}
-                        onCheckedChange={(checked) => setWatermarkEnabled(checked === true)}
-                      />
-                      <Label htmlFor="watermarkEnabled" className="cursor-pointer">Watermark style (semi-transparent)</Label>
-                    </div>
-                    {watermarkEnabled && (
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm">Opacity</Label>
-                          <span className="text-sm text-muted-foreground">{watermarkOpacity}%</span>
-                        </div>
-                        <Slider
-                          value={[watermarkOpacity]}
-                          onValueChange={(value) => setWatermarkOpacity(value[0])}
-                          min={10}
-                          max={100}
-                          step={5}
-                          className="w-full"
-                        />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Brand Style Card - Pro only features */}
-            <Card className={!isProUser ? 'opacity-60' : ''}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Paintbrush className="h-5 w-5 text-primary" />
-                  Brand Style
-                  {!isProUser && (
-                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-normal">Pro</span>
-                  )}
-                </CardTitle>
-                <CardDescription>
-                  {isProUser
-                    ? 'Set your brand style for visual consistency across content.'
-                    : 'Upgrade to Pro to unlock Render Style, Aesthetic Direction, and Brand Colors.'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="visualStyle">Render Style</Label>
-                  <Select value={visualStyle} onValueChange={setVisualStyle} disabled={!isProUser}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {visualStyles.map((style) => (
-                        <SelectItem key={style.value} value={style.value}>
-                          {style.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
-                </div>
-
-                <div>
-                  <Label htmlFor="aestheticDirection">Aesthetic Direction</Label>
-                  <Select value={aestheticDirection} onValueChange={setAestheticDirection} disabled={!isProUser}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {aestheticDirections.map((dir) => (
-                        <SelectItem key={dir.value} value={dir.value}>
-                          {dir.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground mt-1">This controls the mood and composition of the image.</p>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="brandColorEnabled"
-                    checked={brandColorEnabled}
-                    onCheckedChange={(checked) => setBrandColorEnabled(checked === true)}
-                    disabled={!isProUser}
-                  />
-                  <Label htmlFor="brandColorEnabled" className={`cursor-pointer ${!isProUser ? 'text-muted-foreground' : ''}`}>Brand Color</Label>
-                </div>
-
-                {brandColorEnabled && isProUser && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="colorPrimary">Primary Color</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <input
-                            type="color"
-                            id="colorPrimary"
-                            value={colorPrimary}
-                            onChange={(e) => setColorPrimary(e.target.value)}
-                            className="h-10 w-14 rounded border border-input cursor-pointer"
-                          />
-                          <Input
-                            value={colorPrimary}
-                            onChange={(e) => setColorPrimary(e.target.value)}
-                            className="flex-1"
-                            placeholder="#3b82f6"
-                          />
-                        </div>
-                      </div>
-                      <div>
-                        <Label htmlFor="colorSecondary">Secondary Color</Label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <input
-                            type="color"
-                            id="colorSecondary"
-                            value={colorSecondary}
-                            onChange={(e) => setColorSecondary(e.target.value)}
-                            className="h-10 w-14 rounded border border-input cursor-pointer"
-                          />
-                          <Input
-                            value={colorSecondary}
-                            onChange={(e) => setColorSecondary(e.target.value)}
-                            className="flex-1"
-                            placeholder="#8b5cf6"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-3">
-                      <div
-                        className="h-16 flex-1 rounded-lg border border-border flex items-center justify-center text-sm font-medium"
-                        style={{ backgroundColor: colorPrimary, color: '#fff' }}
-                      >
-                        Primary
-                      </div>
-                      <div
-                        className="h-16 flex-1 rounded-lg border border-border flex items-center justify-center text-sm font-medium"
-                        style={{ backgroundColor: colorSecondary, color: '#fff' }}
-                      >
-                        Secondary
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {!isProUser && (
-                  <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => window.location.href = '/upgrade-pro'}>
-                    Upgrade to Pro
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Brand Preview Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm">Preview</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-lg border border-border p-4 space-y-3">
-                  {logoUrl && (
-                    <img src={logoUrl} alt="" className="h-10 object-contain" />
-                  )}
-                  <h3 className="font-bold text-foreground">{name || 'Your Brand'}</h3>
-                  {tagline && <p className="text-sm text-muted-foreground italic">{tagline}</p>}
-                  {description && <p className="text-xs text-muted-foreground line-clamp-3">{description}</p>}
-                  <div className="flex gap-2 items-center">
-                    {brandColorEnabled && (
-                      <>
-                        <span
-                          className="inline-block h-4 w-4 rounded-full border border-border"
-                          style={{ backgroundColor: colorPrimary }}
-                        />
-                        <span
-                          className="inline-block h-4 w-4 rounded-full border border-border"
-                          style={{ backgroundColor: colorSecondary }}
-                        />
-                      </>
-                    )}
-                    <span className="text-xs text-muted-foreground capitalize">{voiceTone} tone</span>
-                    <span className="text-xs text-muted-foreground">· {visualStyles.find(s => s.value === visualStyle)?.label}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLogoUrl(null)}
+                    >
+                      Remove Logo
+                    </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            <Button onClick={handleSave} disabled={isSaving} className="w-full">
-              {isSaving ? (
-                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
-              ) : brand ? (
-                'Update Brand'
               ) : (
-                'Create Brand'
+                <div>
+                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center">
+                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground mb-2">Upload your logo</p>
+                  </div>
+                  <Label htmlFor="logoUpload" className="cursor-pointer">
+                    <Button variant="outline" className="w-full mt-2" disabled={uploading} asChild>
+                      <span>
+                        {uploading ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Uploading...</>
+                        ) : (
+                          'Choose File'
+                        )}
+                      </span>
+                    </Button>
+                  </Label>
+                </div>
               )}
-            </Button>
-          </div>
+              <input
+                id="logoUpload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleLogoUpload}
+              />
+
+              {/* Logo Placement */}
+              <div>
+                <Label htmlFor="logoPlacement">Logo Placement</Label>
+                <Select value={logoPlacement} onValueChange={setLogoPlacement}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Do not include</SelectItem>
+                    {logoPositions.map((pos) => (
+                      <SelectItem key={pos.value} value={pos.value}>
+                        {pos.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Watermark Toggle */}
+              {logoPlacement !== 'none' && (
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="watermarkEnabled"
+                      checked={watermarkEnabled}
+                      onCheckedChange={(checked) => setWatermarkEnabled(checked === true)}
+                    />
+                    <Label htmlFor="watermarkEnabled" className="cursor-pointer">Watermark style (semi-transparent)</Label>
+                  </div>
+                  {watermarkEnabled && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">Opacity</Label>
+                        <span className="text-sm text-muted-foreground">{watermarkOpacity}%</span>
+                      </div>
+                      <Slider
+                        value={[watermarkOpacity]}
+                        onValueChange={(value) => setWatermarkOpacity(value[0])}
+                        min={10}
+                        max={100}
+                        step={5}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Column 2: Brand Style (Pro only) */}
+          <Card className={!isProUser ? 'opacity-60' : ''}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Paintbrush className="h-5 w-5 text-primary" />
+                Brand Style
+                {!isProUser && (
+                  <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-normal">Pro</span>
+                )}
+              </CardTitle>
+              <CardDescription>
+                {isProUser
+                  ? 'Set your brand style for visual consistency across content.'
+                  : 'Upgrade to Pro to unlock Render Style, Aesthetic Direction, and Brand Colors.'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="visualStyle">Render Style</Label>
+                <Select value={visualStyle} onValueChange={setVisualStyle} disabled={!isProUser}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {visualStyles.map((style) => (
+                      <SelectItem key={style.value} value={style.value}>
+                        {style.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
+              </div>
+
+              <div>
+                <Label htmlFor="aestheticDirection">Aesthetic Direction</Label>
+                <Select value={aestheticDirection} onValueChange={setAestheticDirection} disabled={!isProUser}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {aestheticDirections.map((dir) => (
+                      <SelectItem key={dir.value} value={dir.value}>
+                        {dir.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">This controls the mood and composition of the image.</p>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="brandColorEnabled"
+                  checked={brandColorEnabled}
+                  onCheckedChange={(checked) => setBrandColorEnabled(checked === true)}
+                  disabled={!isProUser}
+                />
+                <Label htmlFor="brandColorEnabled" className={`cursor-pointer ${!isProUser ? 'text-muted-foreground' : ''}`}>Brand Color</Label>
+              </div>
+
+              {brandColorEnabled && isProUser && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="colorPrimary">Primary Color</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="color"
+                          id="colorPrimary"
+                          value={colorPrimary}
+                          onChange={(e) => setColorPrimary(e.target.value)}
+                          className="h-10 w-14 rounded border border-input cursor-pointer"
+                        />
+                        <Input
+                          value={colorPrimary}
+                          onChange={(e) => setColorPrimary(e.target.value)}
+                          className="flex-1"
+                          placeholder="#3b82f6"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="colorSecondary">Secondary Color</Label>
+                      <div className="flex items-center gap-2 mt-1">
+                        <input
+                          type="color"
+                          id="colorSecondary"
+                          value={colorSecondary}
+                          onChange={(e) => setColorSecondary(e.target.value)}
+                          className="h-10 w-14 rounded border border-input cursor-pointer"
+                        />
+                        <Input
+                          value={colorSecondary}
+                          onChange={(e) => setColorSecondary(e.target.value)}
+                          className="flex-1"
+                          placeholder="#8b5cf6"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div
+                      className="h-12 flex-1 rounded-lg border border-border flex items-center justify-center text-sm font-medium"
+                      style={{ backgroundColor: colorPrimary, color: '#fff' }}
+                    >
+                      Primary
+                    </div>
+                    <div
+                      className="h-12 flex-1 rounded-lg border border-border flex items-center justify-center text-sm font-medium"
+                      style={{ backgroundColor: colorSecondary, color: '#fff' }}
+                    >
+                      Secondary
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {!isProUser && (
+                <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => window.location.href = '/upgrade-pro'}>
+                  Upgrade to Pro
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Column 3: Brand Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5 text-primary" />
+                Preview
+              </CardTitle>
+              <CardDescription>How your brand appears in generated content.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3">
+                {logoUrl ? (
+                  <img src={logoUrl} alt="" className="h-10 object-contain" />
+                ) : (
+                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                    <Building2 className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+                <h3 className="font-bold text-foreground">{name || 'Your Brand'}</h3>
+                {tagline && <p className="text-sm text-muted-foreground italic">{tagline}</p>}
+                {description && <p className="text-xs text-muted-foreground line-clamp-3">{description}</p>}
+                <div className="flex flex-wrap gap-2 items-center pt-1">
+                  {brandColorEnabled && isProUser && (
+                    <div className="flex gap-1">
+                      <span
+                        className="inline-block h-4 w-4 rounded-full border border-border"
+                        style={{ backgroundColor: colorPrimary }}
+                      />
+                      <span
+                        className="inline-block h-4 w-4 rounded-full border border-border"
+                        style={{ backgroundColor: colorSecondary }}
+                      />
+                    </div>
+                  )}
+                  <span className="text-xs text-muted-foreground capitalize">{voiceTone} tone</span>
+                  {isProUser && <span className="text-xs text-muted-foreground">· {visualStyles.find(s => s.value === visualStyle)?.label}</span>}
+                  {logoPlacement !== 'none' && (
+                    <span className="text-xs text-muted-foreground">· Logo {logoPlacement.replace('-', ' ')}</span>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Row 3: Full-width Save button */}
+        <Button onClick={handleSave} disabled={isSaving} className="w-full" size="lg">
+          {isSaving ? (
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving...</>
+          ) : brand ? (
+            'Update Brand'
+          ) : (
+            'Create Brand'
+          )}
+        </Button>
       </div>
     </div>
   );
