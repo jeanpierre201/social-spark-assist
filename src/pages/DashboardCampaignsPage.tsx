@@ -30,10 +30,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
 const VISUAL_STYLE_OPTIONS = [
   { value: 'auto', label: 'Auto Style (Recommended)' },
-  { value: 'clean-minimal', label: 'Clean & Minimal' },
   { value: 'bold-impact', label: 'Bold & High Impact' },
   { value: 'corporate', label: 'Corporate & Structured' },
-  { value: 'modern-gradient', label: 'Modern Gradient' },
   { value: 'dark-dramatic', label: 'Dark & Dramatic' },
   { value: 'futuristic-tech', label: 'Futuristic & Tech' },
   { value: 'soft-lifestyle', label: 'Soft & Lifestyle' },
@@ -81,7 +79,7 @@ const DashboardCampaignsPage = () => {
   const [audienceType, setAudienceType] = useState('general');
   const [audienceRefinement, setAudienceRefinement] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
-  const [includeLogo, setIncludeLogo] = useState(false);
+  const [includeLogo, setIncludeLogo] = useState(true);
   const [styleLock, setStyleLock] = useState(true);
 
   // Edit state
@@ -124,7 +122,7 @@ const DashboardCampaignsPage = () => {
       setAudienceType('general');
       setAudienceRefinement('');
       setSelectedPlatforms([]);
-      setIncludeLogo(false);
+      setIncludeLogo(true);
       setStyleLock(true);
       setShowCreateDialog(false);
     } catch (err: any) {
@@ -231,7 +229,7 @@ const DashboardCampaignsPage = () => {
                   New Campaign
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Create New Campaign</DialogTitle>
                   <DialogDescription>
@@ -259,7 +257,7 @@ const DashboardCampaignsPage = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="visualStyle">Visual Style</Label>
+                    <Label htmlFor="visualStyle">Render Style</Label>
                     <Select value={visualStyle} onValueChange={setVisualStyle}>
                       <SelectTrigger>
                         <SelectValue />
@@ -270,7 +268,7 @@ const DashboardCampaignsPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    <p className="text-xs text-muted-foreground mt-1">This controls the visual aesthetic of all generated content.</p>
+                    <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
                   </div>
                   <div>
                     <Label htmlFor="audienceType">Audience Type</Label>
@@ -404,7 +402,7 @@ const DashboardCampaignsPage = () => {
 
         {/* Edit Campaign Dialog */}
         <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-          <DialogContent>
+          <DialogContent className="max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Campaign</DialogTitle>
               <DialogDescription>Define the creative direction for a series of content.</DialogDescription>
@@ -428,7 +426,7 @@ const DashboardCampaignsPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="editVisualStyle">Visual Style</Label>
+                <Label htmlFor="editVisualStyle">Render Style</Label>
                 <Select value={editVisualStyle} onValueChange={setEditVisualStyle}>
                   <SelectTrigger>
                     <SelectValue />
@@ -439,7 +437,7 @@ const DashboardCampaignsPage = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground mt-1">This controls the visual aesthetic of all generated content.</p>
+                <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
               </div>
               <div>
                 <Label htmlFor="editAudienceType">Audience Type</Label>
