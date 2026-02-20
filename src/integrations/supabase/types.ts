@@ -154,6 +154,7 @@ export type Database = {
       }
       brands: {
         Row: {
+          aesthetic_direction: string | null
           color_primary: string | null
           color_secondary: string | null
           created_at: string
@@ -171,6 +172,7 @@ export type Database = {
           watermark_opacity: number | null
         }
         Insert: {
+          aesthetic_direction?: string | null
           color_primary?: string | null
           color_secondary?: string | null
           created_at?: string
@@ -188,6 +190,7 @@ export type Database = {
           watermark_opacity?: number | null
         }
         Update: {
+          aesthetic_direction?: string | null
           color_primary?: string | null
           color_secondary?: string | null
           created_at?: string

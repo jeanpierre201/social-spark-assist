@@ -1,0 +1,1 @@
+ALTER TABLE public.brands ADD COLUMN aesthetic_direction text DEFAULT 'auto';

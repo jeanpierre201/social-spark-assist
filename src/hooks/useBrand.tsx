@@ -14,6 +14,7 @@ export interface Brand {
   color_primary: string | null;
   color_secondary: string | null;
   visual_style: string | null;
+  aesthetic_direction: string | null;
   logo_placement: string | null;
   watermark_enabled: boolean;
   watermark_opacity: number | null;
