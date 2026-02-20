@@ -995,6 +995,9 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
                         ))}
                       </SelectContent>
                     </Select>
+                    <p className="text-xs text-muted-foreground">
+                      This controls how the image is produced visually.
+                    </p>
                   </div>
 
                   <div className="space-y-2">
