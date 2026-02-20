@@ -16,6 +16,8 @@ import { Link } from 'react-router-dom';
 import { fromZonedTime } from 'date-fns-tz';
 import { format } from 'date-fns';
 import { applyLogoOverlay, LogoPlacement } from '@/utils/logoOverlay';
+import { RENDER_STYLE_PROMPTS, buildStylePrompt } from '@/config/imageStyleMappings';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface GeneratedContent {
   caption: string;
@@ -67,6 +69,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const [manualCaption, setManualCaption] = useState('');
   const [manualHashtags, setManualHashtags] = useState('');
   const [includeBrand, setIncludeBrand] = useState(false);
+  const [renderStyle, setRenderStyle] = useState('auto');
 
   // Auto-select brand if brand has at least one input filled
   useEffect(() => {
@@ -321,11 +324,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
           }
 
+          // Apply render style prompt
+          const stylePrompt = buildStylePrompt(renderStyle, null);
+          if (stylePrompt) {
+            imagePrompt += `. ${stylePrompt}`;
+          }
+
           // Add brand visual style and colors only when brand context is included
           if (includeBrand && brand) {
-            if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
-              imagePrompt += `. Visual style: ${(brand.visual_style || '').replace(/-/g, ' ')}`;
-            }
             if (brand.color_primary) imagePrompt += `. Use brand primary color ${brand.color_primary}`;
             if (brand.color_secondary) imagePrompt += ` and secondary color ${brand.color_secondary} in the design`;
           }
@@ -515,6 +521,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       setSelectedSocialPlatforms([]);
       setCustomImagePrompt('');
       setGenerateWithImages(false);
+      setRenderStyle('auto');
       setGenerateCaptionWithAI(true);
       setManualCaption('');
       setManualHashtags('');
@@ -973,20 +980,38 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
               </div>
               
               {generateWithImages && (
-                <div className="ml-6 space-y-2">
-                  <Label htmlFor="image-prompt" className="text-sm">Image Description (Optional)</Label>
-                  <Textarea
-                    id="image-prompt"
-                    placeholder="Describe how you want your image to look... e.g., 'Modern office setting with laptop, professional lighting, blue color scheme'"
-                    value={customImagePrompt}
-                    onChange={(e) => setCustomImagePrompt(e.target.value)}
-                    maxLength={500}
-                    rows={2}
-                    className="text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    💡 DALL-E 3 creates images from text descriptions only. Describe visual elements like colors, style, objects, and composition for best results.
-                  </p>
+                <div className="ml-6 space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="render-style" className="text-sm">Render Style</Label>
+                    <Select value={renderStyle} onValueChange={setRenderStyle}>
+                      <SelectTrigger id="render-style" className="text-sm">
+                        <SelectValue placeholder="Auto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.keys(RENDER_STYLE_PROMPTS).map((key) => (
+                          <SelectItem key={key} value={key}>
+                            {key === 'auto' ? 'Auto' : key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="image-prompt" className="text-sm">Image Description (Optional)</Label>
+                    <Textarea
+                      id="image-prompt"
+                      placeholder="Describe how you want your image to look... e.g., 'Modern office setting with laptop, professional lighting, blue color scheme'"
+                      value={customImagePrompt}
+                      onChange={(e) => setCustomImagePrompt(e.target.value)}
+                      maxLength={500}
+                      rows={2}
+                      className="text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      💡 DALL-E 3 creates images from text descriptions only. Describe visual elements like colors, style, objects, and composition for best results.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
