@@ -345,8 +345,12 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             if (brand.visual_style && brand.visual_style !== 'clean-minimal') {
               imagePrompt += `. Visual style: ${brand.visual_style.replace(/-/g, ' ')}`;
             }
-            if (brand.color_primary) imagePrompt += `. Use brand primary color ${brand.color_primary}`;
-            if (brand.color_secondary) imagePrompt += ` and secondary color ${brand.color_secondary} in the design`;
+            // Campaign colors override brand colors when a campaign is selected
+            const selectedCampaignForColors = campaigns.find(c => c.id === selectedCampaignId);
+            const effectivePrimary = (selectedCampaignForColors as any)?.color_primary || brand.color_primary;
+            const effectiveSecondary = (selectedCampaignForColors as any)?.color_secondary || brand.color_secondary;
+            if (effectivePrimary) imagePrompt += `. Use brand primary color ${effectivePrimary}`;
+            if (effectiveSecondary) imagePrompt += ` and secondary color ${effectiveSecondary} in the design`;
             if (brand.name) imagePrompt += `. Brand: ${brand.name}`;
           }
           
@@ -671,11 +675,14 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             if (!customImagePrompt.trim() && nicheInfo.trim()) {
               imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
             }
-            // Add brand colors to batch image prompt
+            // Add brand colors to batch image prompt (campaign colors override brand colors)
             if (includeBrand && brand) {
               if (brand.name) imagePrompt += `. Brand: ${brand.name}`;
-              if (brand.color_primary) imagePrompt += `. Use brand primary color ${brand.color_primary}`;
-              if (brand.color_secondary) imagePrompt += ` and secondary color ${brand.color_secondary} in the design`;
+              const selectedCampaignForColors = campaigns.find(c => c.id === selectedCampaignId);
+              const effectivePrimary = (selectedCampaignForColors as any)?.color_primary || brand.color_primary;
+              const effectiveSecondary = (selectedCampaignForColors as any)?.color_secondary || brand.color_secondary;
+              if (effectivePrimary) imagePrompt += `. Use brand primary color ${effectivePrimary}`;
+              if (effectiveSecondary) imagePrompt += ` and secondary color ${effectiveSecondary} in the design`;
             }
             if (uploadedImage) {
               imagePrompt += ". Incorporate the uploaded image elements (logo, person, or brand elements) into the new image";
