@@ -39,12 +39,15 @@ const visualStyles = [
 ];
 
 const aestheticDirections = [
-  { value: 'auto', label: 'Auto' },
+  { value: 'auto', label: 'Auto Style (Recommended)' },
   { value: 'clean-minimal', label: 'Clean & Minimal' },
   { value: 'bold-impact', label: 'Bold & High Impact' },
-  { value: 'corporate-structured', label: 'Corporate & Structured' },
+  { value: 'corporate', label: 'Corporate & Structured' },
   { value: 'dark-dramatic', label: 'Dark & Dramatic' },
+  { value: 'futuristic-tech', label: 'Futuristic & Tech' },
   { value: 'soft-lifestyle', label: 'Soft & Lifestyle' },
+  { value: 'editorial-magazine', label: 'Editorial & Magazine' },
+  { value: 'playful-colorful', label: 'Playful & Colorful' },
 ];
 
 const logoPositions = [
@@ -396,7 +399,7 @@ const DashboardBrandPage = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
+                  <p className="text-xs text-muted-foreground mt-1">This controls the mood and composition of the image.</p>
                 </div>
 
                 <div className="flex items-center space-x-2">

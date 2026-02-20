@@ -25,12 +25,20 @@ export const AESTHETIC_DIRECTION_PROMPTS: Record<string, string> = {
     'Minimal layout, lots of whitespace, simple composition, restrained color usage.',
   'bold-impact':
     'High contrast, strong focal point, visually striking composition.',
+  corporate:
+    'Balanced layout, professional structure, clean alignment.',
   'corporate-structured':
     'Balanced layout, professional structure, clean alignment.',
   'dark-dramatic':
     'Dark background, strong contrast, moody lighting.',
+  'futuristic-tech':
+    'Sleek futuristic design, neon accents, tech-inspired geometric elements.',
   'soft-lifestyle':
     'Warm tones, natural light, inviting and authentic mood.',
+  'editorial-magazine':
+    'Editorial layout, sophisticated typography emphasis, magazine-quality composition.',
+  'playful-colorful':
+    'Vibrant colors, fun patterns, energetic and playful mood.',
 };
 
 /**
