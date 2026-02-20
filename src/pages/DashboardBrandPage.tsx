@@ -206,6 +206,16 @@ const DashboardBrandPage = () => {
               />
             </div>
             <div>
+              <Label htmlFor="description">Brand Description</Label>
+              <Textarea
+                id="description"
+                placeholder="Describe your brand's mission, values, and what makes you unique..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div>
               <Label htmlFor="voiceTone">Brand Voice & Tone</Label>
               <Select value={voiceTone} onValueChange={setVoiceTone}>
                 <SelectTrigger>
@@ -219,16 +229,6 @@ const DashboardBrandPage = () => {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <Label htmlFor="description">Brand Description</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe your brand's mission, values, and what makes you unique..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
-              />
             </div>
           </CardContent>
         </Card>
