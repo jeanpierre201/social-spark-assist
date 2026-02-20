@@ -293,6 +293,7 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
+          include_logo: boolean | null
           name: string
           platforms: Json | null
           status: string
@@ -307,6 +308,7 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
+          include_logo?: boolean | null
           name: string
           platforms?: Json | null
           status?: string
@@ -321,6 +323,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
+          include_logo?: boolean | null
           name?: string
           platforms?: Json | null
           status?: string

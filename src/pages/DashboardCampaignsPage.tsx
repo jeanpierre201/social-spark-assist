@@ -111,6 +111,7 @@ const DashboardCampaignsPage = () => {
         audience_type: audienceType,
         audience_refinement: audienceRefinement.trim() || null,
         platforms: selectedPlatforms,
+        include_logo: includeLogo,
         style_lock: styleLock,
         created_by: user!.id,
       });
@@ -158,6 +159,7 @@ const DashboardCampaignsPage = () => {
           audience_type: editAudienceType,
           audience_refinement: editAudienceRefinement.trim() || null,
           platforms: editPlatforms,
+          include_logo: editIncludeLogo,
           style_lock: editStyleLock,
         })
         .eq('id', editingCampaign.id);
