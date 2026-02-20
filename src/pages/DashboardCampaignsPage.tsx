@@ -19,6 +19,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
@@ -51,6 +53,13 @@ const AUDIENCE_TYPE_OPTIONS = [
   { value: 'tech-savvy', label: 'Tech-Savvy Users' },
 ];
 
+const PLATFORM_OPTIONS = [
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'telegram', label: 'Telegram' },
+  { value: 'mastodon', label: 'Mastodon' },
+];
+
 const DashboardCampaignsPage = () => {
   const { user } = useAuth();
   const { subscribed, subscriptionTier, loading } = useSubscription();
@@ -68,6 +77,8 @@ const DashboardCampaignsPage = () => {
   const [visualStyle, setVisualStyle] = useState('auto');
   const [audienceType, setAudienceType] = useState('general');
   const [audienceRefinement, setAudienceRefinement] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [styleLock, setStyleLock] = useState(true);
 
   // Edit state
   const [editingCampaign, setEditingCampaign] = useState<any | null>(null);
@@ -77,7 +88,13 @@ const DashboardCampaignsPage = () => {
   const [editVisualStyle, setEditVisualStyle] = useState('auto');
   const [editAudienceType, setEditAudienceType] = useState('general');
   const [editAudienceRefinement, setEditAudienceRefinement] = useState('');
+  const [editPlatforms, setEditPlatforms] = useState<string[]>([]);
+  const [editStyleLock, setEditStyleLock] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
+
+  const togglePlatform = (platform: string, list: string[], setter: (v: string[]) => void) => {
+    setter(list.includes(platform) ? list.filter(p => p !== platform) : [...list, platform]);
+  };
 
   const handleCreateCampaign = async () => {
     if (!campaignName.trim()) return;
@@ -88,6 +105,8 @@ const DashboardCampaignsPage = () => {
         visual_style: visualStyle,
         audience_type: audienceType,
         audience_refinement: audienceRefinement.trim() || null,
+        platforms: selectedPlatforms,
+        style_lock: styleLock,
         created_by: user!.id,
       });
       if (error) throw error;
@@ -98,6 +117,8 @@ const DashboardCampaignsPage = () => {
       setVisualStyle('auto');
       setAudienceType('general');
       setAudienceRefinement('');
+      setSelectedPlatforms([]);
+      setStyleLock(true);
       setShowCreateDialog(false);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -112,6 +133,8 @@ const DashboardCampaignsPage = () => {
     setEditVisualStyle(campaign.visual_style || 'auto');
     setEditAudienceType(campaign.audience_type || 'general');
     setEditAudienceRefinement(campaign.audience_refinement || '');
+    setEditPlatforms(Array.isArray(campaign.platforms) ? campaign.platforms : []);
+    setEditStyleLock(campaign.style_lock ?? true);
     setShowEditDialog(true);
   };
 
@@ -127,6 +150,8 @@ const DashboardCampaignsPage = () => {
           visual_style: editVisualStyle,
           audience_type: editAudienceType,
           audience_refinement: editAudienceRefinement.trim() || null,
+          platforms: editPlatforms,
+          style_lock: editStyleLock,
         })
         .eq('id', editingCampaign.id);
       if (error) throw error;
@@ -260,6 +285,28 @@ const DashboardCampaignsPage = () => {
                       onChange={(e) => setAudienceRefinement(e.target.value)}
                       className="text-sm"
                     />
+                  </div>
+                  <div>
+                    <Label className="flex items-center gap-1.5">📱 Platforms</Label>
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      {PLATFORM_OPTIONS.map((opt) => (
+                        <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <Checkbox
+                            checked={selectedPlatforms.includes(opt.value)}
+                            onCheckedChange={() => togglePlatform(opt.value, selectedPlatforms, setSelectedPlatforms)}
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">These platforms will be pre-selected in the content creator.</p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <div>
+                      <Label className="text-sm font-medium">Style Lock</Label>
+                      <p className="text-xs text-muted-foreground">Lock audience, platforms & style when using this campaign.</p>
+                    </div>
+                    <Switch checked={styleLock} onCheckedChange={setStyleLock} />
                   </div>
                 </div>
                 <DialogFooter>
@@ -414,6 +461,28 @@ const DashboardCampaignsPage = () => {
                   onChange={(e) => setEditAudienceRefinement(e.target.value)}
                   className="text-sm"
                 />
+              </div>
+              <div>
+                <Label className="flex items-center gap-1.5">📱 Platforms</Label>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  {PLATFORM_OPTIONS.map((opt) => (
+                    <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <Checkbox
+                        checked={editPlatforms.includes(opt.value)}
+                        onCheckedChange={() => togglePlatform(opt.value, editPlatforms, setEditPlatforms)}
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">These platforms will be pre-selected in the content creator.</p>
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div>
+                  <Label className="text-sm font-medium">Style Lock</Label>
+                  <p className="text-xs text-muted-foreground">Lock audience, platforms & style when using this campaign.</p>
+                </div>
+                <Switch checked={editStyleLock} onCheckedChange={setEditStyleLock} />
               </div>
             </div>
             <DialogFooter>
