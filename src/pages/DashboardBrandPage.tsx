@@ -28,14 +28,13 @@ const voiceTones = [
 ];
 
 const visualStyles = [
-  { value: 'clean-minimal', label: 'Clean & minimal' },
-  { value: 'modern-gradient', label: 'Modern gradient' },
-  { value: 'flat-design', label: 'Flat design' },
-  { value: '3d-render', label: '3D render' },
+  { value: 'auto', label: 'Auto' },
   { value: 'photorealistic', label: 'Photorealistic' },
+  { value: 'flat-design', label: 'Flat Design' },
+  { value: '3d-render', label: '3D Render' },
   { value: 'illustration', label: 'Illustration' },
   { value: 'cinematic', label: 'Cinematic' },
-  { value: 'social-media-bold', label: 'Social media bold' },
+  { value: 'abstract-graphic', label: 'Abstract Graphic' },
 ];
 
 const logoPositions = [
@@ -349,7 +348,7 @@ const DashboardBrandPage = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="visualStyle">Visual Style</Label>
+                  <Label htmlFor="visualStyle">Render Style</Label>
                   <Select value={visualStyle} onValueChange={setVisualStyle}>
                     <SelectTrigger>
                       <SelectValue />
@@ -362,6 +361,7 @@ const DashboardBrandPage = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
                 </div>
 
                 <div className="flex items-center space-x-2">
