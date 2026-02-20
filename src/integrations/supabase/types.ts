@@ -294,7 +294,9 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          platforms: Json | null
           status: string
+          style_lock: boolean | null
           updated_at: string
           visual_style: string | null
         }
@@ -306,7 +308,9 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          platforms?: Json | null
           status?: string
+          style_lock?: boolean | null
           updated_at?: string
           visual_style?: string | null
         }
@@ -318,7 +322,9 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          platforms?: Json | null
           status?: string
+          style_lock?: boolean | null
           updated_at?: string
           visual_style?: string | null
         }
