@@ -53,7 +53,14 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const { toast } = useToast();
   const [industry, setIndustry] = useState('');
   const [goal, setGoal] = useState('');
-  const [nicheInfo, setNicheInfo] = useState('');
+  const [audienceType, setAudienceType] = useState('general');
+  const [audienceRefinement, setAudienceRefinement] = useState('');
+  const AUDIENCE_LABELS: Record<string, string> = {
+    'general': 'General Audience', 'young-adults': 'Young Adults (18–30)', 'professionals': 'Professionals / B2B',
+    'entrepreneurs': 'Entrepreneurs', 'families': 'Families & Parents', 'students': 'Students',
+    'luxury': 'Luxury Consumers', 'fitness': 'Fitness Enthusiasts', 'tech-savvy': 'Tech-Savvy Users',
+  };
+  const nicheInfo = [AUDIENCE_LABELS[audienceType] || '', audienceRefinement].filter(Boolean).join('. ');
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -512,7 +519,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       // Clear form and reset all state
       setIndustry('');
       setGoal('');
-      setNicheInfo('');
+      setAudienceType('general');
+      setAudienceRefinement('');
       setScheduledDate('');
       setScheduledTime('');
       setUploadedImage(null);
@@ -697,7 +705,8 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       // Clear form
       setIndustry('');
       setGoal('');
-      setNicheInfo('');
+      setAudienceType('general');
+      setAudienceRefinement('');
       setScheduledDate('');
       setScheduledTime('');
       setUploadedImage(null);
@@ -777,14 +786,33 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             </div>
 
             <div>
-              <Label htmlFor="niche">Niche Information (Optional)</Label>
-              <Textarea
-                id="niche"
-                placeholder="Any specific details about your target audience or niche..."
-                value={nicheInfo}
-                onChange={(e) => setNicheInfo(e.target.value)}
+              <Label htmlFor="audienceType">Audience Type</Label>
+              <Select value={audienceType} onValueChange={setAudienceType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select audience type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="general">General Audience</SelectItem>
+                  <SelectItem value="young-adults">Young Adults (18–30)</SelectItem>
+                  <SelectItem value="professionals">Professionals / B2B</SelectItem>
+                  <SelectItem value="entrepreneurs">Entrepreneurs</SelectItem>
+                  <SelectItem value="families">Families & Parents</SelectItem>
+                  <SelectItem value="students">Students</SelectItem>
+                  <SelectItem value="luxury">Luxury Consumers</SelectItem>
+                  <SelectItem value="fitness">Fitness Enthusiasts</SelectItem>
+                  <SelectItem value="tech-savvy">Tech-Savvy Users</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="audienceRefinement">Add specific audience details</Label>
+              <Input
+                id="audienceRefinement"
+                placeholder="e.g., Women aged 25-35 interested in sustainable fashion..."
+                value={audienceRefinement}
+                onChange={(e) => setAudienceRefinement(e.target.value)}
                 maxLength={300}
-                rows={2}
               />
             </div>
 
