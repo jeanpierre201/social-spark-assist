@@ -93,6 +93,9 @@ const DashboardCampaignsPage = () => {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [includeLogo, setIncludeLogo] = useState(true);
   const [styleLock, setStyleLock] = useState(true);
+  const [campaignColorEnabled, setCampaignColorEnabled] = useState(false);
+  const [colorPrimary, setColorPrimary] = useState('#3b82f6');
+  const [colorSecondary, setColorSecondary] = useState('#8b5cf6');
 
   // Edit state
   const [editingCampaign, setEditingCampaign] = useState<any | null>(null);
@@ -106,6 +109,9 @@ const DashboardCampaignsPage = () => {
   const [editPlatforms, setEditPlatforms] = useState<string[]>([]);
   const [editIncludeLogo, setEditIncludeLogo] = useState(false);
   const [editStyleLock, setEditStyleLock] = useState(true);
+  const [editCampaignColorEnabled, setEditCampaignColorEnabled] = useState(false);
+  const [editColorPrimary, setEditColorPrimary] = useState('#3b82f6');
+  const [editColorSecondary, setEditColorSecondary] = useState('#8b5cf6');
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   const togglePlatform = (platform: string, list: string[], setter: (v: string[]) => void) => {
@@ -124,8 +130,10 @@ const DashboardCampaignsPage = () => {
         platforms: selectedPlatforms,
         include_logo: includeLogo,
         style_lock: styleLock,
+        color_primary: campaignColorEnabled ? colorPrimary : null,
+        color_secondary: campaignColorEnabled ? colorSecondary : null,
         created_by: user!.id,
-      });
+      } as any);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
       toast({ title: 'Campaign created!' });
@@ -138,6 +146,9 @@ const DashboardCampaignsPage = () => {
       setSelectedPlatforms([]);
       setIncludeLogo(true);
       setStyleLock(true);
+      setCampaignColorEnabled(false);
+      setColorPrimary('#3b82f6');
+      setColorSecondary('#8b5cf6');
       setShowCreateDialog(false);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -156,6 +167,9 @@ const DashboardCampaignsPage = () => {
     setEditPlatforms(Array.isArray(campaign.platforms) ? campaign.platforms : []);
     setEditIncludeLogo(campaign.include_logo ?? false);
     setEditStyleLock(campaign.style_lock ?? true);
+    setEditCampaignColorEnabled(!!(campaign.color_primary || campaign.color_secondary));
+    setEditColorPrimary(campaign.color_primary || '#3b82f6');
+    setEditColorSecondary(campaign.color_secondary || '#8b5cf6');
     setShowEditDialog(true);
   };
 
@@ -174,7 +188,9 @@ const DashboardCampaignsPage = () => {
           platforms: editPlatforms,
           include_logo: editIncludeLogo,
           style_lock: editStyleLock,
-        })
+          color_primary: editCampaignColorEnabled ? editColorPrimary : null,
+          color_secondary: editCampaignColorEnabled ? editColorSecondary : null,
+        } as any)
         .eq('id', editingCampaign.id);
       if (error) throw error;
       queryClient.invalidateQueries({ queryKey: ['campaigns'] });
@@ -343,6 +359,43 @@ const DashboardCampaignsPage = () => {
                       <p className="text-xs text-muted-foreground">Add your brand logo to generated images.</p>
                     </div>
                     <Switch checked={includeLogo} onCheckedChange={setIncludeLogo} />
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <Label className="text-sm font-medium">Campaign Color</Label>
+                        <p className="text-xs text-muted-foreground">Override brand colors for this campaign.</p>
+                      </div>
+                      <Switch checked={campaignColorEnabled} onCheckedChange={setCampaignColorEnabled} />
+                    </div>
+                    {campaignColorEnabled && (
+                      <div className="grid grid-cols-2 gap-3 px-1">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Primary Color</Label>
+                          <div className="flex items-center gap-2 rounded-md border p-2">
+                            <input
+                              type="color"
+                              value={colorPrimary}
+                              onChange={(e) => setColorPrimary(e.target.value)}
+                              className="h-7 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
+                            />
+                            <span className="text-xs font-mono text-muted-foreground uppercase">{colorPrimary}</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">Secondary Color</Label>
+                          <div className="flex items-center gap-2 rounded-md border p-2">
+                            <input
+                              type="color"
+                              value={colorSecondary}
+                              onChange={(e) => setColorSecondary(e.target.value)}
+                              className="h-7 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
+                            />
+                            <span className="text-xs font-mono text-muted-foreground uppercase">{colorSecondary}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex items-center justify-between rounded-md border p-3">
                     <div>
@@ -526,6 +579,43 @@ const DashboardCampaignsPage = () => {
                   <p className="text-xs text-muted-foreground">Add your brand logo to generated images.</p>
                 </div>
                 <Switch checked={editIncludeLogo} onCheckedChange={setEditIncludeLogo} />
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div>
+                    <Label className="text-sm font-medium">Campaign Color</Label>
+                    <p className="text-xs text-muted-foreground">Override brand colors for this campaign.</p>
+                  </div>
+                  <Switch checked={editCampaignColorEnabled} onCheckedChange={setEditCampaignColorEnabled} />
+                </div>
+                {editCampaignColorEnabled && (
+                  <div className="grid grid-cols-2 gap-3 px-1">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Primary Color</Label>
+                      <div className="flex items-center gap-2 rounded-md border p-2">
+                        <input
+                          type="color"
+                          value={editColorPrimary}
+                          onChange={(e) => setEditColorPrimary(e.target.value)}
+                          className="h-7 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
+                        />
+                        <span className="text-xs font-mono text-muted-foreground uppercase">{editColorPrimary}</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Secondary Color</Label>
+                      <div className="flex items-center gap-2 rounded-md border p-2">
+                        <input
+                          type="color"
+                          value={editColorSecondary}
+                          onChange={(e) => setEditColorSecondary(e.target.value)}
+                          className="h-7 w-7 cursor-pointer rounded border-0 bg-transparent p-0"
+                        />
+                        <span className="text-xs font-mono text-muted-foreground uppercase">{editColorSecondary}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>

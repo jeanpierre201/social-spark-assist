@@ -292,6 +292,8 @@ export type Database = {
         Row: {
           audience_refinement: string | null
           audience_type: string | null
+          color_primary: string | null
+          color_secondary: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -307,6 +309,8 @@ export type Database = {
         Insert: {
           audience_refinement?: string | null
           audience_type?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -322,6 +326,8 @@ export type Database = {
         Update: {
           audience_refinement?: string | null
           audience_type?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
