@@ -186,7 +186,7 @@ const DashboardBrandPage = () => {
               Define your corporate identity. This will be used to generate consistent branded content.
             </CardDescription>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+          <CardContent className="space-y-4">
             <div>
               <Label htmlFor="brandName">Brand Name *</Label>
               <Input
@@ -200,7 +200,7 @@ const DashboardBrandPage = () => {
               <Label htmlFor="tagline">Tagline</Label>
               <Input
                 id="tagline"
-                placeholder="A short memorable phrase"
+                placeholder="A short memorable phrase (e.g., 'Just Do It')"
                 value={tagline}
                 onChange={(e) => setTagline(e.target.value)}
               />
@@ -227,7 +227,7 @@ const DashboardBrandPage = () => {
                 placeholder="Describe your brand's mission, values, and what makes you unique..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                rows={3}
+                rows={4}
               />
             </div>
           </CardContent>
