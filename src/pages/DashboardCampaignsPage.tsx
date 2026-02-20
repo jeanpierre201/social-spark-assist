@@ -56,8 +56,11 @@ const AUDIENCE_TYPE_OPTIONS = [
 const PLATFORM_OPTIONS = [
   { value: 'linkedin', label: 'LinkedIn' },
   { value: 'instagram', label: 'Instagram' },
+  { value: 'facebook', label: 'Facebook' },
   { value: 'telegram', label: 'Telegram' },
   { value: 'mastodon', label: 'Mastodon' },
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'x', label: 'X (Twitter)' },
 ];
 
 const DashboardCampaignsPage = () => {
@@ -78,6 +81,7 @@ const DashboardCampaignsPage = () => {
   const [audienceType, setAudienceType] = useState('general');
   const [audienceRefinement, setAudienceRefinement] = useState('');
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [includeLogo, setIncludeLogo] = useState(false);
   const [styleLock, setStyleLock] = useState(true);
 
   // Edit state
@@ -89,6 +93,7 @@ const DashboardCampaignsPage = () => {
   const [editAudienceType, setEditAudienceType] = useState('general');
   const [editAudienceRefinement, setEditAudienceRefinement] = useState('');
   const [editPlatforms, setEditPlatforms] = useState<string[]>([]);
+  const [editIncludeLogo, setEditIncludeLogo] = useState(false);
   const [editStyleLock, setEditStyleLock] = useState(true);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
@@ -118,6 +123,7 @@ const DashboardCampaignsPage = () => {
       setAudienceType('general');
       setAudienceRefinement('');
       setSelectedPlatforms([]);
+      setIncludeLogo(false);
       setStyleLock(true);
       setShowCreateDialog(false);
     } catch (err: any) {
@@ -134,6 +140,7 @@ const DashboardCampaignsPage = () => {
     setEditAudienceType(campaign.audience_type || 'general');
     setEditAudienceRefinement(campaign.audience_refinement || '');
     setEditPlatforms(Array.isArray(campaign.platforms) ? campaign.platforms : []);
+    setEditIncludeLogo(campaign.include_logo ?? false);
     setEditStyleLock(campaign.style_lock ?? true);
     setShowEditDialog(true);
   };
@@ -287,7 +294,7 @@ const DashboardCampaignsPage = () => {
                     />
                   </div>
                   <div>
-                    <Label className="flex items-center gap-1.5">📱 Platforms</Label>
+                    <Label>Platforms</Label>
                     <div className="grid grid-cols-2 gap-2 mt-2">
                       {PLATFORM_OPTIONS.map((opt) => (
                         <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -300,6 +307,13 @@ const DashboardCampaignsPage = () => {
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">These platforms will be pre-selected in the content creator.</p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <div>
+                      <Label className="text-sm font-medium">Include Logo</Label>
+                      <p className="text-xs text-muted-foreground">Add your brand logo to generated images.</p>
+                    </div>
+                    <Switch checked={includeLogo} onCheckedChange={setIncludeLogo} />
                   </div>
                   <div className="flex items-center justify-between rounded-md border p-3">
                     <div>
@@ -412,20 +426,6 @@ const DashboardCampaignsPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="editStatus">Status</Label>
-                <Select value={editStatus} onValueChange={setEditStatus}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="draft">Draft</SelectItem>
-                    <SelectItem value="completed">Completed</SelectItem>
-                    <SelectItem value="archived">Archived</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <Label htmlFor="editVisualStyle">Visual Style</Label>
                 <Select value={editVisualStyle} onValueChange={setEditVisualStyle}>
                   <SelectTrigger>
@@ -463,7 +463,7 @@ const DashboardCampaignsPage = () => {
                 />
               </div>
               <div>
-                <Label className="flex items-center gap-1.5">📱 Platforms</Label>
+                <Label>Platforms</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   {PLATFORM_OPTIONS.map((opt) => (
                     <label key={opt.value} className="flex items-center gap-2 text-sm cursor-pointer">
@@ -476,6 +476,13 @@ const DashboardCampaignsPage = () => {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">These platforms will be pre-selected in the content creator.</p>
+              </div>
+              <div className="flex items-center justify-between rounded-md border p-3">
+                <div>
+                  <Label className="text-sm font-medium">Include Logo</Label>
+                  <p className="text-xs text-muted-foreground">Add your brand logo to generated images.</p>
+                </div>
+                <Switch checked={editIncludeLogo} onCheckedChange={setEditIncludeLogo} />
               </div>
               <div className="flex items-center justify-between rounded-md border p-3">
                 <div>
