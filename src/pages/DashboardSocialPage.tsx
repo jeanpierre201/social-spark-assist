@@ -39,7 +39,7 @@ const DashboardSocialPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6">
-        <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Social Media" showLogout={false} />
+        <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Social Media" showLogout={true} />
         {isProUser && <ProDashboardNav />}
         {isStarterUser && <StarterDashboardNav />}
         <SocialMediaSettings />
