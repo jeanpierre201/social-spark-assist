@@ -28,8 +28,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
-const VISUAL_STYLE_OPTIONS = [
+const RENDER_STYLE_OPTIONS = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'photorealistic', label: 'Photorealistic' },
+  { value: 'flat-design', label: 'Flat Design' },
+  { value: '3d-render', label: '3D Render' },
+  { value: 'illustration', label: 'Illustration' },
+  { value: 'cinematic', label: 'Cinematic' },
+  { value: 'abstract-graphic', label: 'Abstract Graphic' },
+];
+
+const AESTHETIC_DIRECTION_OPTIONS = [
   { value: 'auto', label: 'Auto Style (Recommended)' },
+  { value: 'clean-minimal', label: 'Clean & Minimal' },
   { value: 'bold-impact', label: 'Bold & High Impact' },
   { value: 'corporate', label: 'Corporate & Structured' },
   { value: 'dark-dramatic', label: 'Dark & Dramatic' },
@@ -75,6 +86,7 @@ const DashboardCampaignsPage = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [campaignName, setCampaignName] = useState('');
   const [campaignDescription, setCampaignDescription] = useState('');
+  const [renderStyle, setRenderStyle] = useState('auto');
   const [visualStyle, setVisualStyle] = useState('auto');
   const [audienceType, setAudienceType] = useState('general');
   const [audienceRefinement, setAudienceRefinement] = useState('');
@@ -87,6 +99,7 @@ const DashboardCampaignsPage = () => {
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [editStatus, setEditStatus] = useState('active');
+  const [editRenderStyle, setEditRenderStyle] = useState('auto');
   const [editVisualStyle, setEditVisualStyle] = useState('auto');
   const [editAudienceType, setEditAudienceType] = useState('general');
   const [editAudienceRefinement, setEditAudienceRefinement] = useState('');
@@ -118,6 +131,7 @@ const DashboardCampaignsPage = () => {
       toast({ title: 'Campaign created!' });
       setCampaignName('');
       setCampaignDescription('');
+      setRenderStyle('auto');
       setVisualStyle('auto');
       setAudienceType('general');
       setAudienceRefinement('');
@@ -135,6 +149,7 @@ const DashboardCampaignsPage = () => {
     setEditName(campaign.name);
     setEditDescription(campaign.description || '');
     setEditStatus(campaign.status);
+    setEditRenderStyle(campaign.render_style || 'auto');
     setEditVisualStyle(campaign.visual_style || 'auto');
     setEditAudienceType(campaign.audience_type || 'general');
     setEditAudienceRefinement(campaign.audience_refinement || '');
@@ -257,18 +272,32 @@ const DashboardCampaignsPage = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="visualStyle">Render Style</Label>
-                    <Select value={visualStyle} onValueChange={setVisualStyle}>
+                    <Label>Render Style</Label>
+                    <Select value={renderStyle} onValueChange={setRenderStyle}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {VISUAL_STYLE_OPTIONS.map((opt) => (
+                        {RENDER_STYLE_OPTIONS.map((opt) => (
                           <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
+                  </div>
+                  <div>
+                    <Label>Aesthetic Direction</Label>
+                    <Select value={visualStyle} onValueChange={setVisualStyle}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AESTHETIC_DIRECTION_OPTIONS.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">This controls the mood and composition of the image.</p>
                   </div>
                   <div>
                     <Label htmlFor="audienceType">Audience Type</Label>
@@ -426,18 +455,32 @@ const DashboardCampaignsPage = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="editVisualStyle">Render Style</Label>
-                <Select value={editVisualStyle} onValueChange={setEditVisualStyle}>
+                <Label>Render Style</Label>
+                <Select value={editRenderStyle} onValueChange={setEditRenderStyle}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {VISUAL_STYLE_OPTIONS.map((opt) => (
+                    {RENDER_STYLE_OPTIONS.map((opt) => (
                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
+              </div>
+              <div>
+                <Label>Aesthetic Direction</Label>
+                <Select value={editVisualStyle} onValueChange={setEditVisualStyle}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AESTHETIC_DIRECTION_OPTIONS.map((opt) => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">This controls the mood and composition of the image.</p>
               </div>
               <div>
                 <Label htmlFor="editAudienceType">Audience Type</Label>
