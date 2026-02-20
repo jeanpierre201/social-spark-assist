@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import ProDashboardNav from '@/components/dashboard/ProDashboardNav';
+import StarterDashboardNav from '@/components/dashboard/StarterDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -142,7 +143,7 @@ const DashboardBrandPage = () => {
     );
   }
 
-  if (!isProUser) {
+  if (!isProUser && !isStarterUser) {
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-6">
@@ -157,7 +158,7 @@ const DashboardBrandPage = () => {
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-6">
         <DashboardHeader isProUser={isProUser} isStarterUser={isStarterUser} title="Brand Profile" />
-        <ProDashboardNav />
+        {isProUser ? <ProDashboardNav /> : <StarterDashboardNav />}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Brand Identity */}
@@ -335,21 +336,26 @@ const DashboardBrandPage = () => {
               </CardContent>
             </Card>
 
-            {/* Brand Style Card */}
-            <Card>
+            {/* Brand Style Card - Pro only features */}
+            <Card className={!isProUser ? 'opacity-60' : ''}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Paintbrush className="h-5 w-5 text-primary" />
                   Brand Style
+                  {!isProUser && (
+                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-normal">Pro</span>
+                  )}
                 </CardTitle>
                 <CardDescription>
-                  Set your brand style for visual consistency across content.
+                  {isProUser
+                    ? 'Set your brand style for visual consistency across content.'
+                    : 'Upgrade to Pro to unlock Render Style, Aesthetic Direction, and Brand Colors.'}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <Label htmlFor="visualStyle">Render Style</Label>
-                  <Select value={visualStyle} onValueChange={setVisualStyle}>
+                  <Select value={visualStyle} onValueChange={setVisualStyle} disabled={!isProUser}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -369,11 +375,12 @@ const DashboardBrandPage = () => {
                     id="brandColorEnabled"
                     checked={brandColorEnabled}
                     onCheckedChange={(checked) => setBrandColorEnabled(checked === true)}
+                    disabled={!isProUser}
                   />
-                  <Label htmlFor="brandColorEnabled" className="cursor-pointer">Brand Color</Label>
+                  <Label htmlFor="brandColorEnabled" className={`cursor-pointer ${!isProUser ? 'text-muted-foreground' : ''}`}>Brand Color</Label>
                 </div>
 
-                {brandColorEnabled && (
+                {brandColorEnabled && isProUser && (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -428,6 +435,12 @@ const DashboardBrandPage = () => {
                       </div>
                     </div>
                   </div>
+                )}
+
+                {!isProUser && (
+                  <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => window.location.href = '/upgrade-pro'}>
+                    Upgrade to Pro
+                  </Button>
                 )}
               </CardContent>
             </Card>

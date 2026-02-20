@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 
 const navItems = [
   { label: 'Overview', path: '/dashboard' },
+  { label: 'Brand', path: '/dashboard/brand' },
   { label: 'Content', path: '/dashboard/content-generator-starter' },
   { label: 'Posts', path: '/dashboard/posts-starter' },
   { label: 'Social', path: '/dashboard/social' },
