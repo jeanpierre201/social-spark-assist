@@ -38,6 +38,15 @@ const visualStyles = [
   { value: 'abstract-graphic', label: 'Abstract Graphic' },
 ];
 
+const aestheticDirections = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'clean-minimal', label: 'Clean & Minimal' },
+  { value: 'bold-impact', label: 'Bold & High Impact' },
+  { value: 'corporate-structured', label: 'Corporate & Structured' },
+  { value: 'dark-dramatic', label: 'Dark & Dramatic' },
+  { value: 'soft-lifestyle', label: 'Soft & Lifestyle' },
+];
+
 const logoPositions = [
   { value: 'top-left', label: 'Top Left' },
   { value: 'top-center', label: 'Top Center' },
@@ -61,6 +70,7 @@ const DashboardBrandPage = () => {
   const [description, setDescription] = useState('');
   const [voiceTone, setVoiceTone] = useState('professional');
   const [visualStyle, setVisualStyle] = useState('clean-minimal');
+  const [aestheticDirection, setAestheticDirection] = useState('auto');
   const [colorPrimary, setColorPrimary] = useState('#3b82f6');
   const [colorSecondary, setColorSecondary] = useState('#8b5cf6');
   const [brandColorEnabled, setBrandColorEnabled] = useState(false);
@@ -77,6 +87,7 @@ const DashboardBrandPage = () => {
       setDescription(brand.description || '');
       setVoiceTone(brand.voice_tone || 'professional');
       setVisualStyle(brand.visual_style || 'clean-minimal');
+      setAestheticDirection((brand as any).aesthetic_direction || 'auto');
       setColorPrimary(brand.color_primary || '#3b82f6');
       setColorSecondary(brand.color_secondary || '#8b5cf6');
       setBrandColorEnabled(!!(brand.color_primary || brand.color_secondary));
@@ -127,6 +138,7 @@ const DashboardBrandPage = () => {
       logo_url: logoUrl,
       voice_tone: voiceTone,
       visual_style: visualStyle,
+      aesthetic_direction: aestheticDirection,
       color_primary: brandColorEnabled ? colorPrimary : null,
       color_secondary: brandColorEnabled ? colorSecondary : null,
       logo_placement: logoPlacement,
@@ -363,6 +375,23 @@ const DashboardBrandPage = () => {
                       {visualStyles.map((style) => (
                         <SelectItem key={style.value} value={style.value}>
                           {style.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground mt-1">This controls how the image is produced visually.</p>
+                </div>
+
+                <div>
+                  <Label htmlFor="aestheticDirection">Aesthetic Direction</Label>
+                  <Select value={aestheticDirection} onValueChange={setAestheticDirection} disabled={!isProUser}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {aestheticDirections.map((dir) => (
+                        <SelectItem key={dir.value} value={dir.value}>
+                          {dir.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
