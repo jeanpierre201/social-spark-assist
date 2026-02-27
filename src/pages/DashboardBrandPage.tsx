@@ -17,6 +17,7 @@ import StarterDashboardNav from '@/components/dashboard/StarterDashboardNav';
 import UpgradePrompt from '@/components/dashboard/UpgradePrompt';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { BUSINESS_TYPES } from '@/config/businessTypes';
 
 const voiceTones = [
   { value: 'professional', label: 'Professional' },
@@ -69,6 +70,8 @@ const DashboardBrandPage = () => {
   const isStarterUser = subscribed && subscriptionTier === 'Starter';
 
   const [name, setName] = useState('');
+  const [businessType, setBusinessType] = useState('');
+  const [otherBusinessType, setOtherBusinessType] = useState('');
   const [tagline, setTagline] = useState('');
   const [description, setDescription] = useState('');
   const [voiceTone, setVoiceTone] = useState('professional');
@@ -83,9 +86,23 @@ const DashboardBrandPage = () => {
   const [watermarkOpacity, setWatermarkOpacity] = useState(50);
   const [uploading, setUploading] = useState(false);
 
+  const businessTypeValue = businessType === 'Other' ? otherBusinessType.trim() : businessType.trim();
+
   useEffect(() => {
     if (brand) {
       setName(brand.name || '');
+      // Set business type from brand or default to empty
+      const storedBusinessType = brand.business_type || '';
+      if (BUSINESS_TYPES.includes(storedBusinessType)) {
+        setBusinessType(storedBusinessType);
+        setOtherBusinessType('');
+      } else if (storedBusinessType) {
+        setBusinessType('Other');
+        setOtherBusinessType(storedBusinessType);
+      } else {
+        setBusinessType('');
+        setOtherBusinessType('');
+      }
       setTagline(brand.tagline || '');
       setDescription(brand.description || '');
       setVoiceTone(brand.voice_tone || 'professional');
@@ -138,6 +155,7 @@ const DashboardBrandPage = () => {
       name: name.trim(),
       tagline: tagline.trim() || null,
       description: description.trim() || null,
+      business_type: businessTypeValue || null,
       logo_url: logoUrl,
       voice_tone: voiceTone,
       visual_style: visualStyle,
@@ -195,6 +213,34 @@ const DashboardBrandPage = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
+            </div>
+            <div>
+              <Label htmlFor="businessType">Business Type</Label>
+              <Select value={businessType} onValueChange={(val) => {
+                setBusinessType(val);
+                if (val !== 'Other') setOtherBusinessType('');
+              }}>
+                <SelectTrigger id="businessType">
+                  <SelectValue placeholder="Select business type (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BUSINESS_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {businessType === 'Other' && (
+                <Input
+                  id="businessType-other"
+                  placeholder="Enter business type"
+                  value={otherBusinessType}
+                  onChange={(e) => setOtherBusinessType(e.target.value)}
+                  maxLength={100}
+                  className="mt-2"
+                />
+              )}
             </div>
             <div>
               <Label htmlFor="tagline">Tagline</Label>

@@ -124,6 +124,19 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
     }
   }, [brand]);
 
+  // Auto-populate business type from brand if available
+  useEffect(() => {
+    if (brand?.business_type) {
+      if (BUSINESS_TYPES.includes(brand.business_type)) {
+        setIndustry(brand.business_type);
+        setOtherBusinessType('');
+      } else {
+        setIndustry('Other');
+        setOtherBusinessType(brand.business_type);
+      }
+    }
+  }, [brand?.business_type]);
+
   const socialPlatforms = [
     { id: 'mastodon', name: 'Mastodon' },
     { id: 'telegram', name: 'Telegram' },

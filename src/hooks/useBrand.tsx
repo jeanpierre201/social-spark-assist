@@ -18,6 +18,7 @@ export interface Brand {
   logo_placement: string | null;
   watermark_enabled: boolean;
   watermark_opacity: number | null;
+  business_type: string | null;
   created_at: string;
   updated_at: string;
 }
