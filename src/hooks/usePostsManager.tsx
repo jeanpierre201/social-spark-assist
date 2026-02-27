@@ -111,6 +111,9 @@ export const usePostsManager = () => {
       selected_image_type?: string;
       ai_generations_count?: number;
       ai_image_prompts?: string[];
+      // added for branding/campaign support
+      brand_id?: string | null;
+      campaign_id?: string | null;
     }) => {
       if (!user) throw new Error('User not authenticated');
       
@@ -166,7 +169,9 @@ export const usePostsManager = () => {
       ai_generations_count,
       ai_image_prompts,
       status,
-      social_platforms
+      social_platforms,
+      brand_id,
+      campaign_id,
     }: { 
       id: string; 
       industry?: string;
@@ -184,6 +189,8 @@ export const usePostsManager = () => {
       ai_image_prompts?: string[];
       status?: string;
       social_platforms?: string[];
+      brand_id?: string | null;
+      campaign_id?: string | null;
     }) => {
       const updateData: any = {
         generated_caption: content,
@@ -204,6 +211,8 @@ export const usePostsManager = () => {
       if (ai_image_prompts !== undefined) updateData.ai_image_prompts = ai_image_prompts;
       if (status !== undefined) updateData.status = status;
       if (social_platforms !== undefined) updateData.social_platforms = social_platforms;
+      if (brand_id !== undefined) updateData.brand_id = brand_id;
+      if (campaign_id !== undefined) updateData.campaign_id = campaign_id;
       
       // Update media_url based on selected image type for backward compatibility
       if (selected_image_type !== undefined) {

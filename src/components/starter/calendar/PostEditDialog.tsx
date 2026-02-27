@@ -531,15 +531,34 @@ const PostEditDialog = ({ isOpen, onClose, editingPost, onPostChange, onSave }: 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="industry">Industry</Label>
-              <Input
-                id="industry"
-                value={editingPost.industry}
-                onChange={(e) => onPostChange({
-                  ...editingPost,
-                  industry: e.target.value
-                })}
-              />
+              <Label htmlFor="industry">Business type</Label>
+              <Select value={BUSINESS_TYPES.includes(editingPost.industry) ? editingPost.industry : 'Other'} onValueChange={(val) => {
+                if (val === 'Other') {
+                  onPostChange({ ...editingPost, industry: '' });
+                } else {
+                  onPostChange({ ...editingPost, industry: val });
+                }
+              }}>
+                <SelectTrigger id="industry">
+                  <SelectValue placeholder="Select business type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BUSINESS_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!BUSINESS_TYPES.includes(editingPost.industry) && (
+                <Input
+                  id="industry-other"
+                  placeholder="Enter business type"
+                  value={editingPost.industry}
+                  onChange={(e) => onPostChange({ ...editingPost, industry: e.target.value })}
+                  className="mt-2"
+                />
+              )}
             </div>
             <div>
               <Label htmlFor="goal">Goal</Label>

@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, Hash, MessageSquare, Image as ImageIcon, Edit, Trash2, Save, X } from 'lucide-react';
+import { BUSINESS_TYPES } from '@/config/businessTypes';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -297,15 +299,34 @@ const GeneratedPostsPreview = ({ posts, setPosts }: GeneratedPostsPreviewProps) 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="industry">Industry</Label>
-                  <Input
-                    id="industry"
-                    value={editingPost.industry}
-                    onChange={(e) => setEditingPost({
-                      ...editingPost,
-                      industry: e.target.value
-                    })}
-                  />
+                  <Label htmlFor="industry">Business type</Label>
+                  <Select value={BUSINESS_TYPES.includes(editingPost.industry) ? editingPost.industry : 'Other'} onValueChange={(val) => {
+                    if (val === 'Other') {
+                      setEditingPost({ ...editingPost, industry: '' });
+                    } else {
+                      setEditingPost({ ...editingPost, industry: val });
+                    }
+                  }}>
+                    <SelectTrigger id="industry">
+                      <SelectValue placeholder="Select business type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BUSINESS_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {!BUSINESS_TYPES.includes(editingPost.industry) && (
+                    <Input
+                      id="industry-other"
+                      placeholder="Enter business type"
+                      value={editingPost.industry}
+                      onChange={(e) => setEditingPost({ ...editingPost, industry: e.target.value })}
+                      className="mt-2"
+                    />
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="goal">Goal</Label>

@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BUSINESS_TYPES } from '@/config/businessTypes';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useBrand } from '@/hooks/useBrand';
@@ -52,7 +53,10 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
   const { campaigns } = useCampaigns();
   const { toast } = useToast();
   const [industry, setIndustry] = useState('');
+  const [otherBusinessType, setOtherBusinessType] = useState('');
   const [goal, setGoal] = useState('');
+
+  const businessTypeValue = industry === 'Other' ? otherBusinessType.trim() : industry.trim();
   const [audienceType, setAudienceType] = useState('general');
   const [audienceRefinement, setAudienceRefinement] = useState('');
   const AUDIENCE_LABELS: Record<string, string> = {
@@ -236,7 +240,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
     // Validate based on content mode
     if (generateCaptionWithAI) {
-      if (!industry.trim() || !goal.trim()) {
+      if (!businessTypeValue || !goal.trim()) {
         toast({
           title: "Missing Information",
           description: "Please fill in at least industry and goal fields",
@@ -289,7 +293,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         const { data, error } = await supabase.functions.invoke('generate-content', {
           body: {
             userId: user?.id,
-            industry: industry.trim(),
+            industry: businessTypeValue,
             goal: goal.trim(),
             nicheInfo: nicheInfo.trim(),
             includeEmojis,
@@ -334,7 +338,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
             }
           } else {
             // Default prompt from AI fields
-            imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+            imagePrompt = `Create a professional image for ${businessTypeValue} business type. Goal: ${goal.trim()}`;
             if (nicheInfo.trim()) {
               imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
             }
@@ -488,7 +492,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         .from('posts')
         .insert({
           user_id: user.id,
-          industry: industry.trim(),
+          industry: businessTypeValue,
           goal: goal.trim(),
           niche_info: nicheInfo.trim() || null,
           scheduled_date: utcDateStr,
@@ -509,7 +513,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
       if (dbError) throw dbError;
 
       const newPost: PostData = {
-        industry: industry.trim(),
+        industry: businessTypeValue,
         goal: goal.trim(),
         nicheInfo: nicheInfo.trim(),
         scheduledDate: scheduledDate,
@@ -536,6 +540,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
 
       // Clear form and reset all state
       setIndustry('');
+      setOtherBusinessType('');
       setGoal('');
       setAudienceType('general');
       setAudienceRefinement('');
@@ -602,10 +607,10 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
       return;
     }
 
-    if (!industry.trim() || !goal.trim()) {
+    if (!businessTypeValue || !goal.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please fill in at least industry and goal fields",
+        description: "Please fill in at least business type and goal fields",
         variant: "destructive",
       });
       return;
@@ -655,7 +660,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         const { data, error } = await supabase.functions.invoke('generate-content', {
           body: {
             userId: user?.id,
-            industry: industry.trim(),
+            industry: businessTypeValue,
             goal: currentGoal,
             nicheInfo: nicheInfo.trim(),
             includeEmojis,
@@ -671,7 +676,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         // Generate AI image if requested for each post
         if (generateWithImages) {
           try {
-            let imagePrompt = customImagePrompt.trim() || `Create a professional image for ${industry.trim()} industry. Goal: ${currentGoal}`;
+            let imagePrompt = customImagePrompt.trim() || `Create a professional image for ${businessTypeValue} business type. Goal: ${currentGoal}`;
             if (!customImagePrompt.trim() && nicheInfo.trim()) {
               imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
             }
@@ -766,7 +771,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           .from('posts')
           .insert({
             user_id: user.id,
-            industry: industry.trim(),
+            industry: businessTypeValue,
             goal: currentGoal,
             niche_info: nicheInfo.trim() || null,
             scheduled_date: utcDateStr,
@@ -789,7 +794,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         // The monthlyPosts counter is already incremented via setMonthlyPosts below
 
         const newPost: PostData = {
-          industry: industry.trim(),
+          industry: businessTypeValue,
           goal: currentGoal,
           nicheInfo: nicheInfo.trim(),
           scheduledDate: scheduledDate,
@@ -905,14 +910,32 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         {generateCaptionWithAI && (
           <>
             <div className="grid gap-2">
-              <Label htmlFor="industry">Industry *</Label>
-              <Input
-                id="industry"
-                placeholder="e.g., Technology, Fashion, Food..."
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                maxLength={100}
-              />
+              <Label htmlFor="industry">Business type *</Label>
+              <Select value={industry} onValueChange={(val) => {
+                setIndustry(val);
+                if (val !== 'Other') setOtherBusinessType('');
+              }}>
+                <SelectTrigger id="industry">
+                  <SelectValue placeholder="Select business type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BUSINESS_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {industry === 'Other' && (
+                <Input
+                  id="industry-other"
+                  placeholder="Enter business type"
+                  value={otherBusinessType}
+                  onChange={(e) => setOtherBusinessType(e.target.value)}
+                  maxLength={100}
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -1181,7 +1204,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
         <div className="flex flex-col gap-3 pt-4 border-t">
           <Button 
             onClick={handleGenerateSingle}
-            disabled={(generateCaptionWithAI ? (!industry.trim() || !goal.trim()) : !manualCaption.trim()) || isGenerating || isGenerating10}
+            disabled={(generateCaptionWithAI ? (!businessTypeValue || !goal.trim()) : !manualCaption.trim()) || isGenerating || isGenerating10}
             className="w-full"
           >
             {isGenerating ? (
@@ -1200,7 +1223,7 @@ const ProContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts,
           {remainingPosts > 1 && generateCaptionWithAI && (
             <Button 
               onClick={handleGenerate10Posts}
-              disabled={!industry.trim() || !goal.trim() || isGenerating || isGenerating10}
+              disabled={!businessTypeValue || !goal.trim() || isGenerating || isGenerating10}
               variant="outline"
               className="w-full"
             >

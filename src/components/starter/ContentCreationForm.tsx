@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useBrand } from '@/hooks/useBrand';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Loader2, Sparkles, Calendar, Clock } from 'lucide-react';
+import { Plus, Loader2, Sparkles, Calendar, Clock, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 import { fromZonedTime } from 'date-fns-tz';
@@ -18,6 +18,7 @@ import { format } from 'date-fns';
 import { applyLogoOverlay, LogoPlacement } from '@/utils/logoOverlay';
 import { RENDER_STYLE_PROMPTS, buildStylePrompt } from '@/config/imageStyleMappings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { BUSINESS_TYPES } from '@/config/businessTypes';
 
 interface GeneratedContent {
   caption: string;
@@ -52,7 +53,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
   const { brand } = useBrand();
   const { toast } = useToast();
   const [industry, setIndustry] = useState('');
+  const [otherBusinessType, setOtherBusinessType] = useState('');
   const [goal, setGoal] = useState('');
+
+  const businessTypeValue = industry === 'Other' ? otherBusinessType.trim() : industry.trim();
   const [audienceType, setAudienceType] = useState('general');
   const [audienceRefinement, setAudienceRefinement] = useState('');
   const AUDIENCE_LABELS: Record<string, string> = {
@@ -238,10 +242,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
 
     // Validate based on content mode
     if (generateCaptionWithAI) {
-      if (!industry.trim() || !goal.trim()) {
+      if (!businessTypeValue || !goal.trim()) {
         toast({
           title: "Missing Information",
-          description: "Please fill in at least industry and goal fields",
+          description: "Please fill in at least business type and goal fields",
           variant: "destructive",
         });
         return;
@@ -277,7 +281,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         const { data, error } = await supabase.functions.invoke('generate-content', {
           body: {
             userId: user?.id,
-            industry: industry.trim(),
+            industry: businessTypeValue,
             goal: goal.trim(),
             nicheInfo: nicheInfo.trim(),
             includeEmojis
@@ -321,7 +325,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
             }
           } else {
             // Default prompt from AI fields
-            imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+            imagePrompt = `Create a professional image for ${businessTypeValue} business type. Goal: ${goal.trim()}`;
             if (nicheInfo.trim()) {
               imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
             }
@@ -467,30 +471,35 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       }
 
       // Save to database
+      const insertData: any = {
+        user_id: user.id,
+        industry: businessTypeValue,
+        goal: goal.trim(),
+        niche_info: nicheInfo.trim() || null,
+        scheduled_date: utcDateStr,
+        scheduled_time: utcTimeStr,
+        user_timezone: userTimezone,
+        social_platforms: selectedSocialPlatforms,
+        generated_caption: generatedContent.caption,
+        generated_hashtags: generatedContent.hashtags,
+        media_url: imageUrl || null,
+        uploaded_image_url: (!isImageGenerated && imageUrl) ? imageUrl : null,
+        ai_generated_image_1_url: isImageGenerated ? imageUrl : null,
+        selected_image_type: isImageGenerated ? 'ai_generated_1' : (imageUrl ? 'uploaded' : null),
+        status: postStatus
+      };
+      if (includeBrand && brand?.id) {
+        insertData.brand_id = brand.id;
+      }
+
       const { error: dbError } = await supabase
         .from('posts')
-        .insert({
-          user_id: user.id,
-          industry: industry.trim(),
-          goal: goal.trim(),
-          niche_info: nicheInfo.trim() || null,
-          scheduled_date: utcDateStr,
-          scheduled_time: utcTimeStr,
-          user_timezone: userTimezone,
-          social_platforms: selectedSocialPlatforms,
-          generated_caption: generatedContent.caption,
-          generated_hashtags: generatedContent.hashtags,
-          media_url: imageUrl || null,
-          uploaded_image_url: (!isImageGenerated && imageUrl) ? imageUrl : null,
-          ai_generated_image_1_url: isImageGenerated ? imageUrl : null,
-          selected_image_type: isImageGenerated ? 'ai_generated_1' : (imageUrl ? 'uploaded' : null),
-          status: postStatus
-        });
+        .insert(insertData);
 
       if (dbError) throw dbError;
 
       const newPost: PostData = {
-        industry: industry.trim(),
+        industry: businessTypeValue,
         goal: goal.trim(),
         nicheInfo: nicheInfo.trim(),
         scheduledDate: scheduledDate,
@@ -518,6 +527,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
 
       // Clear form and reset all state
       setIndustry('');
+      setOtherBusinessType('');
       setGoal('');
       setAudienceType('general');
       setAudienceRefinement('');
@@ -585,10 +595,10 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
       return;
     }
 
-    if (!industry.trim() || !goal.trim()) {
+if (!businessTypeValue || !goal.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please fill in at least industry and goal fields",
+        description: "Please fill in at least business type and goal fields",
         variant: "destructive",
       });
       return;
@@ -624,7 +634,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         const { data, error } = await supabase.functions.invoke('generate-content', {
           body: {
             userId: user?.id,
-            industry: industry.trim(),
+            industry: businessTypeValue,
             goal: currentGoal,
             nicheInfo: nicheInfo.trim(),
             includeEmojis
@@ -665,7 +675,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           .from('posts')
           .insert({
             user_id: user.id,
-            industry: industry.trim(),
+            industry: businessTypeValue,
             goal: currentGoal,
             niche_info: nicheInfo.trim() || null,
             scheduled_date: utcDateStr,
@@ -681,7 +691,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         if (dbError) throw dbError;
 
         const newPost: PostData = {
-          industry: industry.trim(),
+          industry: businessTypeValue,
           goal: currentGoal,
           nicheInfo: nicheInfo.trim(),
           scheduledDate: scheduledDate,
@@ -747,6 +757,30 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Brand Context Toggle */}
+        <div className="p-3 rounded-lg border border-border bg-muted/30 space-y-3">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="include-brand"
+              checked={includeBrand}
+              onCheckedChange={(checked) => setIncludeBrand(checked as boolean)}
+              disabled={!brand?.id}
+            />
+            <Label htmlFor="include-brand" className="text-sm font-medium flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Include Brand context
+              {brand?.name && (
+                <span className="text-xs text-muted-foreground">({brand.name})</span>
+              )}
+            </Label>
+          </div>
+          {!brand?.id && (
+            <p className="text-xs text-muted-foreground ml-6">
+              <Link to="/dashboard/brand" className="text-primary underline">Create a brand profile</Link> to enable this option.
+            </p>
+          )}
+        </div>
+
         {/* AI Caption Generation Toggle - at the top */}
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -763,14 +797,32 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         {generateCaptionWithAI && (
           <>
             <div>
-              <Label htmlFor="industry">Industry *</Label>
-              <Input
-                id="industry"
-                placeholder="e.g., Technology, Fashion, Food..."
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                maxLength={100}
-              />
+              <Label htmlFor="industry">Business type *</Label>
+              <Select value={industry} onValueChange={(val) => {
+                setIndustry(val);
+                if (val !== 'Other') setOtherBusinessType('');
+              }}>
+                <SelectTrigger id="industry">
+                  <SelectValue placeholder="Select business type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BUSINESS_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {industry === 'Other' && (
+                <Input
+                  id="industry-other"
+                  placeholder="Enter business type"
+                  value={otherBusinessType}
+                  onChange={(e) => setOtherBusinessType(e.target.value)}
+                  maxLength={100}
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div>
@@ -1053,7 +1105,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
         <div className="space-y-2">
           <Button
             onClick={handleGenerateSingle}
-            disabled={isGenerating || monthlyPosts >= 10 || !canCreatePosts || (generateCaptionWithAI ? (!industry.trim() || !goal.trim()) : !manualCaption.trim())}
+            disabled={isGenerating || monthlyPosts >= 10 || !canCreatePosts || (generateCaptionWithAI ? (!businessTypeValue || !goal.trim()) : !manualCaption.trim())}
             className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
           >
             {isGenerating ? (
@@ -1072,7 +1124,7 @@ const ContentCreationForm = ({ monthlyPosts, setMonthlyPosts, canCreatePosts, se
           {generateCaptionWithAI && (
             <Button
               onClick={handleGenerateAll10}
-              disabled={isGenerating || monthlyPosts >= 10 || !industry.trim() || !goal.trim() || !canCreatePosts}
+              disabled={isGenerating || monthlyPosts >= 10 || !businessTypeValue || !goal.trim() || !canCreatePosts}
               variant="outline"
               className="w-full"
             >

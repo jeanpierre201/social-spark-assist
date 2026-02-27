@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSocialAccounts } from '@/hooks/useSocialAccounts';
 import { useManualPublish } from '@/hooks/useManualPublish';
+import { useBrand } from '@/hooks/useBrand';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,6 +16,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Sparkles, Calendar, Clock, Send } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { applyLogoOverlay, LogoPlacement } from '@/utils/logoOverlay';
+import { BUSINESS_TYPES } from '@/config/businessTypes';
 
 interface ContentGenerationFormProps {
   currentMonthPosts: number;
@@ -29,12 +32,17 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const { subscribed } = useSubscription();
   const { accounts } = useSocialAccounts();
   const { publishToMastodon, isPublishingPost } = useManualPublish();
+  const { brand } = useBrand();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const [industry, setIndustry] = useState('');
+  const [otherBusinessType, setOtherBusinessType] = useState('');
   const [goal, setGoal] = useState('');
   const [nicheInfo, setNicheInfo] = useState('');
+
+  // final value used in payload/validation (handles the "Other" case)
+  const businessTypeValue = industry === 'Other' ? otherBusinessType.trim() : industry.trim();
   const [selectedPlatform, setSelectedPlatform] = useState('twitter');
   const [scheduledDate, setScheduledDate] = useState<Date | null>(null);
   const [scheduledTime, setScheduledTime] = useState('');
@@ -51,11 +59,19 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
   const [generateCaptionWithAI, setGenerateCaptionWithAI] = useState(true);
   const [manualCaption, setManualCaption] = useState('');
   const [manualHashtags, setManualHashtags] = useState('');
+  const [includeBrand, setIncludeBrand] = useState(false);
   // Free tier platforms - only Mastodon and Telegram
   const freePlatforms = [
     { id: 'mastodon', name: 'Mastodon' },
     { id: 'telegram', name: 'Telegram' }
   ];
+
+  // auto-enable the checkbox if a brand exists with any data
+  useEffect(() => {
+    if (brand && (brand.name || brand.tagline || brand.description || brand.voice_tone || brand.visual_style || brand.color_primary || brand.color_secondary || brand.logo_url)) {
+      setIncludeBrand(true);
+    }
+  }, [brand]);
 
   const socialPlatforms = [
     { id: 'mastodon', name: 'Mastodon' },
@@ -127,10 +143,10 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
     // Validate based on content mode
     if (generateCaptionWithAI) {
-      if (!industry.trim() || !goal.trim()) {
+      if (!businessTypeValue || !goal.trim()) {
         toast({
           title: "Missing Information",
-          description: "Please fill in at least industry and goal fields",
+          description: "Please fill in at least business type and goal fields",
           variant: "destructive",
         });
         return;
@@ -162,14 +178,23 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
       if (generateCaptionWithAI) {
         // Generate with AI
+        // build payload with optional brand context
+        const payload: any = {
+          industry: businessTypeValue,
+          goal: goal.trim(),
+          nicheInfo: nicheInfo.trim(),
+          includeEmojis: includeEmojis,
+          userId: user.id,
+        };
+        if (includeBrand && brand) {
+          payload.brandName = brand.name;
+          payload.brandVoiceTone = brand.voice_tone;
+          payload.brandDescription = brand.description;
+          payload.brandTagline = brand.tagline;
+        }
+
         const { data, error } = await supabase.functions.invoke('generate-content', {
-          body: {
-            industry: industry.trim(),
-            goal: goal.trim(),
-            nicheInfo: nicheInfo.trim(),
-            includeEmojis: includeEmojis,
-            userId: user.id,
-          }
+          body: payload
         });
 
         if (error) {
@@ -214,12 +239,21 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
             }
           } else {
             // Default prompt from AI fields
-            imagePrompt = `Create a professional image for ${industry.trim()} industry. Goal: ${goal.trim()}`;
+            imagePrompt = `Create a professional image for ${businessTypeValue} business type. Goal: ${goal.trim()}`;
             if (nicheInfo.trim()) {
               imagePrompt += `. Target audience: ${nicheInfo.trim()}`;
             }
           }
-          
+
+          // include brand colors/styles when requested
+          if (includeBrand && brand) {
+            if (brand.color_primary) {
+              imagePrompt += `. Use brand primary color ${brand.color_primary}`;
+            }
+            if (brand.color_secondary) {
+              imagePrompt += ` and secondary color ${brand.color_secondary}`;
+            }
+          }
 
           const { data: imageData, error: imageError } = await supabase.functions.invoke('generate-image', {
             body: {
@@ -278,6 +312,39 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         }
       }
 
+      // apply logo overlay if brand context is included and logo placement enabled
+      if (generatedImageUrl && includeBrand && brand?.logo_url && brand.logo_placement && brand.logo_placement !== 'none') {
+        try {
+          const overlayBlob = await applyLogoOverlay({
+            imageUrl: generatedImageUrl,
+            logoUrl: brand.logo_url,
+            placement: brand.logo_placement as LogoPlacement,
+            watermark: brand.watermark_enabled || false,
+            watermarkOpacity: brand.watermark_opacity ?? 0.5,
+          });
+
+          const timestamp2 = new Date().getTime();
+          const storagePath2 = `${user.id}/${timestamp2}-branded.png`;
+          const { data: uploadData2, error: uploadError2 } = await supabase.storage
+            .from('media')
+            .upload(storagePath2, overlayBlob, {
+              cacheControl: '3600',
+              upsert: false,
+              contentType: 'image/png',
+            });
+
+          if (!uploadError2 && uploadData2) {
+            const { data: publicUrlData2 } = supabase.storage
+              .from('media')
+              .getPublicUrl(uploadData2.path);
+            generatedImageUrl = publicUrlData2.publicUrl;
+            setImageUrl(generatedImageUrl);
+          }
+        } catch (overlayError) {
+          console.error('Logo overlay failed:', overlayError);
+        }
+      }
+
       // Increment monthly usage counter
       const { data: newUsageCount, error: incrementError } = await supabase
         .rpc('increment_monthly_usage', { user_uuid: user.id });
@@ -297,11 +364,11 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         }
       }
 
-      const newPost = {
+      const newPost: any = {
         user_id: user.id,
         generated_caption: caption,
         generated_hashtags: hashtags,
-        industry: industry.trim(),
+        industry: businessTypeValue,
         goal: goal.trim(),
         niche_info: nicheInfo.trim() || null,
         scheduled_date: scheduledDate ? format(scheduledDate, 'yyyy-MM-dd') : null,
@@ -310,12 +377,17 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         status: postStatus,
         social_platforms: selectedSocialPlatforms,
       };
+      // include brand reference for starter/pro users
+      if (includeBrand && brand?.id) {
+        newPost.brand_id = brand.id;
+      }
 
       // Save post to database for all users (free users see posts for 24 hours only)
       setLastGeneratedPost(newPost);
       onPostCreated(newPost);
       
       setIndustry('');
+    setOtherBusinessType('');
       setGoal('');
       setNicheInfo('');
       setScheduledDate(null);
@@ -421,6 +493,28 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* brand toggle for Starter/Pro users (moved to very top) */}
+        {(isStarterUser || isProUser) && (
+          <div className="border-t pt-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="include-brand"
+                checked={includeBrand}
+                onCheckedChange={(checked) => setIncludeBrand(checked as boolean)}
+                disabled={!brand?.id}
+              />
+              <Label htmlFor="include-brand" className="text-sm">
+                Include brand styling
+              </Label>
+            </div>
+            {!brand?.id && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Define your brand in <Link to="/dashboard/brand" className="text-primary hover:underline">Brand Profile</Link> to use this option.
+              </p>
+            )}
+          </div>
+        )}
+
         {/* AI Caption Generation Toggle - at the top */}
         <div className="flex items-center space-x-2">
           <Checkbox
@@ -437,14 +531,32 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
         {generateCaptionWithAI && (
           <>
             <div className="grid gap-2">
-              <Label htmlFor="industry">Industry *</Label>
-              <Input
-                id="industry"
-                placeholder="e.g., Technology, Fashion, Food..."
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                maxLength={100}
-              />
+              <Label htmlFor="industry">Business type *</Label>
+              <Select value={industry} onValueChange={(val) => {
+                setIndustry(val);
+                if (val !== 'Other') setOtherBusinessType('');
+              }}>
+                <SelectTrigger id="industry">
+                  <SelectValue placeholder="Select business type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {BUSINESS_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {industry === 'Other' && (
+                <Input
+                  id="industry-other"
+                  placeholder="Enter business type"
+                  value={otherBusinessType}
+                  onChange={(e) => setOtherBusinessType(e.target.value)}
+                  maxLength={100}
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="grid gap-2">
@@ -525,6 +637,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
           </div>
         )}
 
+
         {/* Advanced features for subscribed users only */}
         {!isFreeUser && (
           <>
@@ -581,7 +694,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
                   Generate AI image
                 </Label>
               </div>
-              
+
               {generateWithImages && (
                 <div className="ml-6 space-y-2">
                   <Label htmlFor="image-prompt" className="text-sm">Image Description (Optional)</Label>
@@ -726,7 +839,7 @@ const ContentGenerationForm = ({ currentMonthPosts, isProUser, isStarterUser, is
 
         <Button 
           onClick={handleGenerateContent}
-          disabled={isGenerating || (generateCaptionWithAI ? (!industry.trim() || !goal.trim()) : !manualCaption.trim())}
+          disabled={isGenerating || (generateCaptionWithAI ? (!businessTypeValue || !goal.trim()) : !manualCaption.trim())}
           className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
         >
           {isGenerating ? (
